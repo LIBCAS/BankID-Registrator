@@ -1,0 +1,14 @@
+{
+    "elements": {},
+    "attributes": {
+        "th:text": {
+            "context": "span"
+        },
+        "th:href": {
+            "context": "a"
+        },
+        "th:attr": {
+            "context": "meta"
+        }
+    }
+}
