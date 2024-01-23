@@ -19,11 +19,9 @@ services:
       - ./../../.m2:/root/.m2
       - ./../../logs:/app/logs
     working_dir: /app
-    command: sh ./.docker/local/run.sh
+    command: sh ./.docker/testing/run.sh
     ports:
       - ${APP_PORT_HOST}:${APP_PORT}
-      - 35729:35729
-      - 5005:5005
     depends_on:
       - database
     networks:
@@ -32,8 +30,6 @@ services:
   database:
     image: mariadb:10.6.4-focal
     restart: unless-stopped
-    ports:
-      - ${MYSQL_PORT_HOST}:${MYSQL_PORT}
     env_file: .env
     environment:
       MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
@@ -42,20 +38,6 @@ services:
       MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
     volumes:
       - db-data:/var/lib/mysql
-    networks:
-      - spring-network
-
-  phpmyadmin:
-    depends_on:
-      - database
-    image: phpmyadmin/phpmyadmin
-    restart: unless-stopped
-    ports:
-      - ${PHPMYADMIN_PORT_HOST}:${PHPMYADMIN_PORT}
-    env_file: .env
-    environment:
-      PMA_HOST: database
-      MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
     networks:
       - spring-network
 
