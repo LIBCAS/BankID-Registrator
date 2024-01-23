@@ -3,8 +3,9 @@ version: '3.1'
 services:
   app:
     build:
-      context: ./
+      context: .
       dockerfile: Dockerfile
+    env_file: .env
     environment:
       LOG_PATH: /app/logs
       DATASOURCE_JDBC_URL: jdbc:mariadb://database:${MYSQL_PORT}/${MYSQL_DATABASE}
@@ -13,13 +14,13 @@ services:
       BANKID_CLIENT_ID: ${BANKID_CLIENT_ID}
       BANKID_CLIENT_SECRET: ${BANKID_CLIENT_SECRET}
     volumes:
-      - ./:/app
-      - ./.m2:/root/.m2
-      - ./logs:/app/logs
+      - ./../../:/app
+      - ./../../.m2:/root/.m2
+      - ./../../logs:/app/logs
     working_dir: /app
-    command: sh run.sh
+    command: sh ./.docker/local/run.sh
     ports:
-      - 8080:8080
+      - ${APP_PORT_HOST}:${APP_PORT}
       - 35729:35729
       - 5005:5005
     depends_on:
@@ -31,7 +32,7 @@ services:
     image: mariadb:10.6.4-focal
     restart: unless-stopped
     ports:
-      - 3307:${MYSQL_PORT}
+      - ${MYSQL_PORT_HOST}:${MYSQL_PORT}
     env_file: .env
     environment:
       MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
@@ -49,7 +50,7 @@ services:
     image: phpmyadmin/phpmyadmin
     restart: unless-stopped
     ports:
-      - 8081:80
+      - ${PHPMYADMIN_PORT_HOST}:${PHPMYADMIN_PORT}
     env_file: .env
     environment:
       PMA_HOST: database

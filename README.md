@@ -2,11 +2,12 @@
 
 ## Local DEV guide with Docker
 
-- Hot Reload
+- Live Reload
 - PhpMyAdmin
 
 ### Setup
 
-1. Create `.env` based on `.env.example`
-2. Prepare your local DB based on `.env`
-3. `docker compose up -d --build`
+1. Create `.docker/local/.env` based on `.docker/local/.env.example`
+2. Prepare your local DB based on `.docker/local/.env`
+3. Start containers using `./env.sh local up`
+4. Stop containers using `./env.sh local down`

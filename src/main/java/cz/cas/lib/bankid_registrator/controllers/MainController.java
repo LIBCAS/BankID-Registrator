@@ -99,7 +99,7 @@ public class MainController extends MainControllerAbstract {
      */
     @RequestMapping(value="/welcome", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
     public String WelcomeEntry(Model model) {
-
+        getLogger().info("ACCESSING WELCOME PAGE ...");
         model.addAttribute("appName", this.appName);
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
 
