@@ -20,11 +20,11 @@ fi
 case $ACTION in
     up)
         echo "Starting the containers for the $ENVIRONMENT environment..."
-        sudo docker-compose -f $DOCKER_COMPOSE_FILE up --build
+        docker-compose -f $DOCKER_COMPOSE_FILE up --build
         ;;
     down)
         echo "Stopping the containers for the $ENVIRONMENT environment..."
-        sudo docker-compose -f $DOCKER_COMPOSE_FILE down
+        docker-compose -f $DOCKER_COMPOSE_FILE down
         ;;
     *)
         echo "Invalid action: $ACTION"
