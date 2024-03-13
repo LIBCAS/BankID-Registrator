@@ -48,6 +48,10 @@ public class PatronBarcode extends PatronAbstract implements Serializable {
     @NotEmpty
     private String barcode;
 
+    @Column(name="barcode_aleph")
+    @NotEmpty
+    private String barcodeAleph;
+
     public PatronBarcode() {
         super();
         init();
@@ -136,6 +140,22 @@ public class PatronBarcode extends PatronAbstract implements Serializable {
 
     /**
      * 
+     * @param barcodeAleph  
+     */
+    public void setBarcodeAleph(String barcodeAleph) {
+        this.barcodeAleph = barcodeAleph;
+    }
+
+    /**
+     * 
+     * @return 
+     */
+    public String getBarcodeAleph() {
+        return this.barcodeAleph;
+    }
+
+    /**
+     * 
      * @return 
      */
     @Override
@@ -147,6 +167,7 @@ public class PatronBarcode extends PatronAbstract implements Serializable {
         strTmp.append("id=\"".concat(String.valueOf(this.id)).concat("\", "));
         strTmp.append("sub=\"".concat(this.sub).concat("\", "));
         strTmp.append("barcode=\"".concat(this.barcode).concat("\""));
+        strTmp.append("barcode_aleph=\"".concat(this.barcodeAleph).concat("\""));
         strTmp.append("}");
 
         return strTmp.toString();

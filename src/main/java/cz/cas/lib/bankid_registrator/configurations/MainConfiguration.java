@@ -16,12 +16,14 @@
  */
 package cz.cas.lib.bankid_registrator.configurations;
 
+import cz.cas.lib.bankid_registrator.util.DateUtils;
 import java.util.List;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -263,4 +265,9 @@ public class MainConfiguration extends ConfigurationAbstract {
         return this.length_of_registration;
     }
 
+
+    @Bean
+    public DateUtils dateUtils() {
+        return new DateUtils();
+    }
 }

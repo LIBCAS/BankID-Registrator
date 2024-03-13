@@ -18,17 +18,21 @@ package cz.cas.lib.bankid_registrator;
 
 import org.springframework.boot.Banner;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.PropertySources;
 
-@SpringBootApplication(scanBasePackages={"cz.cas.lib"}, exclude={SecurityAutoConfiguration.class})
+@SpringBootApplication(
+    scanBasePackages={"cz.cas.lib"},
+    exclude={SecurityAutoConfiguration.class, DataSourceAutoConfiguration.class}
+)
 @PropertySources({
-        @PropertySource(value="classpath:config.properties", ignoreResourceNotFound=false),
-        @PropertySource(value="file://${HOME}/.bankid-registrator/application.properties", ignoreResourceNotFound=true)
-    })
+    @PropertySource(value="classpath:config.properties", ignoreResourceNotFound=false),
+    @PropertySource(value="file://${HOME}/.bankid-registrator/application.properties", ignoreResourceNotFound=true)
+})
 public class BankIDRegistratorApplication extends SpringBootServletInitializer {
 
     @Override

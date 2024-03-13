@@ -21,6 +21,7 @@ import java.util.Properties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
@@ -35,17 +36,23 @@ import org.springframework.transaction.PlatformTransactionManager;
  * @author iok
  */
 @Configuration
+@PropertySource({"classpath:config.properties"})
 @EnableJpaRepositories(
     basePackages = "cz.cas.lib.bankid_registrator.dao.mariadb",
     entityManagerFactoryRef = "patronBarcodeEntityManager",
-    transactionManagerRef = "patronBarcodeTransactionManager")
-public class PersistencePatronBarcodeConfiguration extends ConfigurationAbstract {
-
+    transactionManagerRef = "patronBarcodeTransactionManager"
+)
+public class PersistencePatronBarcodeConfiguration extends ConfigurationAbstract
+{
     @Autowired
     private Environment env;
 
-    @Bean
+    public PersistencePatronBarcodeConfiguration() {
+        super();
+    }
+
     @Primary
+    @Bean
     public DataSourceProperties hikariDataSourceProperties() {
 
         final DataSourceProperties dataSourceProperties = new DataSourceProperties();
@@ -109,5 +116,4 @@ public class PersistencePatronBarcodeConfiguration extends ConfigurationAbstract
 
         return txManager;
     }
-
 }

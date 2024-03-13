@@ -18,6 +18,7 @@ package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.MariaDBRepository;
+import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.model.patron_barcode.PatronBarcode;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
@@ -25,21 +26,22 @@ import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.MainService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import java.net.URI;
+import java.util.Map;
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpSession;
 import javax.validation.constraints.NotEmpty;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
  *
@@ -48,35 +50,26 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class MainController extends MainControllerAbstract {
 
-    @Autowired
-    private MainConfiguration mainConfig;
-
-    @Autowired
-    private MainService mainService;
-
-    @Autowired
-    private AlephService alephService;
-
-    @Autowired
-    private ServletContext servletContext;
-
-    @Autowired
-    private ApplicationContext applicationContext;
-
-    // jpa test
-    @Autowired
-    private MariaDBRepository mariaDBRepository;
-    //
-
-    @Autowired
-    private AccessTokenContainer accessTokenContainer;
+    private final MainConfiguration mainConfig;
+    private final MainService mainService;
+    private final AlephService alephService;
+    private final ServletContext servletContext;
+    private final MariaDBRepository mariaDBRepository;
+    private final AccessTokenContainer accessTokenContainer;
 
     @NotEmpty
     @Value("${spring.application.name}")
     private String appName;
 
-    public MainController() {
+    public MainController(MainConfiguration mainConfig, MainService mainService, AlephService alephService, ServletContext servletContext, MariaDBRepository mariaDBRepository, AccessTokenContainer accessTokenContainer)
+    {
         super();
+        this.mainConfig = mainConfig;
+        this.mainService = mainService;
+        this.alephService = alephService;
+        this.servletContext = servletContext;
+        this.mariaDBRepository = mariaDBRepository;
+        this.accessTokenContainer = accessTokenContainer;
         init();
     }
 
@@ -140,24 +133,29 @@ public class MainController extends MainControllerAbstract {
      * 
      * @param code
      * @param model
+     * @param session
      * @return 
      */
     @RequestMapping(value="/callback", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String CallbackEntry(@RequestParam("code") String code, Model model) {
+    public String CallbackEntry(@RequestParam("code") String code, Model model, HttpSession session) {
 
-        model.addAttribute("appName", this.appName);
+        model.addAttribute("appName", appName);
 
         Assert.notNull(code, "\"code\" is required");
 
         if (!accessTokenContainer.getCodeTokenMap().containsKey(code)) {
-            accessTokenContainer.setAccessToken(code, this.mainService.getTokenExchange(code).getAccessToken());
+            accessTokenContainer.setAccessToken(code, mainService.getTokenExchange(code).getAccessToken());
         } else {
             // TODO valid access token
         }
-        
-        Connect userInfo = this.mainService.getUserInfo(accessTokenContainer.getAccessToken(code));
 
-        Identify userProfile = this.mainService.getProfile(accessTokenContainer.getAccessToken(code));
+        session.setAttribute("code", code);
+        model.addAttribute("code", code);
+        
+        Connect userInfo = mainService.getUserInfo(accessTokenContainer.getAccessToken(code));
+
+        Identify userProfile = mainService.getProfile(accessTokenContainer.getAccessToken(code));
+        session.setAttribute("userProfile", userProfile);
 
         if (userProfile.getLimited_legal_capacity()) {
             // TODO limited_legal_capacity => go out
@@ -165,23 +163,70 @@ public class MainController extends MainControllerAbstract {
             return "error";
         }
 
+        // Mapping BankID user data to Aleph patron
+        Map<String, Object> patronObjCreation = alephService.newPatronTest(userInfo, userProfile);
+
+        if (patronObjCreation.containsKey("error")) {
+            model.addAttribute("errorMessage", "Registrace byla zamítnuta: " + (String) patronObjCreation.get("error"));
+            return "error";
+        }
+
+        PatronDTO patron = (PatronDTO) patronObjCreation.get("patron");
+        session.setAttribute("patron", patron);
+        model.addAttribute("patron", patron);
+        try {
+            getLogger().info("patron: {}", patron.toJson());
+        } catch (JsonProcessingException e) {
+            getLogger().error("Error converting patron to JSON", e);
+        }
+
+        // Remove this code after testing
         model.addAttribute("userInfo", userInfo);
-
         model.addAttribute("userProfile", userProfile);
-
-        model.addAttribute("patronXML", this.alephService.CreatePatronXML(userInfo, userProfile));
-
         model.addAttribute("bankIDForSep", "https://developer.bankid.cz/docs/api/bankid-for-sep");
 
-        // jpa test - todo lock/synchronized
-        PatronBarcode patronBarcode = new PatronBarcode();
-        patronBarcode.setSub(userProfile.getSub());
-        patronBarcode.setBarcode(this.mainConfig.getBarcode_prefix().concat(code));
-        this.mariaDBRepository.save(patronBarcode);
-        //
-
         return "callback";
+    }
 
+    /**
+     * Creating new Aleph patron
+     * @param patron
+     * @param session
+     * @return
+     */
+    @PostMapping("/new-registration")
+    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session) {
+        PatronDTO originalPatron = (PatronDTO) session.getAttribute("patron");
+        Identify userProfile = (Identify) session.getAttribute("userProfile");
+        String code = (String) session.getAttribute("code");
+
+        if (originalPatron == null) {
+            return "error_session_expired";
+        }
+
+        try {
+            getLogger().info("new-registration - originalPatron: {}", originalPatron.toJson());
+        } catch (JsonProcessingException e) {
+            getLogger().error("Error converting originalPatron to JSON", e);
+        }
+        try {
+            getLogger().info("new-registration - submitted patron: {}", editedPatron.toJson());
+        } catch (JsonProcessingException e) {
+            getLogger().error("Error converting submitted patron to JSON", e);
+        }
+        getLogger().info("new-registration - userProfile: {}", userProfile);
+        getLogger().info("new-registration - code: {}", code);
+
+        alephService.createPatron(originalPatron);
+
+        // jpa test - todo lock/synchronized
+        // PatronBarcode patronBarcode = new PatronBarcode();
+        // patronBarcode.setSub(patron.getBankIdSub());
+        // patronBarcode.setBarcode(mainConfig.getBarcode_prefix().concat(code));
+        // patronBarcode.setBarcodeAleph(patron.getBarcode());
+        // this.mariaDBRepository.save(patronBarcode);
+
+        return "new_registration_success";
     }
 
     /**

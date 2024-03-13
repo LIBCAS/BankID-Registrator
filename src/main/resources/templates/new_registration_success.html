@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="cs" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${appName}">callback</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="shortcut icon" href="/bankid-registrator/img/favicon.ico" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+    <h1>Nova registrace uspesne provedena</h1>
+    <div class="container my-2" align="center">
+        <div align="center" style="width: 90%; padding: 10px; color: firebrick; background-color: lightgrey;">
+            XML dávka pro vytvoření nového patrona v Alephu
+        </div>
+        <pre lang="xml" th:text="${xml}" style="padding: 20px; text-align: left; background-color: lightyellow; width: 90%;" />
+    </div>
+</body>
+
+</html>

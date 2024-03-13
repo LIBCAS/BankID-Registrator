@@ -18,10 +18,16 @@ package cz.cas.lib.bankid_registrator.dao.mariadb;
 
 import cz.cas.lib.bankid_registrator.model.patron_barcode.PatronBarcode;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  *
  * @author iok
  */
 public interface MariaDBRepository extends JpaRepository<PatronBarcode, Long> {
+    @Query(value = "SELECT MAX(p.id) FROM patron_barcode p", nativeQuery = true)
+    Long findMaxId();
+
+    @Query(value = "SELECT MAX(p.barcode_aleph) FROM patron_barcode p", nativeQuery = true)
+    Long findMaxBarcode();
 }

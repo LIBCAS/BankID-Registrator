@@ -21,14 +21,14 @@ case $ACTION in
     up)
         echo "Starting the containers for the $ENVIRONMENT environment..."
         if [[ "$ENVIRONMENT" == "testing" || "$ENVIRONMENT" == "production" ]]; then
-            docker-compose -f $DOCKER_COMPOSE_FILE up -d --build
+            docker compose -f $DOCKER_COMPOSE_FILE up -d --build
         else
-            docker-compose -f $DOCKER_COMPOSE_FILE up --build
+            docker compose -f $DOCKER_COMPOSE_FILE up --build
         fi
         ;;
     down)
         echo "Stopping the containers for the $ENVIRONMENT environment..."
-        docker-compose -f $DOCKER_COMPOSE_FILE down
+        docker compose -f $DOCKER_COMPOSE_FILE down
         ;;
     *)
         echo "Invalid action: $ACTION"

@@ -16,8 +16,6 @@
  */
 package cz.cas.lib.bankid_registrator.services;
 
-import cz.cas.lib.bankid_registrator.product.Connect;
-import cz.cas.lib.bankid_registrator.product.Identify;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,12 +23,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author iok
  */
-public abstract class AlephServiceAbstract implements ServiceIface {
-
+public abstract class AlephServiceAbstract implements ServiceIface
+{
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
-     * 
+     * Get the logger for this class.
      * @return 
      */
     protected final Logger getLogger() {
@@ -38,15 +36,6 @@ public abstract class AlephServiceAbstract implements ServiceIface {
     }
 
     protected void init() {
-        getLogger().debug("initializing...");
+        getLogger().debug("initializing AlephServiceAbstract ...");
     }
-
-    /**
-     * 
-     * @param userIno
-     * @param userProfile 
-     * @return  
-     */
-    public abstract String CreatePatronXML(Connect userIno, Identify userProfile);
-
 }
