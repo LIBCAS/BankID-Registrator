@@ -2,34 +2,36 @@ package cz.cas.lib.bankid_registrator.dto;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Optional;
 
 public class PatronDTO {
-    public boolean isNew;                       // Is this a new or existing Aleph patron?
-    public String homeLibrary;                  // z303-home-library
-    public String id;                           // z303-id, z303.match-id
-    public String firstname;                    // z303-first-name
-    public String lastname;                     // z303-last-name
-    public String name;                         // z303-name
-    public String email;                        // z304-email-address
-    public String birthDate;                    // z303-birth-date
-    public PatronLanguage conLng;               // z303-con-lng
-    public String address0;                     // z304-address-0 (for <z304-address-type>01</z304-address-type>)
-    public String address1;                     // z304-address-1 (for <z304-address-type>01</z304-address-type>)
-    public String address2;                     // z304-address-2 (for <z304-address-type>01</z304-address-type>)
-    public String zip;                          // z304-zip
-    public String contactAddress0;              // z304-address-0 (for <z304-address-type>02</z304-address-type>)
-    public String contactAddress1;              // z304-address-1 (for <z304-address-type>02</z304-address-type>)
-    public String contactAddress2;              // z304-address-2 (for <z304-address-type>02</z304-address-type>)
-    public String contactZip;                   // z304-zip
-    public String smsNumber;                    // z304-sms-number
-    public String status;                       // z305-bor-status
-    public String barcode;                      // z308-key-data
-    public String idCardName;                   // nazev obcanskeho prukazu - napr. "ID CZ"
-    public String idCardNumber;                 // cislo obcanskeho prukazu
-    public String idCardDetail;                 // detail obcanskeho prukazu
-    public String verification;                 // z308-verification
-    public String bankIdSub;                    // bankIdSub
-    public PatronAction action;                 // record-action
+    public boolean isNew;         // Is this a new or existing Aleph patron?
+    public String homeLibrary = "KNAV";         // z303-home-library
+    public String id;         // z303-id, z303.match-id
+    public String firstname;         // z303-first-name
+    public String lastname;         // z303-last-name
+    public String name;         // z303-name
+    public String email;         // z304-email-address
+    public String birthDate;         // z303-birth-date
+    public PatronLanguage conLng = PatronLanguage.CZE;         // z303-con-lng
+    public String address0;         // z304-address-0 (for <z304-address-type>01</z304-address-type>)
+    public String address1;         // z304-address-1 (for <z304-address-type>01</z304-address-type>)
+    public String address2;         // z304-address-2 (for <z304-address-type>01</z304-address-type>)
+    public String zip;         // z304-zip
+    public String contactAddress0;         // z304-address-0 (for <z304-address-type>02</z304-address-type>)
+    public String contactAddress1;         // z304-address-1 (for <z304-address-type>02</z304-address-type>)
+    public String contactAddress2;         // z304-address-2 (for <z304-address-type>02</z304-address-type>)
+    public String contactZip;         // z304-zip
+    public String smsNumber;         // z304-sms-number
+    public String status;         // z305-bor-status
+    public String barcode;         // z308-key-data
+    public String idCardName;         // nazev obcanskeho prukazu - napr. "ID CZ"
+    public String idCardNumber;         // cislo obcanskeho prukazu
+    public String idCardDetail;         // detail obcanskeho prukazu
+    public String verification;         // z308-verification
+    public String bankIdSub;         // bankIdSub
+    public PatronAction action;          // record-action
+    public PatronBoolean exportConsent;         // z303-export-consent
 
     public boolean getIsNew() {
         return isNew;
@@ -239,8 +241,31 @@ public class PatronDTO {
         this.bankIdSub = bankIdSub;
     }
 
+    public PatronBoolean getExportConsent() {
+        return exportConsent;
+    }
+
+    public void setExportConsent(PatronBoolean exportConsent) {
+        this.exportConsent = exportConsent;
+    }
+
     public String toJson() throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(this);
     }
+
+    public void update(PatronDTO patron) {
+        Optional.ofNullable(patron.email).ifPresent(e -> this.email = e);
+        Optional.ofNullable(patron.smsNumber).ifPresent(e -> this.smsNumber = e);
+        Optional.ofNullable(patron.address0).ifPresent(e -> this.address0 = e);
+        Optional.ofNullable(patron.address1).ifPresent(e -> this.address1 = e);
+        Optional.ofNullable(patron.address2).ifPresent(e -> this.address2 = e);
+        Optional.ofNullable(patron.zip).ifPresent(e -> this.zip = e);
+        Optional.ofNullable(patron.contactAddress0).ifPresent(e -> this.contactAddress0 = e);
+        Optional.ofNullable(patron.contactAddress1).ifPresent(e -> this.contactAddress1 = e);
+        Optional.ofNullable(patron.contactAddress2).ifPresent(e -> this.contactAddress2 = e);
+        Optional.ofNullable(patron.contactZip).ifPresent(e -> this.contactZip = e);
+        Optional.ofNullable(patron.conLng).ifPresent(e -> this.conLng = e);
+        Optional.ofNullable(patron.exportConsent).ifPresent(e -> this.exportConsent = e);
+    } 
 }

@@ -28,61 +28,67 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 </head>
 
 <body>
-    <form action="#" th:action="@{/new-registration}" th:object="${patron}" method="post" class="space-y-4">
-        <div>
-            <label for="firstname" class="block text-sm font-medium text-gray-700">Jméno *</label>
-            <input type="text" id="firstname" name="firstname" required disabled class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{firstname}">
-        </div>
-        <div>
-            <label for="lastname" class="block text-sm font-medium text-gray-700">Příjmení *</label>
-            <input type="text" id="lastname" name="lastname" required disabled class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{lastname}">
-        </div>
-        <div>
-            <label for="birthday" class="block text-sm font-medium text-gray-700">Datum narození *</label>
-            <input type="date" id="birthday" name="birthday" required disabled class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}">
-        </div>
-        <div>
-            <label for="email" class="block text-sm font-medium text-gray-700">E-mail *</label>
-            <input type="email" id="email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{email}">
-        </div>
-        <div>
-            <label for="phone" class="block text-sm font-medium text-gray-700">Mobil *</label>
-            <input type="tel" id="phone" name="phone" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{smsNumber}">
-        </div>
-        <fieldset class="space-y-2">
-            <legend class="block text-sm font-medium text-gray-700">Adresa trvalého pobytu *</legend>
-            <input type="text" name="permanent_address_line1" placeholder="Název" required class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address0}">
-            <input type="text" name="permanent_address_line2" placeholder="Ulice a číslo domu" required class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address1}">
-            <input type="text" name="permanent_address_line3" placeholder="Obec" required class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address2}">
-            <input type="text" name="permanent_zip" placeholder="PSČ" required class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{zip}">
-        </fieldset>
-        <fieldset class="space-y-2">
-            <legend class="block text-sm font-medium text-gray-700">Kontaktní adresa (vyplňte pokud se liší od adresy trvalého pobytu)</legend>
-            <input type="text" name="contact_address_line1" placeholder="Název" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress0}">
-            <input type="text" name="contact_address_line2" placeholder="Ulice a číslo domu" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}">
-            <input type="text" name="contact_address_line3" placeholder="Obec" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}">
-            <input type="text" name="contact_zip" placeholder="PSČ" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}">
-        </fieldset>
-        <div>
-            <label for="language" class="block text-sm font-medium text-gray-700">Jazyk komunikace *</label>
-            <select id="language" name="language" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{conLng}">
-                <option th:value="CZE">čeština</option>
-                <option th:value="ENG">angličtina</option>
-            </select>
-        </div>
-        <div class="flex items-start">
-            <div class="flex items-center h-5">
-                <input id="consent" name="consent" type="checkbox" required class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+    <form action="#" th:action="@{/new-registration}" th:object="${patron}" method="post" class="my-5 space-y-4 max-w-4xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="firstname" class="block text-sm font-medium text-gray-700">Jméno *</label>
+                <input type="text" id="firstname" name="firstname" required disabled class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{firstname}">
             </div>
-            <div class="ml-3 text-sm">
-                <label for="consent" class="font-medium text-gray-700">Souhlasím se zpracováním osobních údajů. *</label>
+            <div>
+                <label for="lastname" class="block text-sm font-medium text-gray-700">Příjmení *</label>
+                <input type="text" id="lastname" name="lastname" required disabled class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{lastname}">
+            </div>
+            <div>
+                <label for="birthday" class="block text-sm font-medium text-gray-700">Datum narození *</label>
+                <input type="date" id="birthday" name="birthday" required disabled class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}">
+            </div>
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700">E-mail *</label>
+                <input type="email" id="email" name="email" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{email}">
+            </div>
+            <div class="md:col-span-2">
+                <label for="phone" class="block text-sm font-medium text-gray-700">Mobil *</label>
+                <input type="tel" id="phone" name="phone" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{smsNumber}">
+            </div>
+            <div class="md:col-span-2">
+                <fieldset class="space-y-2">
+                    <legend class="block text-sm font-medium text-gray-700">Adresa trvalého pobytu *</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" name="permanent_address_line1" placeholder="Název" required class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address0}">
+                        <input type="text" name="permanent_address_line2" placeholder="Ulice a číslo domu" required class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address1}">
+                        <input type="text" name="permanent_address_line3" placeholder="Obec" required class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address2}">
+                        <input type="text" name="permanent_zip" placeholder="PSČ" required class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{zip}">
+                    </div>
+                </fieldset>
+            </div>
+            <div class="md:col-span-2">
+                <fieldset class="space-y-2">
+                    <legend class="block text-sm font-medium text-gray-700">Kontaktní adresa (vyplňte pokud se liší od adresy trvalého pobytu)</legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" name="contact_address_line1" placeholder="Název" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress0}">
+                        <input type="text" name="contact_address_line2" placeholder="Ulice a číslo domu" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}">
+                        <input type="text" name="contact_address_line3" placeholder="Obec" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}">
+                        <input type="text" name="contact_zip" placeholder="PSČ" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}">
+                    </div>
+                </fieldset>
+            </div>
+            <div class="md:col-span-2">
+                <label for="language" class="block text-sm font-medium text-gray-700">Jazyk komunikace *</label>
+                <select id="language" name="language" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{conLng}">
+                    <option th:value="CZE">čeština</option>
+                    <option th:value="ENG">angličtina</option>
+                </select>
             </div>
         </div>
-        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <div class="flex items-center mt-4">
+            <input id="consent" name="consent" type="checkbox" required class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{exportConsent == 'Y'}" th:field="*{exportConsent}" th:value="Y">
+            <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">Souhlasím se zpracováním osobních údajů. *</label>
+        </div>
+        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">
             <span th:if="${patron.isNew}">Nová registrace</span>
             <span th:if="${!patron.isNew}">Prodloužení registrace</span>
         </button>
-    </form>
+    </form>    
     <hr>
     <div class="container my-2" align="center">
         <table style="width:90%" border="1" class="table table-responsive-md">

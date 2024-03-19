@@ -4,6 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 @Configuration
 @ConfigurationProperties("aleph-service")
@@ -24,6 +25,24 @@ public class AlephServiceConfig {
 
     @NotBlank
     private String wwwpasswd;
+
+    @NotBlank
+    private String homeLibrary;
+
+    @NotBlank
+    private String admLibrary;
+
+    @NotBlank
+    private String bibLibrary;
+
+    @NotNull
+    private String[] libraries;
+
+    @NotBlank
+    private String sysno;
+
+    @NotBlank
+    private String itemBarcodePrefix;
 
     public String getHost() {
         return host;
@@ -63,5 +82,53 @@ public class AlephServiceConfig {
 
     public void setWwwpasswd(String wwwpasswd) {
         this.wwwpasswd = wwwpasswd;
+    }
+
+    public String getHomeLibrary() {
+        return homeLibrary;
+    }
+
+    public void setHomeLibrary(String homeLibrary) {
+        this.homeLibrary = homeLibrary;
+    }
+
+    public String getAdmLibrary() {
+        return admLibrary;
+    }
+
+    public void setAdmLibrary(String admLibrary) {
+        this.admLibrary = admLibrary;
+    }
+
+    public String getBibLibrary() {
+        return bibLibrary;
+    }
+
+    public void setBibLibrary(String bibLibrary) {
+        this.bibLibrary = bibLibrary;
+    }
+
+    public String[] getLibraries() {
+        return libraries;
+    }
+
+    public void setLibraries(String[] libraries) {
+        this.libraries = libraries;
+    }
+
+    public String getSysno() {
+        return sysno;
+    }
+
+    public void setSysno(String sysno) {
+        this.sysno = sysno;
+    }
+
+    public String getItemBarcodePrefix() {
+        return itemBarcodePrefix;
+    }
+
+    public void setItemBarcodePrefix(String itemBarcodePrefix) {
+        this.itemBarcodePrefix = itemBarcodePrefix;
     }
 }

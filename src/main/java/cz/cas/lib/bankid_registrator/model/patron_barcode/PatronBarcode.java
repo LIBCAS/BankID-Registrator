@@ -25,6 +25,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 /**
  *
@@ -49,8 +50,8 @@ public class PatronBarcode extends PatronAbstract implements Serializable {
     private String barcode;
 
     @Column(name="barcode_aleph")
-    @NotEmpty
-    private String barcodeAleph;
+    @NotNull
+    private Long barcodeAleph;
 
     public PatronBarcode() {
         super();
@@ -142,7 +143,7 @@ public class PatronBarcode extends PatronAbstract implements Serializable {
      * 
      * @param barcodeAleph  
      */
-    public void setBarcodeAleph(String barcodeAleph) {
+    public void setBarcodeAleph(Long barcodeAleph) {
         this.barcodeAleph = barcodeAleph;
     }
 
@@ -150,7 +151,7 @@ public class PatronBarcode extends PatronAbstract implements Serializable {
      * 
      * @return 
      */
-    public String getBarcodeAleph() {
+    public Long getBarcodeAleph() {
         return this.barcodeAleph;
     }
 
@@ -167,7 +168,7 @@ public class PatronBarcode extends PatronAbstract implements Serializable {
         strTmp.append("id=\"".concat(String.valueOf(this.id)).concat("\", "));
         strTmp.append("sub=\"".concat(this.sub).concat("\", "));
         strTmp.append("barcode=\"".concat(this.barcode).concat("\""));
-        strTmp.append("barcode_aleph=\"".concat(this.barcodeAleph).concat("\""));
+        strTmp.append("barcode_aleph=\"".concat(this.barcodeAleph.toString()).concat("\""));
         strTmp.append("}");
 
         return strTmp.toString();

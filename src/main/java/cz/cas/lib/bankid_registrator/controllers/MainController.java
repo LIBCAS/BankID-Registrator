@@ -18,6 +18,7 @@ package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.MariaDBRepository;
+import cz.cas.lib.bankid_registrator.dto.PatronBoolean;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.model.patron_barcode.PatronBarcode;
 import cz.cas.lib.bankid_registrator.product.Connect;
@@ -95,6 +96,11 @@ public class MainController extends MainControllerAbstract {
         getLogger().info("ACCESSING WELCOME PAGE ...");
         model.addAttribute("appName", this.appName);
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
+
+        // Map<String, Object> itemDeletion = this.alephService.deleteItem("002299434", "148670", "261100229943420240318");
+        // if (itemDeletion.containsKey("error")) {
+        //     logger.error("Error deleting item: {}", itemDeletion.get("error"));
+        // }
 
         return "welcome";
     }
@@ -190,22 +196,19 @@ public class MainController extends MainControllerAbstract {
 
     /**
      * Creating new Aleph patron
-     * @param patron
+     * @param editedPatron - user-edited patron data
      * @param session
-     * @return
+     * @param model
+     * @return String
      */
     @PostMapping("/new-registration")
-    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session) {
-        PatronDTO originalPatron = (PatronDTO) session.getAttribute("patron");
+    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model) {
+        PatronDTO patron = (PatronDTO) session.getAttribute("patron");  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
         String code = (String) session.getAttribute("code");
 
-        if (originalPatron == null) {
-            return "error_session_expired";
-        }
-
         try {
-            getLogger().info("new-registration - originalPatron: {}", originalPatron.toJson());
+            getLogger().info("new-registration - originalPatron: {}", patron.toJson());
         } catch (JsonProcessingException e) {
             getLogger().error("Error converting originalPatron to JSON", e);
         }
@@ -217,14 +220,38 @@ public class MainController extends MainControllerAbstract {
         getLogger().info("new-registration - userProfile: {}", userProfile);
         getLogger().info("new-registration - code: {}", code);
 
-        alephService.createPatron(originalPatron);
+        if (patron == null || userProfile == null || code == null) {
+            return "error_session_expired";
+        }
+
+        if (editedPatron.getExportConsent() != PatronBoolean.Y) {
+            return "error_export_consent";
+        }
+
+        patron.update(editedPatron);
+        try {
+            getLogger().info("new-registration - finalPatron: {}", patron.toJson());
+        } catch (JsonProcessingException e) {
+            getLogger().error("Error converting finalPatron to JSON", e);
+        }
+
+        Map<String, Object> patronCreation = alephService.createPatron(patron);
+        if (patronCreation.containsKey("error")) {
+            getLogger().info("RESULT: {}", patronCreation);
+            getLogger().error("Error creating patron: {}", patronCreation.get("error"));
+            return "error";
+        }
+
+        model.addAttribute("xml", patronCreation.get("xml-patron"));
 
         // jpa test - todo lock/synchronized
-        // PatronBarcode patronBarcode = new PatronBarcode();
-        // patronBarcode.setSub(patron.getBankIdSub());
-        // patronBarcode.setBarcode(mainConfig.getBarcode_prefix().concat(code));
-        // patronBarcode.setBarcodeAleph(patron.getBarcode());
-        // this.mariaDBRepository.save(patronBarcode);
+        PatronBarcode barcode = new PatronBarcode();
+        String patronBarcode = patron.getBarcode();
+        Long patronBarcodeNoPrefix = Long.valueOf(patronBarcode.substring(5));
+        barcode.setSub(patron.getBankIdSub());
+        barcode.setBarcode(mainConfig.getBarcode_prefix().concat(code));
+        barcode.setBarcodeAleph(patronBarcodeNoPrefix);
+        this.mariaDBRepository.save(barcode);
 
         return "new_registration_success";
     }

@@ -20,7 +20,11 @@ import cz.cas.lib.bankid_registrator.configurations.AlephServiceConfig;
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.MariaDBRepository;
 import cz.cas.lib.bankid_registrator.dao.oracle.OracleRepository;
+import cz.cas.lib.bankid_registrator.dto.BorXOp;
+import cz.cas.lib.bankid_registrator.dto.HoldDTO;
+import cz.cas.lib.bankid_registrator.dto.ItemDTO;
 import cz.cas.lib.bankid_registrator.dto.PatronAction;
+import cz.cas.lib.bankid_registrator.dto.PatronBoolean;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.dto.PatronLanguage;
 import cz.cas.lib.bankid_registrator.entities.entity.Address;
@@ -30,9 +34,10 @@ import cz.cas.lib.bankid_registrator.entities.entity.IDCardType;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.util.TimestampToDate;
-
 import java.time.LocalDate;
-
+import java.time.format.DateTimeFormatter;
+import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.HashMap;
@@ -42,6 +47,9 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Result;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
@@ -49,16 +57,23 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 /**
  *
@@ -70,7 +85,7 @@ public class AlephService extends AlephServiceAbstract {
     private final MainConfiguration mainConfig;
     private final AlephServiceConfig alephServiceConfig;
     private final MariaDBRepository mariaDbRepository;
-    private final OracleRepository oracleRepository;
+    private final OracleRepository oracleRepository; 
 
     public AlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, MariaDBRepository mariaDbRepository, OracleRepository oracleRepository)
     {
@@ -84,18 +99,507 @@ public class AlephService extends AlephServiceAbstract {
     {
         Map<String, Object> result = new HashMap<>();
 
-        Map<String, String> createPatronXml = this.createPatronXML(patron);
-
-        if (createPatronXml.containsKey("error")) {
-            result.put("error", createPatronXml.get("error"));
+        // Create a patron
+        Map<String, String> patronXmlCreation = this.createPatronXML(patron);
+        if (patronXmlCreation.containsKey("error")) {
+            result.put("error", patronXmlCreation.get("error"));
+            return result;
+        }
+        String patronXml = patronXmlCreation.get("xml");
+        result.put("xml-patron", patronXml);
+        Map<String, Object> patronCreation = this.updateBorX(patronXml);
+        if (patronCreation.containsKey("error")) {
+            result.put("error", patronCreation.get("error"));
             return result;
         }
 
-        String newPatronXml = createPatronXml.get("xml");
-        result.put("xml", newPatronXml);
+        // Create libraries
+        for (String library : this.alephServiceConfig.getLibraries()) {
+            Map<String, String> libraryXmlCreation = this.createLibraryXml(patron, library);
 
-        boolean newPatronIsCreated = this.updateBorX(newPatronXml);
-        result.put("success", newPatronIsCreated);
+            if (libraryXmlCreation.containsKey("error")) {
+                result.put("error", libraryXmlCreation.get("error"));
+                return result;
+            }
+
+            String libraryXml = libraryXmlCreation.get("xml");
+            result.put("xml-library", libraryXml);
+
+            Map<String, Object> libraryCreation = this.updateBorX(libraryXml);
+
+            if (libraryCreation.containsKey("error")) {
+                result.put("error", libraryCreation.get("error"));
+                return result;
+            }
+        }
+
+        // Create an item
+        Map<String, Object> newItem = this.newItem(patron);
+        if (newItem.containsKey("error")) {
+            result.put("error", newItem.get("error"));
+            return result;
+        }
+        ItemDTO item = (ItemDTO) newItem.get("item");
+        Map<String, String> itemXmlCreation = this.createItemXml(item);
+        if (itemXmlCreation.containsKey("error")) {
+            result.put("error", itemXmlCreation.get("error"));
+            return result;
+        }
+        String itemXml = itemXmlCreation.get("xml");
+        result.put("xml-item", itemXml);
+        Map<String, Object> itemCreation = this.createItem(itemXml, this.alephServiceConfig.getSysno());
+        if (itemCreation.containsKey("error")) {
+            result.put("error", itemCreation.get("error"));
+            return result;
+        }
+        Map<String, String> itemDetails = this.getItemDetails((String) itemCreation.get("response"));
+        if (itemDetails.containsKey("error")) {
+            result.put("error", itemDetails.get("error"));
+            return result;
+        }
+        String itemId = itemDetails.get("id");
+        String itemSequence = itemDetails.get("sequence");
+        String itemBarcode = itemDetails.get("barcode");
+        String itemIdLong = itemDetails.get("idLong");
+        if (itemId == null || itemSequence == null || itemBarcode == null || itemIdLong == null) {
+            result.put("error", "chybí údaje o vytvořené jednotce");
+            return result;
+        }
+
+        // Place a hold request
+        Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong);
+        if (holdRequestPlacement.containsKey("error")) {
+            result.put("error", holdRequestPlacement.get("error"));
+            return result;
+        }
+
+        // Cancel the hold request
+        Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
+        if (holdRequestCancellation.containsKey("error")) {
+            result.put("error", holdRequestCancellation.get("error"));
+            return result;
+        }
+
+        // Delete the item
+        Map<String, Object> itemDeletion = this.deleteItem(itemId, itemSequence, itemBarcode);
+        if (itemDeletion.containsKey("error")) {
+            result.put("error", itemDeletion.get("error"));
+            return result;
+        }
+
+        result.put("success", Boolean.TRUE);
+
+        return result;
+    }
+
+    /** Deletes an item in Aleph
+     * @param itemId - the item ID
+     * @param itemSequence - the item sequence
+     * @param itemBarcode - the item barcode
+     * @return Map<String, Object>
+     */
+    public Map<String, Object> deleteItem(String itemId, String itemSequence, String itemBarcode) {
+        Assert.notNull(itemId, "\"itemId\" is required");
+        Assert.notNull(itemSequence, "\"itemSequence\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        Map<String, String> urlParams = new HashMap<>();
+        urlParams.put("library", this.alephServiceConfig.getAdmLibrary());
+        urlParams.put("doc_number", itemId);
+        urlParams.put("item_sequence", itemSequence);
+        urlParams.put("item_barcode", itemBarcode);
+
+        Map<String, Object> itemDeletion = this.doXRequestUsingPost(BorXOp.DELETE_ITEM, urlParams);
+
+        if (itemDeletion.containsKey("error")) {
+            result.put("error", itemDeletion.get("error"));
+            return result;
+        }
+
+        result.put("success", Boolean.TRUE);
+
+        return result;
+    }
+
+    /** Cancels a hold request in Aleph 
+     * @param itemId - the item ID
+     * @param itemSequence - the item sequence
+     * @return Map<String, Object>
+     */
+    public Map<String, Object> cancelHoldRequest(String itemId, String itemSequence) {
+        Assert.notNull(itemId, "\"itemId\" is required");
+        Assert.notNull(itemSequence, "\"itemSequence\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        Map<String, String> urlParams = new HashMap<>();
+        urlParams.put("library", this.alephServiceConfig.getAdmLibrary());
+        urlParams.put("doc_number", itemId);
+        urlParams.put("item_sequence", itemSequence);
+        urlParams.put("sequence", "0001");
+
+        Map<String, Object> holdCancellation = this.doXRequestUsingPost(BorXOp.HOLD_REQ_CANCEL, urlParams);
+
+        if (holdCancellation.containsKey("error")) {
+            result.put("error", holdCancellation.get("error"));
+            return result;
+        }
+
+        result.put("success", Boolean.TRUE);
+
+        return result;
+    }
+
+
+    /** Places a hold request in Aleph
+     * @param patron - the patron
+     * @param itemId - the item ID
+     * @param itemIdLong - the item ID long
+     * @return Map<String, Object>
+     */
+    public Map<String, Object> placeHoldRequest(PatronDTO patron, String itemId, String itemIdLong) {
+        Assert.notNull(patron, "\"patron\" is required");
+        Assert.notNull(itemId, "\"itemId\" is required");
+        Assert.notNull(itemIdLong, "\"itemIdLong\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        String[] urlPathParts = new String[] {
+            "patron", patron.getId(), 
+            "record", this.alephServiceConfig.getBibLibrary() + itemId, 
+            "items", itemIdLong, 
+            "hold"
+        };
+
+        Map<String, String> urlParams = new HashMap<>();
+        urlParams.put("lang", patron.getConLng().toString());
+
+        Map<String, Object> newHold = this.newHold("Registrace");
+        if (newHold.containsKey("error")) {
+            result.put("error", newHold.get("error"));
+            return result;
+        }
+        HoldDTO hold = (HoldDTO) newHold.get("hold");
+        Map<String, String> holdXmlCreation = this.createHoldXml(hold);
+        if (holdXmlCreation.containsKey("error")) {
+            result.put("error", holdXmlCreation.get("error"));
+            return result;
+        }
+        String holdXml = holdXmlCreation.get("xml");
+
+        Map<String, Object> holdCreation = this.doRestDlfRequest(urlPathParts, urlParams, HttpMethod.PUT, holdXml);
+
+        if (holdCreation.containsKey("error")) {logger.info("BACHA");
+            result.put("error", holdCreation.get("error"));
+            return result;
+        }
+        logger.info("OKACKO");
+        result.put("success", Boolean.TRUE);
+
+        return result;
+    }
+
+    /**
+     * Initializes a hold request
+     * @param description - the hold request description
+     * @return Map<String, Object>
+     */
+    public Map<String, Object> newHold(String description) {
+        Assert.notNull(description, "\"description\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        HoldDTO hold = new HoldDTO();
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String oneMonthFromToday = LocalDate.now().plusMonths(1).format(formatter);
+
+        hold.setPickUpLocation(this.alephServiceConfig.getHomeLibrary());
+        hold.setLastInterestDate(oneMonthFromToday);
+        hold.setNote1(description);
+
+        result.put("hold", hold);
+
+        return result;
+    }
+
+    /**
+     * Generates an XML string for a hold request
+     * @param hold - the hold request
+     * @return Map<String, String>
+     */
+    public Map<String, String> createHoldXml(HoldDTO hold) {
+        Assert.notNull(hold, "\"hold\" is required");
+
+        Map<String, String> result = new HashMap<>();
+
+        String xmlString = "<?xml version=\"1.0\"?>";
+
+        Source stylesheetSource = new StreamSource();
+        stylesheetSource.setSystemId("classpath:/xml/CreateHold.xsl");
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        try {
+            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+
+            transformer.setParameter("pickup-location", hold.getPickUpLocation());
+            transformer.setParameter("last-interest-date", hold.getLastInterestDate());
+            transformer.setParameter("note-1", hold.getNote1());
+
+            StringWriter stringWriter = new StringWriter();
+            Result streamResult = new StreamResult(stringWriter);
+            transformer.transform(stylesheetSource, streamResult);
+            if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
+                xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
+            } else {
+                xmlString = stringWriter.getBuffer().toString();
+            }
+            result.put("xml", xmlString);
+        } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        }
+
+        return result;
+    }
+
+    /**
+     * Sends a REST-DLF request to Aleph
+     * @param urlPathParts - URL path parts
+     * @param urlParams - URL parameters
+     * @param method - HTTP method
+     * @param body - request body
+     */
+    public Map<String, Object> doRestDlfRequest(String[] urlPathParts, Map<String, String> urlParams, HttpMethod method, String body) {
+        Assert.notNull(urlPathParts, "\"urlPathParts\" is required");
+        Assert.notNull(urlParams, "\"urlParams\" is required");
+        Assert.notNull(method, "\"method\" is required");
+        Assert.notNull(body, "\"body\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        String url = this.alephServiceConfig.getRestApiUri() + "/rest-dlf/" + String.join("/", urlPathParts);
+
+        if (!urlParams.isEmpty()) {
+            url += "?";
+            for (Map.Entry<String, String> entry : urlParams.entrySet()) {
+                url += entry.getKey() + "=" + entry.getValue() + "&";
+            }
+            url = url.substring(0, url.length() - 1);
+        }
+
+        Map<String, Object> sendingHttpRequest = this.doHttpRequest(url, method, body);
+
+        if (sendingHttpRequest.containsKey("error")) {
+            result.put("error", sendingHttpRequest.get("error"));
+            return result;
+        }
+
+        String httpRequestResponse = (String) sendingHttpRequest.get("response");
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder;
+        try {
+            builder = factory.newDocumentBuilder();
+            Document document = builder.parse(new InputSource(new StringReader(httpRequestResponse)));
+            document.getDocumentElement().normalize();
+
+            String replyCode = document.getElementsByTagName("reply-code").item(0).getTextContent();
+  
+            if (!replyCode.equals("0000")) {
+                String replyText = document.getElementsByTagName("reply-text").item(0).getTextContent();
+
+                result.put("error", replyText + " code " + replyCode);
+                return result;
+            }
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            result.put("error", e.getMessage());
+            getLogger().error(MainService.class.getName(), e);
+            return result;
+        }
+
+        result.put("success", Boolean.TRUE);
+        result.put("response", httpRequestResponse);
+
+        return result;
+    }
+
+    /** Retrieves item details from the item creation response body
+     * @param response - the response body from the item creation request
+     * return Map<String, String>
+     */
+    public Map<String, String> getItemDetails(String response) {
+        Assert.notNull(response, "\"response\" is required");
+
+        Map<String, String> result = new HashMap<>();
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder;
+        try {
+            builder = factory.newDocumentBuilder();
+            Document document = builder.parse(new InputSource(new StringReader(response)));
+            document.getDocumentElement().normalize();
+
+            Element z30 = (Element) document.getElementsByTagName("z30").item(0);
+            String idPart = z30.getElementsByTagName("z30-doc-number").item(0).getTextContent();
+            String sequenceTmp = z30.getElementsByTagName("z30-item-sequence").item(0).getTextContent();
+            String barcode = z30.getElementsByTagName("z30-barcode").item(0).getTextContent();
+            String id = String.format("%09d", Integer.parseInt(idPart));
+            String sequence = String.format("%06d", Integer.parseInt(sequenceTmp));
+            String idLong =  this.alephServiceConfig.getAdmLibrary() + id + sequence;
+            
+            result.put("barcode", barcode);
+            result.put("id", id);
+            result.put("sequence", sequence);
+            result.put("idLong", idLong);
+            logger.info("barcode: {}", barcode);
+            logger.info("id: {}", id);
+            logger.info("sequence: {}", sequence);
+            logger.info("idLong: {}", idLong);
+        } catch (ParserConfigurationException | SAXException | IOException e) {
+            result.put("error", e.getMessage());
+            getLogger().error(MainService.class.getName(), e);
+        }
+
+        return result;
+    }
+
+    /** 
+     * Creates a new Aleph item
+     * @param xml - the XML string to be sent to Aleph
+     * @param docNumber - the bibliographic document number
+     */
+    public Map<String, Object> createItem(String xml, String docNumber) {
+        Assert.notNull(xml, "\"xml\" is required");
+        Assert.notNull(docNumber, "\"docNumber\" is required");
+
+        Map<String, String> params = new HashMap<>();
+        params.put("Xml_Full_Req", xml);
+        params.put("Adm_Library", this.alephServiceConfig.getAdmLibrary());
+        params.put("Adm_Doc_Number", docNumber);
+        params.put("Bib_Library", this.alephServiceConfig.getBibLibrary());
+        params.put("Bib_Doc_Number", docNumber);
+
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            Map<String, Object> response = this.doXRequestUsingPost(BorXOp.CREATE_ITEM, params);
+            if (response.containsKey("error")) {
+                result.put("error", response.get("error"));
+            } else {
+                result.put("success", Boolean.TRUE);
+                result.put("response", response.get("response"));
+            }
+        } catch (RuntimeException e) {
+            result.put("error", e.getMessage());
+        }
+
+        return result;
+    }
+
+    /** Sends a HTTP request
+     * @param url - URL
+     * @param method - HTTP method
+     * @param body - request body
+     * @return Map<String, Object>
+     */
+    public Map<String, Object> doHttpRequest(String url, HttpMethod method, String body) {
+        Assert.notNull(url, "\"url\" is required");
+        Assert.notNull(method, "\"method\" is required");
+        Assert.notNull(body, "\"body\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<String> entity = new HttpEntity<>("post_xml=" + body, headers);
+logger.info("AAA doHttpRequest url: {}", url);
+logger.info("AAA doHttpRequest body: {}", body);
+logger.info("AAA doHttpRequest method: {}", method);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(url, method, entity, String.class);
+
+            result.put("response", response.getBody().replace("xmlns=", "ns="));
+        } catch (HttpServerErrorException e) {
+            logger.error("Server error occurred: " + e.getStatusCode() + " " + e.getMessage(), e);
+            result.put("error", e.getMessage());
+        } catch (HttpClientErrorException e) {
+            logger.error("Client error occurred: " + e.getStatusCode() + " " + e.getMessage(), e);
+            result.put("error", e.getMessage());
+        } catch (RestClientException e) {
+            logger.error("HTTP request failed: " + e.getMessage(), e);
+            result.put("error", e.getMessage());
+        }
+
+        return result;
+    }
+
+    /** Sends a POST request to Aleph X-Services
+     * @param op - operation to be performed
+     * @param params - request parameters
+     */
+    public Map<String, Object> doXRequestUsingPost(BorXOp op, Map<String, String> params) {
+        Map<String, Object> result = new HashMap<>();
+
+        String url = this.alephServiceConfig.getHost() + ":" + this.alephServiceConfig.getPort() + "/X";
+
+        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
+        body.add("op", op.getValue());
+        body.add("user_name", this.alephServiceConfig.getWwwuser());
+        body.add("user_password", this.alephServiceConfig.getWwwpasswd());
+
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            body.add(entry.getKey(), entry.getValue());
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = null;
+        try {
+            response = restTemplate.postForEntity(url, entity, String.class);
+        } catch (RestClientException e) {
+            result.put("error", "HTTP request failed with message: " + e.getMessage() + ", URL: " + url);
+            return result;
+        }
+
+        if (response.getStatusCode().is2xxSuccessful()) {
+            String responseBody = response.getBody();
+            if (
+                responseBody.contains("Login record belongs to another user") || 
+                responseBody.contains("Match found for ID") || 
+                responseBody.contains("Failed to generate new User ID")
+            ) {
+                result.put("error", "insert_fail_login_data");
+            } else if (responseBody.contains("Can not ins/upd record")) {
+                result.put("error", "insert_fail_z30x");
+            } else if (responseBody.contains("Error retrieving Patron System Key")) {
+                result.put("error", "patron_not_found");
+            } else if (responseBody.contains("Error retrieving Local Patron Record")) {
+                result.put("error", "local_patron_not_found");
+            } else if (
+                !responseBody.contains("Succeeded") && 
+                !responseBody.contains("success") && 
+                !responseBody.contains("spě") &&   // Czech "úspěch"
+                !responseBody.contains("<reply>ok</reply>")
+            ) {
+                logger.info("OP = " + op.getValue());
+                logger.error("HTTP request failed with response QQ: " + responseBody);
+                result.put("error", "HTTP request failed with response: " + responseBody);
+            } else {
+                result.put("success", Boolean.TRUE);
+                result.put("response", responseBody);
+            }
+        } else {
+            result.put("error", "HTTP request failed with status code: " + response.getStatusCode());
+        }
 
         return result;
     }
@@ -105,27 +609,28 @@ public class AlephService extends AlephServiceAbstract {
      * @param xml - the XML string to be sent to Aleph
      * @return - true if the request was successful, false otherwise
      */
-    private boolean updateBorX(String xml) {
-        String url = this.alephServiceConfig.getHost() + ":" + this.alephServiceConfig.getPort() + "/X";
+    public Map<String, Object> updateBorX(String xml) {
+        Assert.notNull(xml, "\"xml\" is required");
 
-        MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
-        body.add("op", "update-bor");
-        body.add("user_name", this.alephServiceConfig.getWwwuser());
-        body.add("user_password", this.alephServiceConfig.getWwwpasswd());
-        body.add("library", "KNA50");
-        body.add("update_flag", "Y");
-        body.add("xml_full_req", xml);
+        Map<String, String> params = new HashMap<>();
+        params.put("library", this.alephServiceConfig.getAdmLibrary());
+        params.put("update_flag", PatronBoolean.Y.toString());
+        params.put("xml_full_req", xml);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        Map<String, Object> result = new HashMap<>();
 
-        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(body, headers);
+        try {
+            Map<String, Object> response = this.doXRequestUsingPost(BorXOp.UPDATE_BOR, params);
+            if (response.containsKey("error")) {
+                result.put("error", response.get("error"));
+            } else {
+                result.put("success", Boolean.TRUE);
+            }
+        } catch (RuntimeException e) {
+            result.put("error", e.getMessage());
+        }
 
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-        getLogger().info("updateBorX's response: {}", response);
-
-        return response.getStatusCode().is2xxSuccessful();
+        return result;
     }
 
     /**
@@ -139,7 +644,7 @@ public class AlephService extends AlephServiceAbstract {
 
         Assert.notNull(patron, "\"patron\" is required");
 
-        String now_yyyyMMdd = TimestampToDate.getTimestampToDate("yyyyMMdd");
+        String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
         String xmlString = "<?xml version=\"1.0\"?>";
 
         Source stylesheetSource = new StreamSource();
@@ -148,53 +653,63 @@ public class AlephService extends AlephServiceAbstract {
         try {
             Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
             String patronId = patron.getId();
+            String patronName = patron.getName();
+            String patronPassword = patron.getVerification();
 
             // z303
             transformer.setParameter("z303-match-id", patronId);
             transformer.setParameter("z303-id", patronId);
-            transformer.setParameter("z303-name-key", patron.getName() + " " + patronId);
+            transformer.setParameter("z303-name-key", patronName + " " + patronId);
+            transformer.setParameter("z303-open-date", today);
+            transformer.setParameter("z303-update-date", today);
+            transformer.setParameter("z303-con-lng", patron.getConLng().toString());
+            transformer.setParameter("z303-name", patronName);
+            transformer.setParameter("z303-birth-date", patron.getBirthDate());
+            transformer.setParameter("z303-export-consent", patron.getExportConsent());
             transformer.setParameter("z303-last-name", patron.getLastname());
             transformer.setParameter("z303-first-name", patron.getFirstname());
-            transformer.setParameter("z303-name", patron.getName());
-            transformer.setParameter("z303-con-lng", patron.getConLng().toString());
-            transformer.setParameter("z303-birth-date", patron.getBirthDate());
 
-            // z304
+            // z304 - sequence 01
             transformer.setParameter("z304-seq01-id", patronId);
             transformer.setParameter("z304-seq01-address-0", patron.getAddress0());
             transformer.setParameter("z304-seq01-address-1", patron.getAddress1());
             transformer.setParameter("z304-seq01-address-2", patron.getAddress2());
             transformer.setParameter("z304-seq01-zip", patron.getZip());
             transformer.setParameter("z304-seq01-email-address", patron.getEmail());
-            transformer.setParameter("z304-seq01-telephone-2", patron.getIdCardName());
-            transformer.setParameter("z304-seq01-telephone-3", patron.getIdCardDetail());
-            transformer.setParameter("z304-seq01-telephone-4", patron.getIdCardNumber());
-            transformer.setParameter("z304-seq01-date-from", now_yyyyMMdd);
+            transformer.setParameter("z304-seq01-date-from", today);
+            transformer.setParameter("z304-seq01-sms-number", patron.getSmsNumber());
+            // transformer.setParameter("z304-seq01-telephone-2", patron.getIdCardName());
+            // transformer.setParameter("z304-seq01-telephone-3", patron.getIdCardDetail());
+            // transformer.setParameter("z304-seq01-telephone-4", patron.getIdCardNumber());
 
-            // z305 / KNA50, KNAV, KNAVD, KNAVP
-            transformer.setParameter("z305-kna50-id", patronId);
-            transformer.setParameter("z305-kna50-registration-date", now_yyyyMMdd);
+            // z304 - sequence 02
+            transformer.setParameter("z304-seq02-id", patronId);
+            transformer.setParameter("z304-seq02-address-0", patron.getContactAddress0());
+            transformer.setParameter("z304-seq02-address-1", patron.getContactAddress1());
+            transformer.setParameter("z304-seq02-address-2", patron.getContactAddress2());
+            transformer.setParameter("z304-seq02-zip", patron.getContactZip());
+            transformer.setParameter("z304-seq02-date-from", today);
 
-            transformer.setParameter("z305-knav-id", patronId);
-            transformer.setParameter("z305-knav-registration-date", now_yyyyMMdd);
+            // z305
+            transformer.setParameter("z305-id", patronId);
+            transformer.setParameter("z305-open-date", today);
+            transformer.setParameter("z305-update-date", today);
+            transformer.setParameter("z305-bor-status", patron.getStatus());
 
-            transformer.setParameter("z305-knavd-id", patronId);
-            transformer.setParameter("z305-knavd-registration-date", now_yyyyMMdd);
-
-            transformer.setParameter("z305-knavp-id", patronId);
-            transformer.setParameter("z305-knavp-registration-date", now_yyyyMMdd);
-
-            // z308 / id
-            transformer.setParameter("z308-key-type-00-id", patronId);
+            // z308 - ID
             transformer.setParameter("z308-key-type-00-key-data", patronId);
+            transformer.setParameter("z308-key-type-00-verification", patronPassword);
+            transformer.setParameter("z308-key-type-00-id", patronId);
 
-            // z308 / barcode
-            transformer.setParameter("z308-key-type-01-id", patronId);
+            // z308 - Barcode
             transformer.setParameter("z308-key-type-01-key-data", patron.getBarcode());
+            transformer.setParameter("z308-key-type-01-verification", patronPassword);
+            transformer.setParameter("z308-key-type-01-id", patronId);
 
-            // z308 / bankid
-            transformer.setParameter("z308-key-type-07-id", patronId);
-            transformer.setParameter("z308-key-type-07-key-data", patron.getBankIdSub());
+            // z308 - BankID
+            // transformer.setParameter("z308-key-type-07-key-data", patron.getBankIdSub());
+            // transformer.setParameter("z308-key-type-07-verification", patronPassword);
+            // transformer.setParameter("z308-key-type-07-id", patronId);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
@@ -238,9 +753,9 @@ public class AlephService extends AlephServiceAbstract {
         patron.setLastname(Stream.of(mname, lname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Kathleen Rowling
-        patron.setName(Stream.of(fname, mname, lname)
+        patron.setName(Stream.of(mname, lname, fname)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Joanne Kathleen Rowling
+            .collect(Collectors.joining(" ")));       // Kathleen Rowling Joanne
 
         patron.setEmail(Optional.ofNullable(userInfo.getEmail()).orElse(""));
 
@@ -316,7 +831,125 @@ public class AlephService extends AlephServiceAbstract {
         // BankID
         patron.setBankIdSub(userInfo.getSub());
 
+        patron.setStatus("16");
+
         result.put("patron", patron);
+
+        return result;
+    }
+
+    /**
+     * Initializes an item based on the patron's data
+     * @param patron
+     * @return Map<String, Object>
+     */
+    public Map<String, Object> newItem(PatronDTO patron) {
+        Assert.notNull(patron, "\"patron\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        ItemDTO item = new ItemDTO();
+
+        String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
+        String itemDocNumber = this.alephServiceConfig.getSysno();
+        String itemBarcode = this.alephServiceConfig.getItemBarcodePrefix() + itemDocNumber + today;
+        String itemStatus = "45";
+
+        item.setDocNumber(itemDocNumber);
+        item.setBarcode(itemBarcode);
+        item.setStatus(itemStatus);
+
+        result.put("item", item);
+
+        return result;
+    }
+
+    /**
+     * Generates an XML string for an item
+     * @param item
+     * @return
+     */
+    public Map<String, String> createItemXml(ItemDTO item) {
+        Map<String, String> result = new HashMap<>();
+
+        Assert.notNull(item, "\"item\" is required");
+
+        String xmlString = "<?xml version=\"1.0\"?>";
+
+        Source stylesheetSource = new StreamSource();
+        stylesheetSource.setSystemId("classpath:/xml/CreateItem.xsl");
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        try {
+            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+
+            // z30
+            transformer.setParameter("z30-doc-number", item.getDocNumber());
+            transformer.setParameter("z30-barcode", item.getBarcode());
+            transformer.setParameter("z30-item-status", item.getStatus());
+
+            StringWriter stringWriter = new StringWriter();
+            Result streamResult = new StreamResult(stringWriter);
+            transformer.transform(stylesheetSource, streamResult);
+            if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
+                xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
+            } else {
+                xmlString = stringWriter.getBuffer().toString();
+            }
+            result.put("xml", xmlString);
+        } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        }
+
+        return result;
+    }
+
+    /**
+     * Generates an XML string for a patron-related library
+     * @patron patron
+     * @library library
+     * @return Map<String, String>
+     */
+    public Map<String, String> createLibraryXml(PatronDTO patron, String library) {
+        Map<String, String> result = new HashMap<>();
+
+        Assert.notNull(patron, "\"patron\" is required");
+        Assert.notNull(library, "\"library\" is required");
+
+        String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
+        String xmlString = "<?xml version=\"1.0\"?>";
+
+        Source stylesheetSource = new StreamSource();
+        stylesheetSource.setSystemId("classpath:/xml/CreateLibrary.xsl");
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        try {
+            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+            String patronId = patron.getId();
+
+            // z303
+            transformer.setParameter("z303-match-id", patronId);
+            transformer.setParameter("z303-id", patronId);
+
+            // z305
+            transformer.setParameter("z305-id", patronId);
+            transformer.setParameter("z305-sub-library", library);
+            transformer.setParameter("z305-open-date", today);
+            transformer.setParameter("z305-update-date", today);
+            transformer.setParameter("z305-bor-status", patron.getStatus());
+
+            StringWriter stringWriter = new StringWriter();
+            Result streamResult = new StreamResult(stringWriter);
+            transformer.transform(stylesheetSource, streamResult);
+            if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
+                xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
+            } else {
+                xmlString = stringWriter.getBuffer().toString();
+            }
+            result.put("xml", xmlString);
+        } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        }
 
         return result;
     }
@@ -345,9 +978,9 @@ public class AlephService extends AlephServiceAbstract {
         patron.setLastname(Stream.of(mname, lname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Kathleen Rowling
-        patron.setName(Stream.of(fname, mname, lname)
+        patron.setName(Stream.of(mname, lname, fname)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Joanne Kathleen Rowling
+            .collect(Collectors.joining(" ")));       // Kathleen Rowling Joanne
 
         patron.setEmail(Optional.ofNullable(this.generateTestingEmail()).orElse(""));
 
@@ -358,7 +991,7 @@ public class AlephService extends AlephServiceAbstract {
         }
         patron.setBirthDate(birthdate.replace("-", ""));  // 2003-07-25 => 20030725
 
-        String smsNumber = userProfile.getPhone_number(); logger.info("smsNumber: {}", smsNumber);
+        String smsNumber = this.generateTestingPhone(); logger.info("smsNumber: {}", smsNumber);
         patron.setSmsNumber(Optional.ofNullable(smsNumber).orElse(""));
 
         String conLng = userInfo.getLocale(); logger.info("conLng: {}", conLng);
@@ -434,6 +1067,8 @@ public class AlephService extends AlephServiceAbstract {
         // BankID
         patron.setBankIdSub(userInfo.getSub());
 
+        patron.setStatus("16");
+
         result.put("patron", patron);
 
         return result;
@@ -493,15 +1128,8 @@ public class AlephService extends AlephServiceAbstract {
         return (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
     }
 
-    public int testika(String name, String birthDate) {
-        getLogger().info("isNewAlephPatron params: {} {}", name, birthDate);
-        int result = oracleRepository.getPatronRowsCount(name, birthDate);
-        getLogger().info("isNewAlephPatron: {}", result);
-        return result;
-    }
-
     private String generateTestingMname() {
-        return "Testovací";
+        return "Test";
     }
 
     private String generateTestingBirthday() {
@@ -516,6 +1144,12 @@ public class AlephService extends AlephServiceAbstract {
         Random random = new Random();
         int randomNum = 1000 + random.nextInt(9000);
         return "test" + randomNum + "@testing.com";
+    }
+
+    private String generateTestingPhone() {
+        Random random = new Random();
+        int randomNum = 100000000 + random.nextInt(900000000);
+        return "+420" + randomNum;
     }
 
     /**
