@@ -32,6 +32,7 @@ public class PatronDTO {
     public String bankIdSub;         // bankIdSub
     public PatronAction action;          // record-action
     public PatronBoolean exportConsent;         // z303-export-consent
+    public String rfid;
 
     public boolean getIsNew() {
         return isNew;
@@ -249,6 +250,14 @@ public class PatronDTO {
         this.exportConsent = exportConsent;
     }
 
+    public String getRfid() {
+        return rfid;
+    }
+
+    public void setRfid(String rfid) {
+        this.rfid = rfid;
+    }
+
     public String toJson() throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(this);
@@ -257,15 +266,12 @@ public class PatronDTO {
     public void update(PatronDTO patron) {
         Optional.ofNullable(patron.email).ifPresent(e -> this.email = e);
         Optional.ofNullable(patron.smsNumber).ifPresent(e -> this.smsNumber = e);
-        Optional.ofNullable(patron.address0).ifPresent(e -> this.address0 = e);
-        Optional.ofNullable(patron.address1).ifPresent(e -> this.address1 = e);
-        Optional.ofNullable(patron.address2).ifPresent(e -> this.address2 = e);
-        Optional.ofNullable(patron.zip).ifPresent(e -> this.zip = e);
         Optional.ofNullable(patron.contactAddress0).ifPresent(e -> this.contactAddress0 = e);
         Optional.ofNullable(patron.contactAddress1).ifPresent(e -> this.contactAddress1 = e);
         Optional.ofNullable(patron.contactAddress2).ifPresent(e -> this.contactAddress2 = e);
         Optional.ofNullable(patron.contactZip).ifPresent(e -> this.contactZip = e);
         Optional.ofNullable(patron.conLng).ifPresent(e -> this.conLng = e);
         Optional.ofNullable(patron.exportConsent).ifPresent(e -> this.exportConsent = e);
+        Optional.ofNullable(patron.rfid).ifPresent(e -> this.rfid = e);
     } 
 }

@@ -27,6 +27,7 @@ import cz.cas.lib.bankid_registrator.dto.PatronAction;
 import cz.cas.lib.bankid_registrator.dto.PatronBoolean;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.dto.PatronLanguage;
+import cz.cas.lib.bankid_registrator.dto.PatronStatus;
 import cz.cas.lib.bankid_registrator.entities.entity.Address;
 import cz.cas.lib.bankid_registrator.entities.entity.AddressType;
 import cz.cas.lib.bankid_registrator.entities.entity.IDCard;
@@ -57,6 +58,8 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+
+import org.checkerframework.checker.units.qual.t;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -706,6 +709,16 @@ logger.info("AAA doHttpRequest method: {}", method);
             transformer.setParameter("z308-key-type-01-verification", patronPassword);
             transformer.setParameter("z308-key-type-01-id", patronId);
 
+            // z308 - RFID
+            // If patron has an RFID, set the RFID key type
+            logger.info("patron.getRfid(): {}", patron.getRfid());
+            if (patron.getRfid().equals("") == Boolean.FALSE) {
+                transformer.setParameter("is-z308-key-type-03", Boolean.TRUE);
+                transformer.setParameter("z308-key-type-03-key-data", patron.getRfid());
+                // transformer.setParameter("z308-key-type-03-verification", patronPassword);
+                transformer.setParameter("z308-key-type-03-id", patronId);
+            }
+
             // z308 - BankID
             // transformer.setParameter("z308-key-type-07-key-data", patron.getBankIdSub());
             // transformer.setParameter("z308-key-type-07-verification", patronPassword);
@@ -796,7 +809,7 @@ logger.info("AAA doHttpRequest method: {}", method);
             if (!addressCityarea.equals("") && addressCityarea.equals(addressCity)) {
                 patron.setAddress2(addressCity);
             } else if (!addressCityarea.equals("") && !addressCityarea.equals(addressCity)) {
-                patron.setAddress2(addressCity + '-' + addressCityarea);
+                patron.setAddress2(addressCity + " - " + addressCityarea);
             } else {
                 patron.setAddress2(addressCity);
             }
@@ -804,6 +817,41 @@ logger.info("AAA doHttpRequest method: {}", method);
         } else {
             result.put("error", "chybí adresa trvalého bydliště");
             return result;
+        }
+
+        // Patron contact address
+        Address contactAddress = userProfile.getAddresses().stream()
+            .filter(a -> a.getType() == AddressType.SECONDARY_RESIDENCE)
+            .findFirst()
+            .orElse(null);
+        if (contactAddress != null) {
+            String contactAddressStreet = Optional.ofNullable(contactAddress.getStreet()).orElse("");
+            String contactAddressNumber = Optional.ofNullable(contactAddress.getEvidencenumber()).orElse("");
+            String contactAddressCity = contactAddress.getCity();
+            if (contactAddressCity == null) {
+                result.put("error", "chybí město kontaktní adresy");
+                return result;
+            }
+            String contactAddressCityarea = Optional.ofNullable(contactAddress.getCityarea()).orElse("");
+            String contactAddressZip = contactAddress.getZipcode();
+            if (contactAddressZip == null) {
+                result.put("error", "chybí PSČ kontaktní adresy");
+                return result;
+            }
+
+            patron.setContactAddress0(patron.getName());
+            patron.setContactAddress1(Stream.of(!contactAddressStreet.equals("") ? contactAddressStreet : contactAddressCityarea, contactAddressNumber)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining(" ")));
+            
+            if (!contactAddressCityarea.equals("") && contactAddressCityarea.equals(contactAddressCity)) {
+                patron.setContactAddress2(contactAddressCity);
+            } else if (!contactAddressCityarea.equals("") && !contactAddressCityarea.equals(contactAddressCity)) {
+                patron.setContactAddress2(contactAddressCity + " - " + contactAddressCityarea);
+            } else {
+                patron.setContactAddress2(contactAddressCity);
+            }
+            patron.setContactZip(contactAddressZip);
         }
 
         // Patron ID card
@@ -831,7 +879,7 @@ logger.info("AAA doHttpRequest method: {}", method);
         // BankID
         patron.setBankIdSub(userInfo.getSub());
 
-        patron.setStatus("16");
+        patron.setStatus(PatronStatus.STATUS_16.getId());
 
         result.put("patron", patron);
 
@@ -853,7 +901,7 @@ logger.info("AAA doHttpRequest method: {}", method);
         String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
         String itemDocNumber = this.alephServiceConfig.getSysno();
         String itemBarcode = this.alephServiceConfig.getItemBarcodePrefix() + itemDocNumber + today;
-        String itemStatus = "45";
+        String itemStatus = PatronStatus.STATUS_16.getRegistrationItemStatusId();
 
         item.setDocNumber(itemDocNumber);
         item.setBarcode(itemBarcode);
@@ -1032,7 +1080,7 @@ logger.info("AAA doHttpRequest method: {}", method);
             if (!addressCityarea.equals("") && addressCityarea.equals(addressCity)) {
                 patron.setAddress2(addressCity);
             } else if (!addressCityarea.equals("") && !addressCityarea.equals(addressCity)) {
-                patron.setAddress2(addressCity + '-' + addressCityarea);
+                patron.setAddress2(addressCity + " - " + addressCityarea);
             } else {
                 patron.setAddress2(addressCity);
             }
@@ -1040,6 +1088,41 @@ logger.info("AAA doHttpRequest method: {}", method);
         } else {
             result.put("error", "chybí adresa trvalého bydliště");
             return result;
+        }
+
+        // Patron contact address
+        Address contactAddress = userProfile.getAddresses().stream()
+            .filter(a -> a.getType() == AddressType.SECONDARY_RESIDENCE)
+            .findFirst()
+            .orElse(null);
+        if (contactAddress != null) {
+            String contactAddressStreet = Optional.ofNullable(contactAddress.getStreet()).orElse("");
+            String contactAddressNumber = Optional.ofNullable(contactAddress.getEvidencenumber()).orElse("");
+            String contactAddressCity = contactAddress.getCity();
+            if (contactAddressCity == null) {
+                result.put("error", "chybí město kontaktní adresy");
+                return result;
+            }
+            String contactAddressCityarea = Optional.ofNullable(contactAddress.getCityarea()).orElse("");
+            String contactAddressZip = contactAddress.getZipcode();
+            if (contactAddressZip == null) {
+                result.put("error", "chybí PSČ kontaktní adresy");
+                return result;
+            }
+
+            patron.setContactAddress0(patron.getName());
+            patron.setContactAddress1(Stream.of(!contactAddressStreet.equals("") ? contactAddressStreet : contactAddressCityarea, contactAddressNumber)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining(" ")));
+            
+            if (!contactAddressCityarea.equals("") && contactAddressCityarea.equals(contactAddressCity)) {
+                patron.setContactAddress2(contactAddressCity);
+            } else if (!contactAddressCityarea.equals("") && !contactAddressCityarea.equals(contactAddressCity)) {
+                patron.setContactAddress2(contactAddressCity + " - " + contactAddressCityarea);
+            } else {
+                patron.setContactAddress2(contactAddressCity);
+            }
+            patron.setContactZip(contactAddressZip);
         }
 
         // Patron ID card
@@ -1067,7 +1150,7 @@ logger.info("AAA doHttpRequest method: {}", method);
         // BankID
         patron.setBankIdSub(userInfo.getSub());
 
-        patron.setStatus("16");
+        patron.setStatus(PatronStatus.STATUS_16.getId());
 
         result.put("patron", patron);
 

@@ -97,11 +97,6 @@ public class MainController extends MainControllerAbstract {
         model.addAttribute("appName", this.appName);
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
 
-        // Map<String, Object> itemDeletion = this.alephService.deleteItem("002299434", "148670", "261100229943420240318");
-        // if (itemDeletion.containsKey("error")) {
-        //     logger.error("Error deleting item: {}", itemDeletion.get("error"));
-        // }
-
         return "welcome";
     }
 
