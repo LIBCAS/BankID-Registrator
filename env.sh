@@ -3,7 +3,7 @@
 if [ "$#" -ne 2 ]; then
     echo "Usage: ./env.sh [environment] [action]"
     echo "       environment: local | testing | production"
-    echo "       action: up | down"
+    echo "       action: up | start | down | stop"
     exit 1
 fi
 
@@ -26,9 +26,17 @@ case $ACTION in
             docker-compose -f $DOCKER_COMPOSE_FILE up --build
         fi
         ;;
+    start)
+        echo "Starting the containers for the $ENVIRONMENT environment..."
+        docker compose -f $DOCKER_COMPOSE_FILE start
+        ;;
     down)
+        echo "Removing the containers for the $ENVIRONMENT environment..."
+        docker compose -f $DOCKER_COMPOSE_FILE down
+        ;;
+    stop)
         echo "Stopping the containers for the $ENVIRONMENT environment..."
-        docker-compose -f $DOCKER_COMPOSE_FILE down
+        docker compose -f $DOCKER_COMPOSE_FILE stop
         ;;
     *)
         echo "Invalid action: $ACTION"
