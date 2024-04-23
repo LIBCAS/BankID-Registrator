@@ -8,6 +8,7 @@ services:
     env_file: .env
     environment:
       LOG_PATH: /app/logs
+      STORAGE_PATH: /app/storage
       DATASOURCE_JDBC_URL: jdbc:mariadb://database:${MYSQL_PORT}/${MYSQL_DATABASE}
       DATASOURCE_USERNAME: ${MYSQL_USERNAME}
       DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
@@ -25,7 +26,7 @@ services:
     volumes:
       - ./../../:/app
       - ./../../.m2:/root/.m2
-      - ./../../logs:/app/logs
+      - ./../../storage:/app/storage
     working_dir: /app
     command: sh ./.docker/local/run.sh
     ports:

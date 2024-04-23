@@ -18,7 +18,7 @@ package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.configurations.AlephServiceConfig;
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
-import cz.cas.lib.bankid_registrator.dao.mariadb.MariaDBRepository;
+import cz.cas.lib.bankid_registrator.dao.mariadb.PatronBarcodeRepository;
 import cz.cas.lib.bankid_registrator.dao.oracle.OracleRepository;
 import cz.cas.lib.bankid_registrator.dto.BorXOp;
 import cz.cas.lib.bankid_registrator.dto.HoldDTO;
@@ -58,8 +58,6 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-
-import org.checkerframework.checker.units.qual.t;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -87,14 +85,14 @@ public class AlephService extends AlephServiceAbstract {
 
     private final MainConfiguration mainConfig;
     private final AlephServiceConfig alephServiceConfig;
-    private final MariaDBRepository mariaDbRepository;
+    private final PatronBarcodeRepository patronBarcodeRepository;
     private final OracleRepository oracleRepository; 
 
-    public AlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, MariaDBRepository mariaDbRepository, OracleRepository oracleRepository)
+    public AlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, PatronBarcodeRepository patronBarcodeRepository, OracleRepository oracleRepository)
     {
         this.mainConfig = mainConfig;
         this.alephServiceConfig = alephServiceConfig;
-        this.mariaDbRepository = mariaDbRepository;
+        this.patronBarcodeRepository = patronBarcodeRepository;
         this.oracleRepository = oracleRepository;
     }
 
@@ -710,12 +708,9 @@ logger.info("AAA doHttpRequest method: {}", method);
             transformer.setParameter("z308-key-type-01-id", patronId);
 
             // z308 - RFID
-            // If patron has an RFID, set the RFID key type
-            logger.info("patron.getRfid(): {}", patron.getRfid());
             if (patron.getRfid().equals("") == Boolean.FALSE) {
                 transformer.setParameter("is-z308-key-type-03", Boolean.TRUE);
                 transformer.setParameter("z308-key-type-03-key-data", patron.getRfid());
-                // transformer.setParameter("z308-key-type-03-verification", patronPassword);
                 transformer.setParameter("z308-key-type-03-id", patronId);
             }
 
@@ -1162,7 +1157,7 @@ logger.info("AAA doHttpRequest method: {}", method);
      */
     private String generatePatronId() {
         String prefix = this.mainConfig.getId_prefix();
-        Long maxVal = mariaDbRepository.findMaxId();
+        Long maxVal = patronBarcodeRepository.findMaxId();
         Long newVal = 1L;
 
         if (maxVal != null) {
@@ -1177,7 +1172,7 @@ logger.info("AAA doHttpRequest method: {}", method);
      */
     private String generatePatronBarcode() {
         String prefix = mainConfig.getBarcode_prefix();
-        Long maxVal = mariaDbRepository.findMaxBarcode();
+        Long maxVal = patronBarcodeRepository.findMaxBarcode();
         Long newVal = 1L;
 
         if (maxVal != null) {

@@ -36,6 +36,7 @@ build/
 
 
 /logs/
+/storage/
 
 .m2/
 .svn/

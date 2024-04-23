@@ -24,7 +24,7 @@ import org.springframework.data.jpa.repository.Query;
  *
  * @author iok
  */
-public interface MariaDBRepository extends JpaRepository<PatronBarcode, Long> {
+public interface PatronBarcodeRepository extends JpaRepository<PatronBarcode, Long> {
     @Query(value = "SELECT MAX(p.id) FROM patron_barcode p", nativeQuery = true)
     Long findMaxId();
 

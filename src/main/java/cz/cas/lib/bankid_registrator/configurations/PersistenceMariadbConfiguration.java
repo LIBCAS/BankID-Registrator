@@ -39,15 +39,15 @@ import org.springframework.transaction.PlatformTransactionManager;
 @PropertySource({"classpath:config.properties"})
 @EnableJpaRepositories(
     basePackages = "cz.cas.lib.bankid_registrator.dao.mariadb",
-    entityManagerFactoryRef = "patronBarcodeEntityManager",
-    transactionManagerRef = "patronBarcodeTransactionManager"
+    entityManagerFactoryRef = "mariadbEntityManager",
+    transactionManagerRef = "mariadbTransactionManager"
 )
-public class PersistencePatronBarcodeConfiguration extends ConfigurationAbstract
+public class PersistenceMariadbConfiguration extends ConfigurationAbstract
 {
     @Autowired
     private Environment env;
 
-    public PersistencePatronBarcodeConfiguration() {
+    public PersistenceMariadbConfiguration() {
         super();
     }
 
@@ -86,7 +86,7 @@ public class PersistencePatronBarcodeConfiguration extends ConfigurationAbstract
 
     @Bean
     @Primary
-    public LocalContainerEntityManagerFactoryBean patronBarcodeEntityManager () {
+    public LocalContainerEntityManagerFactoryBean mariadbEntityManager () {
 
         final Properties jpaProperties = new Properties();
 
@@ -98,7 +98,7 @@ public class PersistencePatronBarcodeConfiguration extends ConfigurationAbstract
         final LocalContainerEntityManagerFactoryBean factory = new LocalContainerEntityManagerFactoryBean();
 
         factory.setDataSource(patronDataSource());
-        factory.setPackagesToScan(new String[] {"cz.cas.lib.bankid_registrator.model.patron_barcode"});
+        factory.setPackagesToScan("cz.cas.lib.bankid_registrator.model", "cz.cas.lib.bankid_registrator.dto");
         factory.setJpaVendorAdapter(vendorAdapter);
         factory.setJpaProperties(jpaProperties);
         factory.afterPropertiesSet();
@@ -108,11 +108,11 @@ public class PersistencePatronBarcodeConfiguration extends ConfigurationAbstract
 
     @Bean
     @Primary
-    public PlatformTransactionManager patronBarcodeTransactionManager() {
+    public PlatformTransactionManager mariadbTransactionManager() {
 
         final JpaTransactionManager txManager = new JpaTransactionManager();
 
-        txManager.setEntityManagerFactory(patronBarcodeEntityManager().getObject());
+        txManager.setEntityManagerFactory(mariadbEntityManager().getObject());
 
         return txManager;
     }

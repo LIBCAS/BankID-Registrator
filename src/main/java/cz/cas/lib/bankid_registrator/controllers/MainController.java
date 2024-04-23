@@ -17,16 +17,23 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
-import cz.cas.lib.bankid_registrator.dao.mariadb.MariaDBRepository;
+import cz.cas.lib.bankid_registrator.dao.mariadb.PatronBarcodeRepository;
+import cz.cas.lib.bankid_registrator.dao.mariadb.PatronDTORepository;
+import cz.cas.lib.bankid_registrator.dao.mariadb.MediaRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronBoolean;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
+import cz.cas.lib.bankid_registrator.model.media.Media;
 import cz.cas.lib.bankid_registrator.model.patron_barcode.PatronBarcode;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.MainService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
+
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.*;
+import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -41,6 +48,7 @@ import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -55,21 +63,33 @@ public class MainController extends MainControllerAbstract {
     private final MainService mainService;
     private final AlephService alephService;
     private final ServletContext servletContext;
-    private final MariaDBRepository mariaDBRepository;
+    private final PatronBarcodeRepository patronBarcodeRepository;
+    private final PatronDTORepository patronDTORepository;
+    private final MediaRepository mediaRepository;
     private final AccessTokenContainer accessTokenContainer;
 
     @NotEmpty
     @Value("${spring.application.name}")
     private String appName;
 
-    public MainController(MainConfiguration mainConfig, MainService mainService, AlephService alephService, ServletContext servletContext, MariaDBRepository mariaDBRepository, AccessTokenContainer accessTokenContainer)
-    {
+    public MainController(
+        MainConfiguration mainConfig,
+        MainService mainService,
+        AlephService alephService,
+        ServletContext servletContext, 
+        PatronBarcodeRepository patronBarcodeRepository,
+        PatronDTORepository patronDTORepository,
+        MediaRepository mediaRepository,
+        AccessTokenContainer accessTokenContainer
+    ) {
         super();
         this.mainConfig = mainConfig;
         this.mainService = mainService;
         this.alephService = alephService;
         this.servletContext = servletContext;
-        this.mariaDBRepository = mariaDBRepository;
+        this.patronBarcodeRepository = patronBarcodeRepository;
+        this.patronDTORepository = patronDTORepository;
+        this.mediaRepository = mediaRepository;
         this.accessTokenContainer = accessTokenContainer;
         init();
     }
@@ -173,7 +193,8 @@ public class MainController extends MainControllerAbstract {
         }
 
         PatronDTO patron = (PatronDTO) patronObjCreation.get("patron");
-        session.setAttribute("patron", patron);
+        patron = patronDTORepository.save(patron);
+        session.setAttribute("patron", patron.getSysId());
         model.addAttribute("patron", patron);
         try {
             getLogger().info("patron: {}", patron.toJson());
@@ -194,11 +215,13 @@ public class MainController extends MainControllerAbstract {
      * @param editedPatron - user-edited patron data
      * @param session
      * @param model
+     * @param media
      * @return String
      */
     @PostMapping("/new-registration")
-    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model) {
-        PatronDTO patron = (PatronDTO) session.getAttribute("patron");  // original patron data
+    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, @RequestParam("media") MultipartFile[] media) {
+        Long patronSysId = (Long) session.getAttribute("patron");
+        PatronDTO patron = patronDTORepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
         String code = (String) session.getAttribute("code");
 
@@ -215,12 +238,20 @@ public class MainController extends MainControllerAbstract {
         getLogger().info("new-registration - userProfile: {}", userProfile);
         getLogger().info("new-registration - code: {}", code);
 
-        if (patron == null || userProfile == null || code == null) {
+        if (patronSysId == null || patron == null || userProfile == null || code == null) {
             return "error_session_expired";
         }
 
         if (editedPatron.getExportConsent() != PatronBoolean.Y) {
             return "error_export_consent";
+        }
+
+        for (MultipartFile file : media) {
+            Map<String, Object> fileUpload = uploadFile(file, patronSysId);
+            if (fileUpload.containsKey("error")) {
+                model.addAttribute("error", fileUpload.get("error"));
+                return "error_file_upload";
+            }
         }
 
         patron.update(editedPatron);
@@ -246,7 +277,7 @@ public class MainController extends MainControllerAbstract {
         barcode.setSub(patron.getBankIdSub());
         barcode.setBarcode(mainConfig.getBarcode_prefix().concat(code));
         barcode.setBarcodeAleph(patronBarcodeNoPrefix);
-        this.mariaDBRepository.save(barcode);
+        this.patronBarcodeRepository.save(barcode);
 
         return "new_registration_success";
     }
@@ -275,6 +306,59 @@ public class MainController extends MainControllerAbstract {
         model.addAttribute("appName", this.appName);
 
         return "data_usage_policy";
+    }
+
+    /**
+     * Upload media file
+     * @param file
+     * @param patronSysId
+     * @return Map<String, Object>
+     */
+    public Map<String, Object> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("patron-sys-id") Long patronSysId) {
+        Map<String, Object> result = new HashMap<>();
+
+        String fileName = file.getOriginalFilename();
+
+        if (file.isEmpty()) {
+            result.put("error", "File " + fileName + " is empty.");
+            return result;
+        }
+
+        String contentType = file.getContentType();
+        if (!contentType.equals("image/jpeg") && !contentType.equals("image/png") && !contentType.equals("application/pdf")) {
+            result.put("error", "File " + fileName + " is not a valid image or PDF file.");
+            return result;
+        }
+
+        PatronDTO patron = patronDTORepository.findById(patronSysId).orElse(null);
+
+        if (patron == null) {
+            result.put("error", "User not found.");
+            return result;
+        }
+
+        Path path = Paths.get(this.mainConfig.getStorage_path() + "/" + file.getOriginalFilename());
+
+        try {
+            Files.write(path, file.getBytes());
+        } catch (IOException e) {
+            result.put("error", "Error saving file " + fileName + ": " + e.getMessage());
+            return result;
+        }
+
+        Media media = new Media();
+        media.setName(fileName);
+        media.setType(file.getContentType());
+        media.setPath(path.toString());
+        media.setPatronDTO(patron);
+
+        if (mediaRepository.save(media) != null) {
+            result.put("success", Boolean.TRUE);
+        } else {
+            result.put("error", "Error uploading media file " + fileName + ".");
+        }
+
+        return result;
     }
 
 }

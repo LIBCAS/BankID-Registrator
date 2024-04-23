@@ -73,6 +73,13 @@ public class MainConfiguration extends ConfigurationAbstract {
     @Pattern(regexp="^[0-9]{1,}$")
     private String length_of_registration;
 
+    /**
+     * The path to the directory where uploaded files will be stored.
+     * This path can be absolute or relative to the application's working directory.
+     */
+    @NotBlank
+    private String storage_path;
+
     public MainConfiguration() {
         super();
         init();
@@ -265,6 +272,22 @@ public class MainConfiguration extends ConfigurationAbstract {
         return this.length_of_registration;
     }
 
+    /**
+     * 
+     * @param storage_path 
+     */
+    public synchronized void setStorage_path(String storage_path) {
+        this.storage_path = storage_path;
+        getLogger().debug("Set {}.storage_path={}", this.propertyPrefix, this.storage_path);
+    }
+
+    /**
+     * 
+     * @return 
+     */
+    public synchronized String getStorage_path() {
+        return this.storage_path;
+    }
 
     @Bean
     public DateUtils dateUtils() {

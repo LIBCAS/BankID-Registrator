@@ -2,37 +2,115 @@ package cz.cas.lib.bankid_registrator.dto;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import cz.cas.lib.bankid_registrator.model.media.Media;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import javax.persistence.*;
 
+@Entity
+@Table(name = "patron_dto")
 public class PatronDTO {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column
     public boolean isNew;         // Is this a new or existing Aleph patron?
+
+    @Column
     public String homeLibrary = "KNAV";         // z303-home-library
-    public String id;         // z303-id, z303.match-id
+
+    @Column
+    public String patronId;         // z303-id, z303.match-id
+
+    @Column
     public String firstname;         // z303-first-name
+
+    @Column
     public String lastname;         // z303-last-name
+
+    @Column
     public String name;         // z303-name
+
+    @Column
     public String email;         // z304-email-address
+
+    @Column
     public String birthDate;         // z303-birth-date
+
+    @Column
+    @Enumerated(EnumType.STRING)
     public PatronLanguage conLng = PatronLanguage.CZE;         // z303-con-lng
+
+    @Column
     public String address0;         // z304-address-0 (for <z304-address-type>01</z304-address-type>)
+
+    @Column
     public String address1;         // z304-address-1 (for <z304-address-type>01</z304-address-type>)
+
+    @Column
     public String address2;         // z304-address-2 (for <z304-address-type>01</z304-address-type>)
+
+    @Column
     public String zip;         // z304-zip
+
+    @Column
     public String contactAddress0;         // z304-address-0 (for <z304-address-type>02</z304-address-type>)
+
+    @Column
     public String contactAddress1;         // z304-address-1 (for <z304-address-type>02</z304-address-type>)
+
+    @Column
     public String contactAddress2;         // z304-address-2 (for <z304-address-type>02</z304-address-type>)
+
+    @Column
     public String contactZip;         // z304-zip
+
+    @Column
     public String smsNumber;         // z304-sms-number
+
+    @Column
     public String status;         // z305-bor-status
+
+    @Column
     public String barcode;         // z308-key-data
+
+    @Column
     public String idCardName;         // nazev obcanskeho prukazu - napr. "ID CZ"
+
+    @Column
     public String idCardNumber;         // cislo obcanskeho prukazu
+
+    @Column
     public String idCardDetail;         // detail obcanskeho prukazu
+
+    @Column
     public String verification;         // z308-verification
+
+    @Column
     public String bankIdSub;         // bankIdSub
+
+    @Column
+    @Enumerated(EnumType.STRING)
     public PatronAction action;          // record-action
-    public PatronBoolean exportConsent;         // z303-export-consent
+
+    @Column
+    @Enumerated(EnumType.STRING)
+    public PatronBoolean exportConsent = PatronBoolean.N;         // z303-export-consent
+
+    @Column
+    public boolean isCasEmployee = Boolean.FALSE;         // is CAS employee
+
+    @Column
     public String rfid;
+
+    @OneToMany(mappedBy = "patronDTO", cascade = CascadeType.ALL)
+    private List<Media> media = new ArrayList<>();
+
+    public Long getSysId() {
+        return id;
+    }
 
     public boolean getIsNew() {
         return isNew;
@@ -43,11 +121,11 @@ public class PatronDTO {
     }
 
     public String getId() {
-        return id;
+        return patronId;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setId(String patronId) {
+        this.patronId = patronId;
     }
 
     public String getBarcode() {
@@ -256,6 +334,14 @@ public class PatronDTO {
 
     public void setRfid(String rfid) {
         this.rfid = rfid;
+    }
+
+    public boolean getIsCasEmployee() {
+        return isCasEmployee;
+    }
+
+    public void setIsCasEmployee(boolean isCasEmployee) {
+        this.isCasEmployee = isCasEmployee;
     }
 
     public String toJson() throws JsonProcessingException {
