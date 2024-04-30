@@ -24,566 +24,271 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
         integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
     <link rel="shortcut icon" href="/bankid-registrator/img/favicon.ico" />
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css" type="text/css" />
+    <link rel="stylesheet" href="https://unpkg.com/filepond/dist/filepond.min.css" type="text/css" />
+    <style>
+        #files-control {
+            display: none;
+        }
+
+        #files {
+            display: block;
+            width: 100%;
+        }
+
+        .filepond--drop-label {
+            color: #4c4e53;
+        }
+
+        .filepond--label-action {
+            text-decoration-color: #babdc0;
+        }
+
+        .filepond--panel-root {
+            border-radius: 2em;
+            background-color: #edf0f4;
+            height: 1em;
+        }
+
+        .filepond--item-panel {
+            background-color: #595e68;
+        }
+
+        .filepond--drip-blob {
+            background-color: #7f8a9a;
+        }
+
+        .filepond--credits {
+            display: none;
+        }
+    </style>
 </head>
 
 <body>
-    <form action="#" th:action="@{/new-registration}" th:object="${patron}" method="post" enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto">
+    <form action="#" th:action="@{/new-registration}" th:object="${patron}" method="post" enctype="multipart/form-data"
+        class="my-5 space-y-4 max-w-4xl mx-auto">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input class="hidden" type="text" th:field="*{patronId}" />
+            <input class="hidden" type="text" th:field="*{bankIdSub}" />
             <div>
                 <label for="firstname" class="block text-sm font-medium text-gray-700">Jméno *</label>
-                <input type="text" id="firstname" name="firstname" class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{firstname}" required readonly />
+                <input type="text" id="firstname" name="firstname"
+                    class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    th:field="*{firstname}" required readonly />
             </div>
             <div>
                 <label for="lastname" class="block text-sm font-medium text-gray-700">Příjmení *</label>
-                <input type="text" id="lastname" name="lastname" class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{lastname}" required readonly />
+                <input type="text" id="lastname" name="lastname"
+                    class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    th:field="*{lastname}" required readonly />
             </div>
             <div>
                 <label for="birthday" class="block text-sm font-medium text-gray-700">Datum narození *</label>
-                <input type="date" id="birthday" name="birthday" class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}" required readonly />
+                <input type="date" id="birthday" name="birthday"
+                    class="mt-1 block w-full p-2 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}"
+                    required readonly />
             </div>
             <div>
                 <label for="email" class="block text-sm font-medium text-gray-700">E-mail *</label>
-                <input type="email" id="email" name="email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{email}" required />
+                <input type="email" id="email" name="email"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    th:field="*{email}" required />
             </div>
             <div>
                 <label for="phone" class="block text-sm font-medium text-gray-700">Mobil *</label>
-                <input type="tel" id="phone" name="phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{smsNumber}" required />
+                <input type="tel" id="phone" name="phone"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    th:field="*{smsNumber}" required />
             </div>
             <div>
                 <label for="rfid" class="block text-sm font-medium text-gray-700">RFID (Lítačka, ISIC apod.)</label>
-                <input type="text" id="rfid" name="rfid" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{rfid}" />
+                <input type="text" id="rfid" name="rfid"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    th:field="*{rfid}" />
             </div>
             <div class="md:col-span-2">
                 <fieldset class="space-y-2">
                     <legend class="block text-sm font-medium text-gray-700">Adresa trvalého pobytu *</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" name="permanent_address_line1" placeholder="Název" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address0}" required readonly />
-                        <input type="text" name="permanent_address_line2" placeholder="Ulice a číslo domu" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address1}" required readonly />
-                        <input type="text" name="permanent_address_line3" placeholder="Obec" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{address2}" required readonly />
-                        <input type="text" name="permanent_zip" placeholder="PSČ" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{zip}" required readonly />
+                        <input type="text" name="permanent_address_line1" placeholder="Název"
+                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            th:field="*{address0}" required readonly />
+                        <input type="text" name="permanent_address_line2" placeholder="Ulice a číslo domu"
+                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            th:field="*{address1}" required readonly />
+                        <input type="text" name="permanent_address_line3" placeholder="Obec"
+                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            th:field="*{address2}" required readonly />
+                        <input type="text" name="permanent_zip" placeholder="PSČ"
+                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            th:field="*{zip}" required readonly />
                     </div>
                 </fieldset>
             </div>
             <div class="md:col-span-2">
                 <fieldset class="space-y-2">
-                    <legend class="block text-sm font-medium text-gray-700">Kontaktní adresa (vyplňte pokud se liší od adresy trvalého pobytu)</legend>
+                    <legend class="block text-sm font-medium text-gray-700">Kontaktní adresa (vyplňte pokud se liší od
+                        adresy trvalého pobytu)</legend>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <input type="text" name="contact_address_line1" placeholder="Název" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress0}">
-                        <input type="text" name="contact_address_line2" placeholder="Ulice a číslo domu" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}">
-                        <input type="text" name="contact_address_line3" placeholder="Obec" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}">
-                        <input type="text" name="contact_zip" placeholder="PSČ" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}">
+                        <input type="text" name="contact_address_line1" placeholder="Název"
+                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            th:field="*{contactAddress0}">
+                        <input type="text" name="contact_address_line2" placeholder="Ulice a číslo domu"
+                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            th:field="*{contactAddress1}">
+                        <input type="text" name="contact_address_line3" placeholder="Obec"
+                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            th:field="*{contactAddress2}">
+                        <input type="text" name="contact_zip" placeholder="PSČ"
+                            class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            th:field="*{contactZip}">
                     </div>
                 </fieldset>
             </div>
             <div class="md:col-span-2">
                 <label for="language" class="block text-sm font-medium text-gray-700">Jazyk komunikace *</label>
-                <select id="language" name="language" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{conLng}" required />
-                    <option th:value="CZE">čeština</option>
-                    <option th:value="ENG">angličtina</option>
+                <select id="language" name="language"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    th:field="*{conLng}" required />
+                <option th:value="CZE">čeština</option>
+                <option th:value="ENG">angličtina</option>
                 </select>
             </div>
         </div>
         <div class="flex items-center mt-4">
-            <input id="consent" name="consent" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{exportConsent == 'Y'}" th:field="*{exportConsent}" th:value="Y" required />
-            <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">Souhlasím se zpracováním osobních údajů. *</label>
+            <input id="isCasEmployee" name="isCasEmployee" type="checkbox"
+                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                th:checked="*{isCasEmployee == TRUE}" th:field="*{isCasEmployee}" />
+            <label for="isCasEmployee" class="ml-2 mb-0 text-sm font-medium text-gray-700">Jsem zaměstnancem AV ČR</label>
         </div>
-        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">
+        <div id="files-control" class="flex flex-col items-center mt-4 pl-4">
+            <label for="media" class="block text-sm font-medium text-gray-700">Nahrajte občanský průkaz, pas nebo jiný doklad totožnosti *</label>
+            <input id="files" type="file" class="filepond mb-0" name="media[]" multiple data-max-file-size="10MB" data-max-files="3" />
+        </div>
+        <div class="flex items-center mt-4">
+            <input id="consent" name="consent" type="checkbox"
+                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                th:checked="*{exportConsent == 'Y'}" th:field="*{exportConsent}" th:value="Y" required />
+            <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">Souhlasím se zpracováním osobních
+                údajů *</label>
+        </div>
+        <button type="submit"
+            class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">
             <span th:if="${patron.isNew}">Nová registrace</span>
             <span th:if="${!patron.isNew}">Prodloužení registrace</span>
         </button>
-    </form>    
-    <hr>
-    <div class="container my-2" align="center">
-        <table style="width:90%" border="1" class="table table-responsive-md">
-            <thead>
-                <tr>
-                    <th colspan="2" style="text-align: center; font-size: 130%; color: firebrick;">
-                        Standardní profil uživatele
-                    </th>
-                </tr>
-                <tr>
-                    <th style="background-color: goldenrod;">Pole</th>
-                    <th style="background-color: goldenrod;">Hodnota</th>
-                </tr>
-                <tr>
-                    <th colspan="2" style="text-align: center; font-size: 100%; color: black;">
-                        Claims
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Celé jméno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.name</a>)</td>
-                    <td th:text="${userInfo.getName()}">userInfo.name</td>
-                </tr>
-                <tr>
-                    <td>Jméno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.given_name</a>)</td>
-                    <td th:text="${userInfo.getGiven_name()}">userInfo.given_name</td>
-                </tr>
-                <tr>
-                    <td>Příjmení&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.family_name</a>)</td>
-                    <td th:text="${userInfo.getFamily_name()}">userInfo.family_name</td>
-                </tr>
-                <tr>
-                    <td>Prostřední jméno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.middle_name</a>)
-                    </td>
-                    <td th:text="${userInfo.getMiddle_name()}">userInfo.middle_name</td>
-                </tr>
-                <tr>
-                    <td>Přezdívka&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.nickname</a>)</td>
-                    <td th:text="${userInfo.getNickname}">userInfo.nickname</td>
-                </tr>
-                <tr>
-                    <td>Preferované uživatelské jméno&nbsp;(<a th:target="_blank"
-                            th:href="${bankIDForSep}">BankID.preferred_username</a>)</td>
-                    <td th:text="${userInfo.getPreferred_username()}">userInfo.preferred_username</td>
-                </tr>
-                <tr>
-                    <td>E-mail&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.email</a>)</td>
-                    <td th:text="${userInfo.getEmail()}">userInfo.email</td>
-                </tr>
-                <tr>
-                    <td>Ověřený E-mail&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.email_verified</a>)
-                    </td>
-                    <td th:text="${userInfo.getEmail_verified()}">userInfo.email_verified</td>
-                </tr>
-                <tr>
-                    <td>Pohlaví&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.gender</a>)</td>
-                    <td th:text="${userInfo.getGender()}">userInfo.gender</td>
-                </tr>
-                <tr>
-                    <td>Datum narození&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.birthdate</a>)</td>
-                    <td th:text="${userInfo.getBirthdate()}">userInfo.birthdate</td>
-                </tr>
-                <tr>
-                    <td>Zóna&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.zoneinfo</a>)</td>
-                    <td th:text="${userInfo.getZoneinfo()}">userInfo.zoneinfo</td>
-                </tr>
-                <tr>
-                    <td>Jazykové prostředí&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.locale</a>)</td>
-                    <td th:text="${userInfo.getLocale()}">userInfo.locale</td>
-                </tr>
-                <tr>
-                    <td>Telefonní číslo&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.phone_number</a>)
-                    </td>
-                    <td th:text="${userInfo.getPhone_number()}">userInfo.phone_number</td>
-                </tr>
-                <tr>
-                    <td>Ověřené telefonní číslo&nbsp;(<a th:target="_blank"
-                            th:href="${bankIDForSep}">BankID.phone_number_verified</a>)</td>
-                    <td th:text="${userInfo.getPhone_number_verified()}">userInfo.phone_number_verified</td>
-                </tr>
-                <tr>
-                    <td>Aktualizováno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.updated_at</a>)</td>
-                    <td th:text="${userInfo.getUpdated_at()}">userInfo.updated_at</td>
-                </tr>
-            </tbody>
-            <thead>
-                <tr>
-                    <th colspan="2" style="text-align: center; font-size: 100%; color: orangered;">Verified Claims</th>
-                </tr>
-            </thead>
-            <tbody style="color: orangered;">
-                <tr>
-                    <td>Celé jméno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.name</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getName(), '')}">
-                        userInfo.verified_claims.claims.name
-                    </td>
-                </tr>
-                <tr>
-                    <td>Jméno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.given_name</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getGiven_name(), '')}">
-                        userInfo.verified_claims.claims.given_name
-                    </td>
-                </tr>
-                <tr>
-                    <td>Příjmení&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.family_name</a>)</td>
-                    <td
-                        th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getFamily_name(), '')}">
-                        userInfo.verified_claims.claims.family_name
-                    </td>
-                </tr>
-                <tr>
-                    <td>Prostřední jméno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.middle_name</a>)
-                    </td>
-                    <td
-                        th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getMiddle_name(), '')}">
-                        userInfo.verified_claims.claims.middle_name
-                    </td>
-                </tr>
-                <tr>
-                    <td>Přezdívka&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.nickname</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getNickname(), '')}">
-                        userInfo.verified_claims.claims.nickname
-                    </td>
-                </tr>
-                <tr>
-                    <td>Preferované uživatelské jméno&nbsp;(<a th:target="_blank"
-                            th:href="${bankIDForSep}">BankID.preferred_username</a>)</td>
-                    <td
-                        th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getPreferred_username(), '')}">
-                        userInfo.verified_claims.claims.preferred_username
-                    </td>
-                </tr>
-                <tr>
-                    <td>E-mail&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.email</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getEmail(), '')}">
-                        userInfo.verified_claims.claims.email
-                    </td>
-                </tr>
-                <tr>
-                    <td>Ověřený E-mail&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.email_verified</a>)
-                    </td>
-                    <td
-                        th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getEmail_verified(), '')}">
-                        userInfo.verified_claims.claims.email_verified
-                    </td>
-                </tr>
-                <tr>
-                    <td>Pohlaví&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.gender</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getGender(), '')}">
-                        userInfo.verified_claims.claims.gender
-                    </td>
-                </tr>
-                <tr>
-                    <td>Datum narození&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.birthdate</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getBirthdate(), '')}">
-                        userInfo.verified_claims.claims.birthdate
-                    </td>
-                </tr>
-                <tr>
-                    <td>Zóna&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.zoneinfo</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getZoneinfo(), '')}">
-                        userInfo.verified_claims.claims.zoneinfo
-                    </td>
-                </tr>
-                <tr>
-                    <td>Jazykové prostředí&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.locale</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getLocale(), '')}">
-                        userInfo.verified_claims.claims.locale
-                    </td>
-                </tr>
-                <tr>
-                    <td>Telefonní číslo&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.phone_number</a>)
-                    </td>
-                    <td
-                        th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getPhone_number(), '')}">
-                        userInfo.verified_claims.claims.phone_number
-                    </td>
-                </tr>
-                <tr>
-                    <td>Ověřené telefonní číslo&nbsp;(<a th:target="_blank"
-                            th:href="${bankIDForSep}">BankID.phone_number_verified</a>)</td>
-                    <td
-                        th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getPhone_number_verified(), '')}">
-                        userInfo.verified_claims.claims.phone_number_verified
-                    </td>
-                </tr>
-                <tr>
-                    <td>Aktualizováno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.updated_at</a>)</td>
-                    <td th:text="${#objects.nullSafe(userInfo.getVerified_claims()?.getClaims()?.getUpdated_at(), '')}">
-                        userInfo.verified_claims.claims.updated_at
-                    </td>
-                </tr>
-            </tbody>
-            <thead>
-                <tr>
-                    <th colspan="2" style="text-align: center; font-size: 100%; color: cadetblue;">
-                        Systémové informace standardního profilu uživatele
-                    </th>
-                </tr>
-            </thead>
-            <tbody style="color: cadetblue;">
-                <tr>
-                    <td>sub&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.sub</a>)</td>
-                    <td th:text="${userInfo.getSub()}">userInfo.sub</td>
-                </tr>
-                <tr>
-                    <td>txn&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.txn</a>)</td>
-                    <td th:text="${userInfo.getTxn()}">userInfo.txn</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    <div class="container my-2" align="center">
-        <table style="width:90%" border="1" class="table table-responsive-md">
-            <thead>
-                <tr>
-                    <th colspan="2" style="text-align: center; font-size: 130%; color: firebrick;">
-                        Rozšířený profil uživatele
-                    </th>
-                </tr>
-                <tr>
-                    <th style="background-color: goldenrod;">Pole</th>
-                    <th style="background-color: goldenrod;">Hodnota</th>
-                </tr>
-                <tr>
-                    <th colspan="2" style="text-align: center; font-size: 100%; color: black;">
-                        Claims
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>Titul před&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.title_prefix</a>)</td>
-                    <td th:text="${userProfile.getTitle_prefix()}">userProfile.title_prefix</td>
-                </tr>
-                <tr>
-                    <td>Titul za&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.title_suffix</a>)</td>
-                    <td th:text="${userProfile.getTitle_suffix()}">userProfile.title_suffix</td>
-                </tr>
-                <tr>
-                    <td>Jméno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.given_name</a>)</td>
-                    <td th:text="${userProfile.getGiven_name()}">userProfile.given_name</td>
-                </tr>
-                <tr>
-                    <td>Příjmení&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.family_name</a>)</td>
-                    <td th:text="${userProfile.getFamily_name()}">userProfile.family_name</td>
-                </tr>
-                <tr>
-                    <td>Prostřední jméno&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.middle_name</a>)
-                    </td>
-                    <td th:text="${userProfile.getMiddle_name()}">userprofile.middle_name</td>
-                </tr>
-                <tr>
-                    <td>Telefonní číslo&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.phone_number</a>)
-                    </td>
-                    <td th:text="${userProfile.getPhone_number()}">userProfile.phone_number</td>
-                </tr>
-                <tr>
-                    <td>E-mail&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.email</a>)</td>
-                    <td th:text="${userProfile.getEmail()}">userProfile.email</td>
-                </tr>
-                <tr>
-                    <th th:rowspan="${#objects.nullSafe(userProfile?.getAddresses()?.size, '') + 1}"
-                        style="background-color: goldenrod;">
-                        Bydliště&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.address</a>)
-                    </th>
-                </tr>
-                <tr th:each="address:${userProfile.getAddresses()}">
-                    <td style="background-color: lightyellow;">
-                        <table style="border: none;">
-                            <tr>
-                                <td style="border: none; text-align: right;">Typ:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getType()}">address.type
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Ulice:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getStreet()}">
-                                    address.street</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Byt:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getBuildingapartment()}">
-                                    address.buildingapartment</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Číslo ulice:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getStreetnumber()}">
-                                    address.streetnumber</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Evidenční číslo:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getEvidencenumber()}">
-                                    address.evidencenumber</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Město:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getCity()}">address.city
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Městská část:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getCityarea()}">
-                                    address.cityarea</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Poštovní směrovací číslo:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getZipcode()}">
-                                    address.zipcode</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Země:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getCountry()}">
-                                    address.country</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Kód adresy (ruian):&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${address.getRuian_reference()}">
-                                    address.ruian_reference</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Datum narození&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.birthdate</a>)</td>
-                    <td th:text="${userProfile.getBirthdate()}">userProfile.birthdate</td>
-                </tr>
-                <tr>
-                    <td>Věk&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.age</a>)</td>
-                    <td th:text="${userProfile.getAge()}">userProfile.age</td>
-                </tr>
-                <tr>
-                    <td>Datum úmrtí&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.date_of_death</a>)</td>
-                    <td th:text="${userProfile.getDate_of_death()}">userProfile.date_of_death</td>
-                </tr>
-                <tr>
-                    <td>Pohlaví&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.gender</a>)</td>
-                    <td th:text="${userProfile.getGender()}">userProfile.gender</td>
-                </tr>
-                <tr>
-                    <td>Rodné číslo&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.birthnumber</a>)</td>
-                    <td th:text="${userProfile.getBirthnumber()}">userProfile.birthnumber</td>
-                </tr>
-                <tr>
-                    <td>Země původu&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.birthcountry</a>)</td>
-                    <td th:text="${userProfile.getBirthcountry()}">userProfile.birthcountry</td>
-                </tr>
-                <tr>
-                    <td>Místo narození&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.birthplace</a>)</td>
-                    <td th:text="${userProfile.getBirthplace()}">userProfile.birthplace</td>
-                </tr>
-                <tr>
-                    <td>Primární národnost&nbsp;(<a th:target="_blank"
-                            th:href="${bankIDForSep}">BankID.primary_nationality</a>)</td>
-                    <td th:text="${userProfile.getPrimary_nationality()}">userProfile.primary_nationality</td>
-                </tr>
-                <tr>
-                    <th th:rowspan="${#objects.nullSafe(userProfile?.getNationalities()?.length, '') + 1}"
-                        style="background-color: goldenrod;">
-                        Další národnost(i)&nbsp;(<a th:target="_blank"
-                            th:href="${bankIDForSep}">BankID.nationalities</a>)
-                    </th>
-                </tr>
-                <tr th:each="nationality:${userProfile.getNationalities()}">
-                    <td style="background-color: lightyellow;" th:text="${nationality}">nationality</td>
-                </tr>
-                <tr>
-                    <td>Stav&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.maritalstatus</a>)</td>
-                    <td th:text="${userProfile.getMaritalstatus()}">userProfile.maritalstatus</td>
-                </tr>
-                <tr>
-                    <th th:rowspan="${#objects.nullSafe(userProfile?.getIdcards()?.size, '') + 1}"
-                        style="background-color: goldenrod;">
-                        Průkaz(y) totožnosti&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.idcards</a>)
-                    </th>
-                </tr>
-                <tr th:each="idcard:${userProfile.getIdcards()}">
-                    <td style="background-color: lightyellow;">
-                        <table style="border: none;">
-                            <tr>
-                                <td style="border: none; text-align: right;">Typ:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${idcard.getType()}">idcard.type
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Popis:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${idcard.getDescription()}">
-                                    idcard.description</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Země:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${idcard.getCountry()}">
-                                    idcard.country</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Číslo:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${idcard.getNumber()}">
-                                    idcard.number</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Platnost do:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${idcard.getValid_to()}">
-                                    idcard.valid_to</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Vydavatel:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${idcard.getIssuer()}">
-                                    idcard.issuer</td>
-                            </tr>
-                            <tr>
-                                <td style="border: none; text-align: right;">Vydáno:&nbsp;</td>
-                                <td style="border: none; text-align: left;" th:text="${idcard.getIssue_date()}">
-                                    idcard.issue_date</td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <tr>
-                    <th th:rowspan="${#objects.nullSafe(userProfile?.getPaymentAccounts()?.size, '') + 1}"
-                        style="background-color: goldenrod;">
-                        Účet&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.paymentAccounts</a>)
-                    </th>
-                </tr>
-                <tr th:each="paymentAccount:${userProfile.getPaymentAccounts()}">
-                    <td style="background-color: lightyellow;">
-                        <table style="border: none;">
-                            <tr>
-                                <td style="border: none; background-color: lightgray;" th:text="${paymentAccount}">
-                                    paymentAccount</td>
-                            </tr>
-                            <tr th:each="paymentAccountDetail:${userProfile.getPaymentAccountsDetails()}">
-                                <td style="border: none;">
-                                    <table style="border: none;">
-                                        <tr th:switch="${paymentAccount}">
-                                            <div th:case="${paymentAccountDetail.getIban()}">
-                                                <td style="border: none; text-align: right;">IBAN:&nbsp;</td>
-                                                <td style="border: none; text-align: left;">
-                                                    <span th:text="${paymentAccountDetail.getIban()}" />
-                                                </td>
-                                            </div>
-                                        </tr>
-                                        <tr th:switch="${paymentAccount}">
-                                            <div th:case="${paymentAccountDetail.getIban()}">
-                                                <td style="border: none; text-align: right;">Měna:&nbsp;</td>
-                                                <td style="border: none; text-align: left;">
-                                                    <span th:text="${paymentAccountDetail.getCurrency()}" />
-                                                </td>
-                                            </div>
-                                        </tr>
-                                    </table>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Politicky exponovaná osoba (PEP)&nbsp;(<a th:target="_blank"
-                            th:href="${bankIDForSep}">BankID.pep</a>)</td>
-                    <td th:text="${userProfile.getPep()}">userProfile.pep</td>
-                </tr>
-                <tr>
-                    <td>
-                        Osoba s omezenou způsobilostí k právním úkonům&nbsp;(<a th:target="_blank"
-                            th:href="${bankIDForSep}">BankID.limited_legal_capacity</a>)
-                    </td>
-                    <td th:text="${userProfile.getLimited_legal_capacity()}">userProfile.limited_legal_capacity</td>
-                </tr>
-            </tbody>
-            <thead>
-                <tr>
-                    <th colspan="2" style="text-align: center; font-size: 100%; color: cadetblue;">
-                        Systémové informace rozšířeného profilu uživatele
-                    </th>
-                </tr>
-            </thead>
-            <tbody style="color: cadetblue;">
-                <tr>
-                    <td>sub&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.sub</a>)</td>
-                    <td th:text="${userProfile.getSub()}">userProfile.sub</td>
-                </tr>
-                <tr>
-                    <td>txn&nbsp;(<a th:target="_blank" th:href="${bankIDForSep}">BankID.txn</a>)</td>
-                    <td th:text="${userProfile.getTxn()}">userprofile.txn</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-    <div class="container my-2" align="center">
-        <a th:href="@{/welcome}" class="btn btn-primary btn-sm mb-3">Znovu přihlásit</a>
-    </div>
+    </form>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-file-encode/dist/filepond-plugin-file-encode.min.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-file-validate-size/dist/filepond-plugin-file-validate-size.min.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-exif-orientation/dist/filepond-plugin-image-exif-orientation.min.js"></script>
+    <script src="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.js"></script>
+    <script src="https://unpkg.com/filepond/dist/filepond.min.js"></script>
+    <script>
+        constApiUrl = "/bankid-registrator/api";
+        const filesElm = document.getElementById('files');
+        const filesInputElm = document.querySelector('[name="media[]"]');
+        const filesWrapper = document.getElementById('files-control');
+
+        function showAlert(type, message) {
+            const mainElm = document.querySelector("form");
+            const alert = document.createElement("div");
+            const typeCss = {
+                success: "green",
+                danger: "red", 
+            };
+
+            alert.className = `relative block w-full p-4 mb-4 text-base leading-5 text-white bg-${typeCss[type]}-500 rounded-lg opacity-100 font-regular`;
+            alert.textContent = message;
+
+            mainElm.prepend(alert);
+
+            setTimeout(() => {
+                mainElm.removeChild(alert);
+            }, 3000);
+        }
+
+        const checkRfid = async (rfid, bid, patronId) => {
+            const response = await fetch(`${constApiUrl}/check-rfid`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: new URLSearchParams({
+                    rfid: rfid,
+                    bid: bid,
+                    patronId: patronId
+                })
+            });
+
+            if (!response.ok) {
+                alert(`HTTP-Error: ${response.status} ${response.error}`);
+            }
+
+            const data = await response.json();
+            return data;
+        }
+
+        FilePond.registerPlugin(
+            FilePondPluginFileEncode,
+            FilePondPluginFileValidateSize,
+            FilePondPluginImageExifOrientation,
+            FilePondPluginImagePreview
+        );
+
+        FilePond.create(filesElm);
+
+        document.getElementById('rfid').addEventListener('change', (ev) => {
+            const rfidElm = ev.target;
+            const rfid = rfidElm.value;
+            const bid = document.querySelector('input[name="bankIdSub"]').value;
+            let patronId = document.querySelector('input[name="patronId"]').value;
+
+            if (bid.trim().length === 0) {
+                this.value = '';
+                showAlert('danger', 'An error occurred while checking the RFID.');
+                return;
+            }
+
+            if (rfid.trim().length === 0) {
+                return;
+            }
+
+            if (patronId.trim().length === 0) {
+                patronId = null;
+            }
+
+            checkRfid(rfid, bid, patronId)
+                .then(data => {
+                    if (data.result === true) {
+                        rfidElm.value = '';
+                        showAlert('danger', 'The RFID already exists.');
+                    } else {
+                        showAlert('success', 'The RFID is available.');
+                    }
+                })
+                .catch(error => {
+                    rfidElm.value = '';
+                    showAlert('danger', 'An error occurred while checking the RFID.');
+                });
+        });
+
+        document.getElementById("isCasEmployee").addEventListener("change", (ev) => {
+            const casEmployee = ev.target;
+            const casEmployeeValue = casEmployee.checked;
+
+            if (casEmployeeValue) {
+                filesInputElm.required = true;
+                filesWrapper.style.display = "block";
+            } else {
+                filesInputElm.required = false;
+                filesWrapper.style.display = "none";
+            }
+        });
+    </script>
 </body>
 
 </html>

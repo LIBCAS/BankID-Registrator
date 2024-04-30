@@ -16,6 +16,7 @@
  */
 package cz.cas.lib.bankid_registrator.dao.oracle;
 
+import javax.annotation.Nullable;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -35,9 +36,10 @@ public class OracleRepository
      * Gets the number of matches with the given name and birth date.
      * @param name
      * @param birthDate
-     * @return
+     * @return Number of matches.
      */
-    public int getPatronRowsCount(String name, String birthDate) {
+    public int getPatronRowsCount(String name, String birthDate)
+    {
         String sql = "SELECT COUNT(*) AS count " +
                      "FROM KNA50.Z303 A, KNA50.Z305 B, KNA50.Z308 C " +
                      "WHERE A.Z303_REC_KEY = SUBSTR(B.Z305_REC_KEY, 1, 12) " +
@@ -49,6 +51,35 @@ public class OracleRepository
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("name", name);
         query.setParameter("birthDate", birthDate);
+        return ((Number) query.getSingleResult()).intValue();
+    }
+
+    /**
+     * Checks if a RFID is already in use by any patron except the given one (if any).
+     * @param rfid
+     * @param patronId
+     * @return Number of matches.
+     */
+    public int getRFIDRowsCount(String rfid, @Nullable String patronId)
+    {
+        String sanitizedRfid = rfid.replace("%", "\\%").replace("_", "\\_");
+        String sanitizedPatronId = (patronId != null) ? patronId.replace("%", "\\%").replace("_", "\\_") : null;
+    
+        String sql = "SELECT COUNT(*) AS count " +
+                     "FROM KNA50.Z308 " +
+                     "WHERE Z308_REC_KEY LIKE :rfid ESCAPE '\\'";
+    
+        if (sanitizedPatronId != null) {
+            sql += " AND Z308_ID NOT LIKE :patronId ESCAPE '\\'";
+        }
+    
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("rfid", "03" + sanitizedRfid + " %");
+    
+        if (sanitizedPatronId != null) {
+            query.setParameter("patronId", sanitizedPatronId + " %");
+        }
+    
         return ((Number) query.getSingleResult()).intValue();
     }
 }

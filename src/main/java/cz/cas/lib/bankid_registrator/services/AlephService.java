@@ -750,8 +750,8 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         PatronDTO patron = new PatronDTO();
 
-        patron.setId(generatePatronId());
-        patron.setBarcode(generatePatronBarcode());
+        // patron.setId(generatePatronId());
+        // patron.setBarcode(generatePatronBarcode());
 
         String fname = userInfo.getGiven_name();      // Joanne
         String mname = Optional.ofNullable(userInfo.getMiddle_name()).orElse("");     // Kathleen
@@ -998,6 +998,19 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
+     * Checks if a RFID is already in use by any patron except the given one (if any).
+     * @param rfid
+     * @param patronId
+     * @return Boolean
+     */
+    public Boolean isRfidInUse(String rfid, String patronId) {
+        Assert.notNull(rfid, "\"rfid\" is required");
+
+        // TRUE if RFID is already in use by any patron except the given one (if any)
+        return this.oracleRepository.getRFIDRowsCount(rfid, patronId) > 0;
+    }
+
+    /**
      * Initializes patron's testing data based on the Connect and Identify objects
      * @param userInfo
      * @param userProfile
@@ -1011,8 +1024,8 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         PatronDTO patron = new PatronDTO();
 
-        patron.setId(generatePatronId());
-        patron.setBarcode(generatePatronBarcode());
+        // patron.setId(generatePatronId());
+        // patron.setBarcode(generatePatronBarcode());
 
         String fname = userInfo.getGiven_name();      // Joanne
         String mname = this.generateTestingMname();   // Kathleen
@@ -1155,7 +1168,7 @@ logger.info("AAA doHttpRequest method: {}", method);
     /**
      * Generates patron's id, at least 9 characters long
      */
-    private String generatePatronId() {
+    public String generatePatronId() {
         String prefix = this.mainConfig.getId_prefix();
         Long maxVal = patronBarcodeRepository.findMaxId();
         Long newVal = 1L;
@@ -1170,7 +1183,7 @@ logger.info("AAA doHttpRequest method: {}", method);
     /**
      * Generates patron's barcode, at least 10 characters long
      */
-    private String generatePatronBarcode() {
+    public String generatePatronBarcode() {
         String prefix = mainConfig.getBarcode_prefix();
         Long maxVal = patronBarcodeRepository.findMaxBarcode();
         Long newVal = 1L;
@@ -1228,13 +1241,5 @@ logger.info("AAA doHttpRequest method: {}", method);
         Random random = new Random();
         int randomNum = 100000000 + random.nextInt(900000000);
         return "+420" + randomNum;
-    }
-
-    /**
-     * Checks if we can proceed with the action associated with the patron
-     * @return
-     */
-    public boolean isActionReady() {
-        return true;
     }
 }

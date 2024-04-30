@@ -1,0 +1,63 @@
+<html lang="cs" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${appName}">callback</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="shortcut icon" href="/bankid-registrator/img/favicon.ico" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+</head>
+
+<body class="bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="w-full max-w-4xl p-5 bg-white shadow-lg rounded-lg">
+            <h1 class="text-xl font-semibold text-center text-gray-900 mb-6">Dashboard</h1>
+            <pre th:text="${dataJson}"></pre>
+            <div th:each="patron, patronStat : ${data}">
+                <div class="mb-4 p-4 border-b border-gray-200">
+                    <div class="flex justify-between">
+                        <h2 class="text-lg font-semibold text-gray-800">
+                            <span th:text="${patronStat.count}"></span>) <span th:text="${patron.name}"></span>
+                        </h2>
+                        <div>
+                            <button class="px-4 py-2 bg-green-500 text-white rounded-lg">Vytvořit</button>
+                            <button class="px-4 py-2 bg-red-500 text-white rounded-lg">Smazat</button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-gray-700 font-semibold">Osobní údaje</h3>
+                        <div class="text-gray-600">
+                            <p>Jméno: <span th:text="${patron.firstname}"></span></p>
+                            <p>Příjmení: <span th:text="${patron.lastname}"></span></p>
+                            <p>Datum narození: <span th:text="${patron.birthDate}"></span></p>
+                            <p>Adresa: <span th:text="${patron.address0 + ' ' + patron.address1 + ' ' + patron.address2 + ' ' + patron.zip}"></span></p>
+                            <p>Kontaktní adresa: <span th:text="${patron.contactAddress0 + ' ' + patron.contactAddress1 + ' ' + patron.contactAddress2 + ' ' + patron.contactZip}"></span></p>
+                            <p>Telefon: <span th:text="${patron.smsNumber}"></span></p>
+                            <p>Email: <span th:text="${patron.email}"></span></p>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <h3 class="text-gray-700 font-semibold">Soubory</h3>
+                        <div class="space-y-2">
+                            <div th:each="media, mediaStat : ${patron.media}">
+                                <div>
+                                    <span th:text="${mediaStat.count}"></span>) <span th:text="${media.name}"></span>
+                                </div>
+                                <a th:href="@{'/files/' + ${media.name}}" target="_blank">
+                                    <img th:src="@{'/files/' + ${media.name}}" th:alt="${media.name}" class="max-w-xs h-auto"/>
+                                </a>
+                            </div>
+                            <p th:if="${patron.media.size() == 0}" class="text-gray-600">Žádné soubory</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+</body>
+
+</html>

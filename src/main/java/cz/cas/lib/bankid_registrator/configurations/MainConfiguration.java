@@ -16,6 +16,7 @@
  */
 package cz.cas.lib.bankid_registrator.configurations;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import java.util.List;
 import javax.validation.constraints.NotBlank;
@@ -79,6 +80,11 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     @NotBlank
     private String storage_path;
+
+     @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
 
     public MainConfiguration() {
         super();

@@ -33,18 +33,23 @@ import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.validation.constraints.NotEmpty;
+
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -57,8 +62,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
  * @author iok
  */
 @Controller
-public class MainController extends MainControllerAbstract {
-
+public class MainController extends MainControllerAbstract
+{
     private final MainConfiguration mainConfig;
     private final MainService mainService;
     private final AlephService alephService;
@@ -219,7 +224,7 @@ public class MainController extends MainControllerAbstract {
      * @return String
      */
     @PostMapping("/new-registration")
-    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, @RequestParam("media") MultipartFile[] media) {
+    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, @RequestParam("media[]") String[] media) {
         Long patronSysId = (Long) session.getAttribute("patron");
         PatronDTO patron = patronDTORepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
@@ -246,15 +251,13 @@ public class MainController extends MainControllerAbstract {
             return "error_export_consent";
         }
 
-        for (MultipartFile file : media) {
-            Map<String, Object> fileUpload = uploadFile(file, patronSysId);
-            if (fileUpload.containsKey("error")) {
-                model.addAttribute("error", fileUpload.get("error"));
-                return "error_file_upload";
-            }
-        }
-
         patron.update(editedPatron);
+        if (patron.getPatronId() == null) {
+            patron.setId(this.alephService.generatePatronId());
+        }
+        if (patron.getBarcode() == null) {
+            patron.setBarcode(this.alephService.generatePatronBarcode());
+        }
         try {
             getLogger().info("new-registration - finalPatron: {}", patron.toJson());
         } catch (JsonProcessingException e) {
@@ -266,6 +269,13 @@ public class MainController extends MainControllerAbstract {
             getLogger().info("RESULT: {}", patronCreation);
             getLogger().error("Error creating patron: {}", patronCreation.get("error"));
             return "error";
+        }
+
+        if (patron.isCasEmployee) {
+            this.patronDTORepository.save(patron);
+            for (String mediaItem : media) {
+                this.uploadMedia(mediaItem, patronSysId);
+            }
         }
 
         model.addAttribute("xml", patronCreation.get("xml-patron"));
@@ -309,22 +319,25 @@ public class MainController extends MainControllerAbstract {
     }
 
     /**
-     * Upload media file
+     * Upload a media file
      * @param file
      * @param patronSysId
      * @return Map<String, Object>
      */
-    public Map<String, Object> uploadFile(@RequestParam("file") MultipartFile file, @RequestParam("patron-sys-id") Long patronSysId) {
+    public Map<String, Object> uploadMedia(String file, Long patronSysId)
+    {
         Map<String, Object> result = new HashMap<>();
 
-        String fileName = file.getOriginalFilename();
+        JSONObject mediaJson = new JSONObject(file); 
+        String contentType = mediaJson.getString("type"); getLogger().info("QAZWSX - contentType: {}", contentType);
+        String fileName = mediaJson.getString("name"); getLogger().info("QAZWSX - fileName: {}", fileName);
+        String data = mediaJson.getString("data");
 
-        if (file.isEmpty()) {
+        if (data.isEmpty()) {
             result.put("error", "File " + fileName + " is empty.");
             return result;
         }
 
-        String contentType = file.getContentType();
         if (!contentType.equals("image/jpeg") && !contentType.equals("image/png") && !contentType.equals("application/pdf")) {
             result.put("error", "File " + fileName + " is not a valid image or PDF file.");
             return result;
@@ -337,10 +350,12 @@ public class MainController extends MainControllerAbstract {
             return result;
         }
 
-        Path path = Paths.get(this.mainConfig.getStorage_path() + "/" + file.getOriginalFilename());
+        Path path = Paths.get(this.mainConfig.getStorage_path() + "/" + fileName);
 
         try {
-            Files.write(path, file.getBytes());
+            String base64Data = data;
+            byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
+            Files.write(path, decodedBytes);
         } catch (IOException e) {
             result.put("error", "Error saving file " + fileName + ": " + e.getMessage());
             return result;
@@ -348,7 +363,7 @@ public class MainController extends MainControllerAbstract {
 
         Media media = new Media();
         media.setName(fileName);
-        media.setType(file.getContentType());
+        media.setType(contentType);
         media.setPath(path.toString());
         media.setPatronDTO(patron);
 
@@ -360,5 +375,4 @@ public class MainController extends MainControllerAbstract {
 
         return result;
     }
-
 }
