@@ -165,7 +165,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         </div>
         <div id="files-control" class="flex flex-col items-center mt-4 pl-4">
             <label for="media" class="block text-sm font-medium text-gray-700">Nahrajte občanský průkaz, pas nebo jiný doklad totožnosti *</label>
-            <input id="files" type="file" class="filepond mb-0" name="media[]" multiple data-max-file-size="10MB" data-max-files="3" />
+            <input id="files" type="file" class="filepond mb-0" name="media" multiple data-max-file-size="10MB" data-max-files="3" />
         </div>
         <div class="flex items-center mt-4">
             <input id="consent" name="consent" type="checkbox"
@@ -190,7 +190,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     <script>
         constApiUrl = "/bankid-registrator/api";
         const filesElm = document.getElementById('files');
-        const filesInputElm = document.querySelector('[name="media[]"]');
+        const filesInputElm = document.querySelector('[name="media"]');
         const filesWrapper = document.getElementById('files-control');
 
         function showAlert(type, message) {
@@ -233,13 +233,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
         }
 
         FilePond.registerPlugin(
-            FilePondPluginFileEncode,
+            // FilePondPluginFileEncode,
             FilePondPluginFileValidateSize,
             FilePondPluginImageExifOrientation,
             FilePondPluginImagePreview
         );
 
         FilePond.create(filesElm);
+
+        FilePond.setOptions({
+            storeAsFile: true
+        });
 
         document.getElementById('rfid').addEventListener('change', (ev) => {
             const rfidElm = ev.target;

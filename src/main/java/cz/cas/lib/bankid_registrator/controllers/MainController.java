@@ -224,7 +224,7 @@ public class MainController extends MainControllerAbstract
      * @return String
      */
     @PostMapping("/new-registration")
-    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, @RequestParam("media[]") String[] media) {
+    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, @RequestParam("media") MultipartFile[] mediaFiles) {
         Long patronSysId = (Long) session.getAttribute("patron");
         PatronDTO patron = patronDTORepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
@@ -271,23 +271,30 @@ public class MainController extends MainControllerAbstract
             return "error";
         }
 
-        if (patron.isCasEmployee) {
-            this.patronDTORepository.save(patron);
-            for (String mediaItem : media) {
-                this.uploadMedia(mediaItem, patronSysId);
-            }
+        model.addAttribute("xml", patronCreation.get("xml-patron"));
+        getLogger().info("Trying saving patron barcode");
+        try {
+            PatronBarcode barcode = new PatronBarcode();
+            String patronBarcode = patron.getBarcode();
+            Long patronBarcodeNoPrefix = Long.valueOf(patronBarcode.substring(5));
+            barcode.setSub(patron.getBankIdSub());
+            barcode.setBarcode(mainConfig.getBarcode_prefix().concat(code));
+            barcode.setBarcodeAleph(patronBarcodeNoPrefix);
+            this.patronBarcodeRepository.save(barcode);
+            getLogger().info("Successful patron barcode saving");
+        } catch (Exception e) {
+            getLogger().error("Error saving patron barcode", e);
         }
 
-        model.addAttribute("xml", patronCreation.get("xml-patron"));
-
-        // jpa test - todo lock/synchronized
-        PatronBarcode barcode = new PatronBarcode();
-        String patronBarcode = patron.getBarcode();
-        Long patronBarcodeNoPrefix = Long.valueOf(patronBarcode.substring(5));
-        barcode.setSub(patron.getBankIdSub());
-        barcode.setBarcode(mainConfig.getBarcode_prefix().concat(code));
-        barcode.setBarcodeAleph(patronBarcodeNoPrefix);
-        this.patronBarcodeRepository.save(barcode);
+        if (patron.isCasEmployee) {
+            this.patronDTORepository.save(patron);
+            for (MultipartFile file : mediaFiles) {
+                Map<String, Object> uploadResult = this.uploadMedia(file, patronSysId);
+                if (uploadResult.containsKey("error")) {
+                    getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
+                }
+            }
+        }
 
         return "new_registration_success";
     }
@@ -324,40 +331,29 @@ public class MainController extends MainControllerAbstract
      * @param patronSysId
      * @return Map<String, Object>
      */
-    public Map<String, Object> uploadMedia(String file, Long patronSysId)
-    {
+    public Map<String, Object> uploadMedia(MultipartFile file, Long patronSysId)
+    {getLogger().info("uploadMedia - patronSysId: {}", patronSysId);
         Map<String, Object> result = new HashMap<>();
 
-        JSONObject mediaJson = new JSONObject(file); 
-        String contentType = mediaJson.getString("type"); getLogger().info("QAZWSX - contentType: {}", contentType);
-        String fileName = mediaJson.getString("name"); getLogger().info("QAZWSX - fileName: {}", fileName);
-        String data = mediaJson.getString("data");
-
-        if (data.isEmpty()) {
-            result.put("error", "File " + fileName + " is empty.");
-            return result;
-        }
+        String contentType = file.getContentType(); getLogger().info("QAZWSX - contentType: {}", contentType);
+        String fileName = file.getOriginalFilename(); getLogger().info("QAZWSX - fileName: {}", fileName);
 
         if (!contentType.equals("image/jpeg") && !contentType.equals("image/png") && !contentType.equals("application/pdf")) {
-            result.put("error", "File " + fileName + " is not a valid image or PDF file.");
+            result.put("error", "Unsupported file type: " + contentType);
             return result;
         }
 
         PatronDTO patron = patronDTORepository.findById(patronSysId).orElse(null);
-
         if (patron == null) {
             result.put("error", "User not found.");
             return result;
         }
 
-        Path path = Paths.get(this.mainConfig.getStorage_path() + "/" + fileName);
-
+        Path path = Paths.get(mainConfig.getStorage_path(), fileName);
         try {
-            String base64Data = data;
-            byte[] decodedBytes = Base64.getDecoder().decode(base64Data);
-            Files.write(path, decodedBytes);
+            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            result.put("error", "Error saving file " + fileName + ": " + e.getMessage());
+            result.put("error", "Failed to save file: " + e.getMessage());
             return result;
         }
 
