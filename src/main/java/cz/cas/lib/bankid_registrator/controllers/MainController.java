@@ -27,6 +27,7 @@ import cz.cas.lib.bankid_registrator.model.patron_barcode.PatronBarcode;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
+import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.MainService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 
@@ -41,6 +42,7 @@ import javax.servlet.http.HttpSession;
 import javax.validation.constraints.NotEmpty;
 
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -72,6 +74,7 @@ public class MainController extends MainControllerAbstract
     private final PatronDTORepository patronDTORepository;
     private final MediaRepository mediaRepository;
     private final AccessTokenContainer accessTokenContainer;
+    private final EmailService emailService;
 
     @NotEmpty
     @Value("${spring.application.name}")
@@ -85,7 +88,8 @@ public class MainController extends MainControllerAbstract
         PatronBarcodeRepository patronBarcodeRepository,
         PatronDTORepository patronDTORepository,
         MediaRepository mediaRepository,
-        AccessTokenContainer accessTokenContainer
+        AccessTokenContainer accessTokenContainer,
+        EmailService emailService
     ) {
         super();
         this.mainConfig = mainConfig;
@@ -96,6 +100,7 @@ public class MainController extends MainControllerAbstract
         this.patronDTORepository = patronDTORepository;
         this.mediaRepository = mediaRepository;
         this.accessTokenContainer = accessTokenContainer;
+        this.emailService = emailService;
         init();
     }
 
@@ -115,9 +120,10 @@ public class MainController extends MainControllerAbstract
      * 
      * @param model
      * @return 
+     * @throws Exception 
      */
     @RequestMapping(value="/welcome", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String WelcomeEntry(Model model) {
+    public String WelcomeEntry(Model model) throws Exception {
         getLogger().info("ACCESSING WELCOME PAGE ...");
         model.addAttribute("appName", this.appName);
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
