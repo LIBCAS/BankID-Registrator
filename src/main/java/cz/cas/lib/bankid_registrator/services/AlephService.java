@@ -100,6 +100,15 @@ public class AlephService extends AlephServiceAbstract {
     {
         Map<String, Object> result = new HashMap<>();
 
+        Boolean patronIsCasEmployee = patron.getIsCasEmployee();
+
+        // Patron status (Aleph reader status)
+        if (patronIsCasEmployee) {
+            patron.setStatus(PatronStatus.STATUS_03.getId());
+        } else {
+            patron.setStatus(PatronStatus.STATUS_16.getId());
+        }
+
         // Create a patron
         Map<String, String> patronXmlCreation = this.createPatronXML(patron);
         if (patronXmlCreation.containsKey("error")) {
@@ -134,58 +143,60 @@ public class AlephService extends AlephServiceAbstract {
             }
         }
 
-        // Create an item
-        Map<String, Object> newItem = this.newItem(patron);
-        if (newItem.containsKey("error")) {
-            result.put("error", newItem.get("error"));
-            return result;
-        }
-        ItemDTO item = (ItemDTO) newItem.get("item");
-        Map<String, String> itemXmlCreation = this.createItemXml(item);
-        if (itemXmlCreation.containsKey("error")) {
-            result.put("error", itemXmlCreation.get("error"));
-            return result;
-        }
-        String itemXml = itemXmlCreation.get("xml");
-        result.put("xml-item", itemXml);
-        Map<String, Object> itemCreation = this.createItem(itemXml, this.alephServiceConfig.getSysno());
-        if (itemCreation.containsKey("error")) {
-            result.put("error", itemCreation.get("error"));
-            return result;
-        }
-        Map<String, String> itemDetails = this.getItemDetails((String) itemCreation.get("response"));
-        if (itemDetails.containsKey("error")) {
-            result.put("error", itemDetails.get("error"));
-            return result;
-        }
-        String itemId = itemDetails.get("id");
-        String itemSequence = itemDetails.get("sequence");
-        String itemBarcode = itemDetails.get("barcode");
-        String itemIdLong = itemDetails.get("idLong");
-        if (itemId == null || itemSequence == null || itemBarcode == null || itemIdLong == null) {
-            result.put("error", "chybí údaje o vytvořené jednotce");
-            return result;
-        }
-
-        // Place a hold request
-        Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong);
-        if (holdRequestPlacement.containsKey("error")) {
-            result.put("error", holdRequestPlacement.get("error"));
-            return result;
-        }
-
-        // Cancel the hold request
-        Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
-        if (holdRequestCancellation.containsKey("error")) {
-            result.put("error", holdRequestCancellation.get("error"));
-            return result;
-        }
-
-        // Delete the item
-        Map<String, Object> itemDeletion = this.deleteItem(itemId, itemSequence, itemBarcode);
-        if (itemDeletion.containsKey("error")) {
-            result.put("error", itemDeletion.get("error"));
-            return result;
+        // Create an item (Aleph registration fee)
+        if (!patronIsCasEmployee) {
+            Map<String, Object> newItem = this.newItem(patron);
+            if (newItem.containsKey("error")) {
+                result.put("error", newItem.get("error"));
+                return result;
+            }
+            ItemDTO item = (ItemDTO) newItem.get("item");
+            Map<String, String> itemXmlCreation = this.createItemXml(item);
+            if (itemXmlCreation.containsKey("error")) {
+                result.put("error", itemXmlCreation.get("error"));
+                return result;
+            }
+            String itemXml = itemXmlCreation.get("xml");
+            result.put("xml-item", itemXml);
+            Map<String, Object> itemCreation = this.createItem(itemXml, this.alephServiceConfig.getSysno());
+            if (itemCreation.containsKey("error")) {
+                result.put("error", itemCreation.get("error"));
+                return result;
+            }
+            Map<String, String> itemDetails = this.getItemDetails((String) itemCreation.get("response"));
+            if (itemDetails.containsKey("error")) {
+                result.put("error", itemDetails.get("error"));
+                return result;
+            }
+            String itemId = itemDetails.get("id");
+            String itemSequence = itemDetails.get("sequence");
+            String itemBarcode = itemDetails.get("barcode");
+            String itemIdLong = itemDetails.get("idLong");
+            if (itemId == null || itemSequence == null || itemBarcode == null || itemIdLong == null) {
+                result.put("error", "chybí údaje o vytvořené jednotce");
+                return result;
+            }
+    
+            // Place a hold request
+            Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong);
+            if (holdRequestPlacement.containsKey("error")) {
+                result.put("error", holdRequestPlacement.get("error"));
+                return result;
+            }
+    
+            // Cancel the hold request
+            Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
+            if (holdRequestCancellation.containsKey("error")) {
+                result.put("error", holdRequestCancellation.get("error"));
+                return result;
+            }
+    
+            // Delete the item
+            Map<String, Object> itemDeletion = this.deleteItem(itemId, itemSequence, itemBarcode);
+            if (itemDeletion.containsKey("error")) {
+                result.put("error", itemDeletion.get("error"));
+                return result;
+            }
         }
 
         result.put("success", Boolean.TRUE);
@@ -874,8 +885,6 @@ logger.info("AAA doHttpRequest method: {}", method);
         // BankID
         patron.setBankIdSub(userInfo.getSub());
 
-        patron.setStatus(PatronStatus.STATUS_16.getId());
-
         result.put("patron", patron);
 
         return result;
@@ -1157,8 +1166,6 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         // BankID
         patron.setBankIdSub(userInfo.getSub());
-
-        patron.setStatus(PatronStatus.STATUS_16.getId());
 
         result.put("patron", patron);
 

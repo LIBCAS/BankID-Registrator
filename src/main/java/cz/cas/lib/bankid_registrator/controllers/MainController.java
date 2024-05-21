@@ -302,6 +302,14 @@ public class MainController extends MainControllerAbstract
             }
         }
 
+        try {
+            this.emailService.sendEmailNewRegistration(patron.getEmail(), patron.getId());
+        } catch (Exception e) {
+            getLogger().error("Error sending email", e);
+        }
+
+        model.addAttribute("patronBarcode", patron.getBarcode());
+
         return "new_registration_success";
     }
 
