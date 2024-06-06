@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 public class AuthController
 {
     @NotEmpty
-    @Value("${spring.application.name} - Admin authentication")
+    @Value("${spring.application.name}")
     private String appName;
 
     @Autowired
@@ -31,7 +31,7 @@ public class AuthController
     public String showRegistrationForm(Model model)
     {
         model.addAttribute("user", new User());
-        return "user-registration";
+        return "admin_registration";
     }
 
     @PostMapping("/user/register")
@@ -47,7 +47,7 @@ public class AuthController
         if (authentication != null && authentication.isAuthenticated()) {
             return "redirect:/dashboard";
         }
-        return "user-login";
+        return "admin_login";
     }
 
     @GetMapping("/user/logout")

@@ -1,6 +1,7 @@
 package cz.cas.lib.bankid_registrator.model.media;
 
-import cz.cas.lib.bankid_registrator.dto.PatronDTO;
+import cz.cas.lib.bankid_registrator.model.patron.Patron;
+
 import javax.persistence.*;
 
 @Entity
@@ -20,8 +21,8 @@ public class Media {
     private String path;
 
     @ManyToOne
-    @JoinColumn(name = "patron_dto_id")
-    private PatronDTO patronDTO;
+    @JoinColumn(name = "patron_id")
+    private Patron patron;
 
     public Long getId() {
         return id;
@@ -51,11 +52,11 @@ public class Media {
         return path;
     }
 
-    public void setPatronDTO(PatronDTO patronDTO) {
-        this.patronDTO = patronDTO;
+    public void setPatron(Patron patron) {
+        this.patron = patron;
     }
 
-    public PatronDTO getPatronDTO() {
-        return patronDTO;
+    public Patron getPatron() {
+        return patron;
     }
 }

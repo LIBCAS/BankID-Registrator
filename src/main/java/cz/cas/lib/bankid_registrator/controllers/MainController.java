@@ -18,17 +18,19 @@ package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronBarcodeRepository;
-import cz.cas.lib.bankid_registrator.dao.mariadb.PatronDTORepository;
+import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dao.mariadb.MediaRepository;
-import cz.cas.lib.bankid_registrator.dto.PatronBoolean;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
+import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.model.media.Media;
-import cz.cas.lib.bankid_registrator.model.patron_barcode.PatronBarcode;
+import cz.cas.lib.bankid_registrator.model.patron.Patron;
+import cz.cas.lib.bankid_registrator.model.patron.PatronBarcode;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.MainService;
+import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 
 import java.io.IOException;
@@ -36,6 +38,7 @@ import java.net.URI;
 import java.nio.file.*;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -44,6 +47,7 @@ import javax.validation.constraints.NotEmpty;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -71,10 +75,12 @@ public class MainController extends MainControllerAbstract
     private final AlephService alephService;
     private final ServletContext servletContext;
     private final PatronBarcodeRepository patronBarcodeRepository;
-    private final PatronDTORepository patronDTORepository;
+    private final PatronRepository patronRepository;
+    private final PatronService patronService;
     private final MediaRepository mediaRepository;
     private final AccessTokenContainer accessTokenContainer;
     private final EmailService emailService;
+    private final MessageSource messageSource;
 
     @NotEmpty
     @Value("${spring.application.name}")
@@ -86,10 +92,12 @@ public class MainController extends MainControllerAbstract
         AlephService alephService,
         ServletContext servletContext, 
         PatronBarcodeRepository patronBarcodeRepository,
-        PatronDTORepository patronDTORepository,
+        PatronRepository patronRepository,
+        PatronService patronService,
         MediaRepository mediaRepository,
         AccessTokenContainer accessTokenContainer,
-        EmailService emailService
+        EmailService emailService,
+        MessageSource messageSource
     ) {
         super();
         this.mainConfig = mainConfig;
@@ -97,22 +105,24 @@ public class MainController extends MainControllerAbstract
         this.alephService = alephService;
         this.servletContext = servletContext;
         this.patronBarcodeRepository = patronBarcodeRepository;
-        this.patronDTORepository = patronDTORepository;
+        this.patronRepository = patronRepository;
+        this.patronService = patronService;
         this.mediaRepository = mediaRepository;
         this.accessTokenContainer = accessTokenContainer;
         this.emailService = emailService;
+        this.messageSource = messageSource;
         init();
     }
 
     @Override
     @RequestMapping(value="/", method=RequestMethod.GET)
-    public String RootEntry() {
+    public String RootEntry(Locale locale) {
         return "redirect:/welcome";
     }
 
     @Override
     @RequestMapping(value="/index", method=RequestMethod.GET)
-    public String IndexEntry() {
+    public String IndexEntry(Locale locale) {
         return "redirect:/welcome";
     }
 
@@ -123,10 +133,12 @@ public class MainController extends MainControllerAbstract
      * @throws Exception 
      */
     @RequestMapping(value="/welcome", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String WelcomeEntry(Model model) throws Exception {
-        getLogger().info("ACCESSING WELCOME PAGE ...");
+    public String WelcomeEntry(Model model, Locale locale) throws Exception {
+        getLogger().info("ACCESSING WELCOME PAGE (lang = " + locale.getLanguage() + ") ...");
+        model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
         model.addAttribute("appName", this.appName);
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
+        model.addAttribute("lang", locale.getLanguage());
 
         return "welcome";
     }
@@ -169,8 +181,8 @@ public class MainController extends MainControllerAbstract
      * @return 
      */
     @RequestMapping(value="/callback", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String CallbackEntry(@RequestParam("code") String code, Model model, HttpSession session) {
-
+    public String CallbackEntry(@RequestParam("code") String code, Model model, HttpSession session)
+    {
         model.addAttribute("appName", appName);
 
         Assert.notNull(code, "\"code\" is required");
@@ -191,34 +203,53 @@ public class MainController extends MainControllerAbstract
 
         if (userProfile.getLimited_legal_capacity()) {
             // TODO limited_legal_capacity => go out
-            model.addAttribute("errorMessage", "Registrace byla zamítnuta: Osoba s omezenou způsobilostí k právním úkonům.");
+            model.addAttribute("error", "Registrace byla zamítnuta: Osoba s omezenou způsobilostí k právním úkonům.");
             return "error";
         }
 
-        // Mapping BankID user data to Aleph patron
-        Map<String, Object> patronObjCreation = alephService.newPatronTest(userInfo, userProfile);
+        // Mapping BankID user data to a Patron entity (so-called "BankId patron")
+        Map<String, Object> patronObjCreation = this.alephService.newPatronTest(userInfo, userProfile);
 
         if (patronObjCreation.containsKey("error")) {
-            model.addAttribute("errorMessage", "Registrace byla zamítnuta: " + (String) patronObjCreation.get("error"));
+            model.addAttribute("error", "Registrace byla zamítnuta: " + (String) patronObjCreation.get("error"));
             return "error";
         }
 
-        PatronDTO patron = (PatronDTO) patronObjCreation.get("patron");
-        patron = patronDTORepository.save(patron);
+        Patron patron = (Patron) patronObjCreation.get("patron");
+        patron = patronRepository.save(patron);
         session.setAttribute("patron", patron.getSysId());
-        model.addAttribute("patron", patron);
+        model.addAttribute("patron", this.patronService.getPatronDTO(patron));
+
         try {
             getLogger().info("patron: {}", patron.toJson());
         } catch (JsonProcessingException e) {
             getLogger().error("Error converting patron to JSON", e);
         }
+        
+        if (patron.isNew()) {
+            return "callback_registration_new";
+        } else {
+            Map<String, Object> patronAlephObjCreation = this.alephService.getAlephPatron(patron.getId());
 
-        // Remove this code after testing
-        model.addAttribute("userInfo", userInfo);
-        model.addAttribute("userProfile", userProfile);
-        model.addAttribute("bankIDForSep", "https://developer.bankid.cz/docs/api/bankid-for-sep");
+            if (patronAlephObjCreation.containsKey("error")) {
+                getLogger().error("Error getting patron from Aleph: {}", patronAlephObjCreation.get("error"));
+                model.addAttribute("error", "Registrace byla zamítnuta: " + (String) patronAlephObjCreation.get("error"));
+                return "error";
+            }
 
-        return "callback";
+            Patron patronAleph = (Patron) patronAlephObjCreation.get("patron");
+            patronAleph = patronRepository.save(patronAleph);
+            session.setAttribute("patronAleph", patronAleph.getSysId());
+            model.addAttribute("patronAleph", this.patronService.getPatronDTO(patronAleph));
+
+            try {
+                getLogger().info("patronAleph: {}", patronAleph.toJson());
+            } catch (JsonProcessingException e) {
+                getLogger().error("Error converting patronAleph to JSON", e);
+            }
+
+            return "callback_registration_renewal";
+        }
     }
 
     /**
@@ -232,7 +263,7 @@ public class MainController extends MainControllerAbstract
     @PostMapping("/new-registration")
     public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, @RequestParam("media") MultipartFile[] mediaFiles) {
         Long patronSysId = (Long) session.getAttribute("patron");
-        PatronDTO patron = patronDTORepository.findById(patronSysId).orElse(null);  // original patron data
+        Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
         String code = (String) session.getAttribute("code");
 
@@ -293,7 +324,7 @@ public class MainController extends MainControllerAbstract
         }
 
         if (patron.isCasEmployee) {
-            this.patronDTORepository.save(patron);
+            this.patronRepository.save(patron);
             for (MultipartFile file : mediaFiles) {
                 Map<String, Object> uploadResult = this.uploadMedia(file, patronSysId);
                 if (uploadResult.containsKey("error")) {
@@ -311,6 +342,19 @@ public class MainController extends MainControllerAbstract
         model.addAttribute("patronBarcode", patron.getBarcode());
 
         return "new_registration_success";
+    }
+
+    /**
+     * 
+     * @param model
+     * @return 
+     */
+    @RequestMapping(value="/guide", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
+    public String AboutEntry(Model model) {
+
+        model.addAttribute("appName", this.appName);
+
+        return "guide";
     }
 
     /**
@@ -336,7 +380,7 @@ public class MainController extends MainControllerAbstract
 
         model.addAttribute("appName", this.appName);
 
-        return "data_usage_policy";
+        return "privacy_policy";
     }
 
     /**
@@ -357,7 +401,7 @@ public class MainController extends MainControllerAbstract
             return result;
         }
 
-        PatronDTO patron = patronDTORepository.findById(patronSysId).orElse(null);
+        Patron patron = patronRepository.findById(patronSysId).orElse(null);
         if (patron == null) {
             result.put("error", "User not found.");
             return result;
@@ -375,7 +419,7 @@ public class MainController extends MainControllerAbstract
         media.setName(fileName);
         media.setType(contentType);
         media.setPath(path.toString());
-        media.setPatronDTO(patron);
+        media.setPatron(patron);
 
         if (mediaRepository.save(media) != null) {
             result.put("success", Boolean.TRUE);

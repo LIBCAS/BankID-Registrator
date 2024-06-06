@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cz.cas.lib.bankid_registrator.model.patron_barcode;
+package cz.cas.lib.bankid_registrator.model.patron;
 
 /**
  *

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="head">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${appName} + ' - ' + ${pageTitle}"></title>
+    <link rel="shortcut icon" href="/bankid-registrator/img/favicon.ico" />
+
+    <!-- TailwindCSS, Flowbite -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Filepond stylesheets -->
+    <link rel="stylesheet"
+        href="https://unpkg.com/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css"
+        type="text/css" />
+    <link rel="stylesheet" href="https://unpkg.com/filepond/dist/filepond.min.css" type="text/css" />
+
+    <!-- Custom stylesheets -->
+    <link rel="stylesheet" href="/bankid-registrator/assets/dist/css/main.css" type="text/css" />
+</head>
+
+</html>

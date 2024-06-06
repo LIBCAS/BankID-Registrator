@@ -1,4 +1,4 @@
-package cz.cas.lib.bankid_registrator.dto;
+package cz.cas.lib.bankid_registrator.entities.patron;
 
 public enum PatronStatus {
     STATUS_03("03", "Institute Staff", 1095, "", ""),
@@ -53,6 +53,15 @@ public enum PatronStatus {
     public static PatronStatus getById(String id) {
         for (PatronStatus status : values()) {
             if (status.getId().equals(id)) {
+                return status;
+            }
+        }
+        return null;
+    }
+
+    public static PatronStatus getByName(String name) {
+        for (PatronStatus status : values()) {
+            if (status.getName().equals(name)) {
                 return status;
             }
         }

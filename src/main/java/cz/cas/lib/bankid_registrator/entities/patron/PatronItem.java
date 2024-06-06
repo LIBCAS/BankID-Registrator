@@ -1,9 +1,9 @@
-package cz.cas.lib.bankid_registrator.dto;
+package cz.cas.lib.bankid_registrator.entities.patron;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class ItemDTO {
+public class PatronItem {
     public String docNumber;
     public String barcode;
     public String status;

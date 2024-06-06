@@ -1,7 +1,7 @@
-package cz.cas.lib.bankid_registrator.dto;
+package cz.cas.lib.bankid_registrator.entities.patron;
 
 // Possible perations: "bor-info", "bor-auth"
-public enum BorXOp {
+public enum PatronBorXOp {
     BOR_INFO("bor-info"),
     BOR_AUTH("bor-auth"),
     UPDATE_BOR("update-bor"),
@@ -11,7 +11,7 @@ public enum BorXOp {
 
     private final String value;
 
-    BorXOp(String value) {
+    PatronBorXOp(String value) {
         this.value = value;
     }
 

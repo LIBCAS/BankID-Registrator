@@ -1,9 +1,9 @@
-package cz.cas.lib.bankid_registrator.dto;
+package cz.cas.lib.bankid_registrator.entities.patron;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class HoldDTO {
+public class PatronHold {
     public String pickUpLocation;
     public String lastInterestDate;
     public String note1;

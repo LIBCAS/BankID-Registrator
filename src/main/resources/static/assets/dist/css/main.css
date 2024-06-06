@@ -1,0 +1,51 @@
+body > main {
+    margin-top: 8em;
+    padding: 2em 0;
+}
+
+#files-control {
+    display: none;
+}
+
+#files {
+    display: block;
+    width: 100%;
+}
+
+.filepond--drop-label {
+    color: #4c4e53;
+}
+
+.filepond--label-action {
+    text-decoration-color: #babdc0;
+}
+
+.filepond--panel-root {
+    border-radius: 2em;
+    background-color: #edf0f4;
+    height: 1em;
+}
+
+.filepond--item-panel {
+    background-color: #595e68;
+}
+
+.filepond--drip-blob {
+    background-color: #7f8a9a;
+}
+
+.filepond--credits {
+    display: none;
+}
+
+@media (min-width: 640px) { /* SM */
+    body > main {
+        margin-top: 14em;
+    }
+}
+
+@media (min-width: 768px) { /* MD */
+    body > main {
+        margin-top: 10em;
+    }
+}

@@ -16,6 +16,7 @@
  */
 package cz.cas.lib.bankid_registrator.controllers;
 
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,13 +45,13 @@ public abstract class MainControllerAbstract implements ControllerIface {
      * @return 
      */
     @Override
-    public abstract String RootEntry();
+    public abstract String RootEntry(Locale locale);
 
     /**
      * 
      * @return 
      */
     @Override
-    public abstract String IndexEntry();
+    public abstract String IndexEntry(Locale locale);
 
 }
