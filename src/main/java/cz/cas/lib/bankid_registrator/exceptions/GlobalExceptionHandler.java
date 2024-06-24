@@ -46,17 +46,15 @@ public class GlobalExceptionHandler extends ExceptionHandlerAbstract
         mav.addObject("lang", locale.getLanguage());
         mav.addObject("error", "");
         mav.addObject("appName", this.appName);
+        mav.addObject("pageTitle", this.messageSource.getMessage("page.error.title", null, "Error", locale));
 
         HttpStatus status = e.getStatus();
-        if (status == HttpStatus.NOT_FOUND) {
-            mav.addObject("pageTitle", this.messageSource.getMessage("error.404.text", null, locale));
-            mav.addObject("errorCode", this.messageSource.getMessage("error.404.code", null, locale));
-        } else if (status == HttpStatus.INTERNAL_SERVER_ERROR) {
-            mav.addObject("pageTitle", this.messageSource.getMessage("error.500.text", null, locale));
-            mav.addObject("errorCode", this.messageSource.getMessage("error.500.code", null, locale));
+        String statusCode = String.valueOf(status.value());
+        if (status.is4xxClientError() || status.is5xxServerError()) {
+            mav.addObject("errorCode", this.messageSource.getMessage("error." + statusCode + ".code", null, statusCode, locale));
+            mav.addObject("error", this.messageSource.getMessage("error." + statusCode + ".text", null, e.getErrorMessage(), locale));
         } else {
-            mav.addObject("pageTitle", "Error");
-            mav.addObject("errorCode", String.valueOf(status.value()));
+            mav.addObject("errorCode", statusCode);
             mav.addObject("error", e.getErrorMessage());
         }
 

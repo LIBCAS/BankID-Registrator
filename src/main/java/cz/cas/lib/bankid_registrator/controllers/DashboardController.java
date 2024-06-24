@@ -7,21 +7,21 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import cz.cas.lib.bankid_registrator.services.PatronService;
+import cz.cas.lib.bankid_registrator.services.IdentityService;
 
 /**
  * Controller for the admin dashboard page
  */
 @Controller
 public class DashboardController extends ControllerAbstract {
-    private final PatronService patronService;
+    private final IdentityService identityService;
 
     @NotEmpty
     @Value("${spring.application.name} - Admin Dashboard")
     private String appName;
 
-    public DashboardController(PatronService patronService) {
-        this.patronService = patronService;
+    public DashboardController(IdentityService identityService) {
+        this.identityService = identityService;
     }
 
     /**
@@ -34,7 +34,7 @@ public class DashboardController extends ControllerAbstract {
         getLogger().info("ACCESSING DASHBOARD PAGE ...");
         model.addAttribute("appName", this.appName);
 
-        model.addAttribute("data", this.patronService.findCasEmployeesWithMedia());
+        model.addAttribute("data", this.identityService.getIdentitiesWithMedia());
 
         return "dashboard";
     }

@@ -89,15 +89,15 @@ public class AlephService extends AlephServiceAbstract
 {
     private final MainConfiguration mainConfig;
     private final AlephServiceConfig alephServiceConfig;
-    private final PatronBarcodeRepository patronBarcodeRepository;
+    private final IdentityService identityService;
     private final OracleRepository oracleRepository;
     private final String[] borXOpsNoSuccessMsg; // A list of Aleph API ops whose response does not contain a success message
 
-    public AlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, PatronBarcodeRepository patronBarcodeRepository, OracleRepository oracleRepository)
+    public AlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository)
     {
         this.mainConfig = mainConfig;
         this.alephServiceConfig = alephServiceConfig;
-        this.patronBarcodeRepository = patronBarcodeRepository;
+        this.identityService = identityService;
         this.oracleRepository = oracleRepository;
         this.borXOpsNoSuccessMsg = new String[] {
             PatronBorXOp.BOR_INFO.getValue()
@@ -167,12 +167,16 @@ public class AlephService extends AlephServiceAbstract
 
         Boolean patronIsCasEmployee = patron.isCasEmployee();
 
-        // Patron status (Aleph reader status)
+        // Patron status (Aleph reader membership status)
         if (patronIsCasEmployee) {
             patron.setStatus(PatronStatus.STATUS_03.getId());
         } else {
             patron.setStatus(PatronStatus.STATUS_16.getId());
         }
+
+        // Patron Aleph ID and Aleph barcode
+        patron.setId(this.generatePatronId());
+        patron.setBarcode(this.generatePatronBarcode());
 
         // Create a patron
         Map<String, String> patronXmlCreation = this.createPatronXML(patron);
@@ -1447,7 +1451,7 @@ logger.info("AAA doHttpRequest method: {}", method);
      */
     public String generatePatronId() {
         String prefix = this.mainConfig.getId_prefix();
-        Long maxVal = patronBarcodeRepository.findMaxId();
+        Long maxVal = this.identityService.getMaxId();
         Long newVal = 1L;
 
         if (maxVal != null) {
@@ -1462,7 +1466,7 @@ logger.info("AAA doHttpRequest method: {}", method);
      */
     public String generatePatronBarcode() {
         String prefix = mainConfig.getBarcode_prefix();
-        Long maxVal = patronBarcodeRepository.findMaxBarcode();
+        Long maxVal = this.identityService.getMaxId();
         Long newVal = 1L;
 
         if (maxVal != null) {

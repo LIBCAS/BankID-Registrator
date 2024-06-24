@@ -1,15 +1,11 @@
 package cz.cas.lib.bankid_registrator.model.patron;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronAction;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
-import cz.cas.lib.bankid_registrator.model.media.Media;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import javax.persistence.*;
 import lombok.AllArgsConstructor;
@@ -118,10 +114,6 @@ public class Patron {
     @Column
     public String rfid;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "patron", cascade = CascadeType.ALL)
-    private List<Media> media = new ArrayList<>();
-
     public Long getSysId() {
         return id;
     }
@@ -140,10 +132,6 @@ public class Patron {
     
     public void setPatronId(String patronId) {
         this.patronId = patronId;
-    }
-
-    public List<Media> getMedia() {
-        return this.media;
     }
 
     public String toJson() throws JsonProcessingException {

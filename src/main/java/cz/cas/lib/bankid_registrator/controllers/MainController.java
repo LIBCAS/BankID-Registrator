@@ -19,9 +19,14 @@ package cz.cas.lib.bankid_registrator.controllers;
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronBarcodeRepository;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
-import cz.cas.lib.bankid_registrator.dao.mariadb.MediaRepository;
+import cz.cas.lib.bankid_registrator.dao.mariadb.IdentityRepository;
+import cz.cas.lib.bankid_registrator.dao.mariadb.IdentityActivityRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
+import cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent;
+import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
+import cz.cas.lib.bankid_registrator.model.identity.Identity;
+import cz.cas.lib.bankid_registrator.model.identity.IdentityActivity;
 import cz.cas.lib.bankid_registrator.model.media.Media;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.model.patron.PatronBarcode;
@@ -31,31 +36,30 @@ import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.MainService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
+import cz.cas.lib.bankid_registrator.services.MediaService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.*;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.time.LocalDateTime;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.validation.constraints.NotEmpty;
 
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -77,7 +81,9 @@ public class MainController extends MainControllerAbstract
     private final PatronBarcodeRepository patronBarcodeRepository;
     private final PatronRepository patronRepository;
     private final PatronService patronService;
-    private final MediaRepository mediaRepository;
+    private final MediaService mediaService;
+    private final IdentityRepository identityRepository;
+    private final IdentityActivityRepository identityActivityRepository;
     private final AccessTokenContainer accessTokenContainer;
     private final EmailService emailService;
     private final MessageSource messageSource;
@@ -94,7 +100,9 @@ public class MainController extends MainControllerAbstract
         PatronBarcodeRepository patronBarcodeRepository,
         PatronRepository patronRepository,
         PatronService patronService,
-        MediaRepository mediaRepository,
+        MediaService mediaService,
+        IdentityRepository identityRepository,
+        IdentityActivityRepository identityActivityRepository,
         AccessTokenContainer accessTokenContainer,
         EmailService emailService,
         MessageSource messageSource
@@ -107,7 +115,9 @@ public class MainController extends MainControllerAbstract
         this.patronBarcodeRepository = patronBarcodeRepository;
         this.patronRepository = patronRepository;
         this.patronService = patronService;
-        this.mediaRepository = mediaRepository;
+        this.mediaService = mediaService;
+        this.identityRepository = identityRepository;
+        this.identityActivityRepository = identityActivityRepository;
         this.accessTokenContainer = accessTokenContainer;
         this.emailService = emailService;
         this.messageSource = messageSource;
@@ -134,7 +144,6 @@ public class MainController extends MainControllerAbstract
      */
     @RequestMapping(value="/welcome", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
     public String WelcomeEntry(Model model, Locale locale) throws Exception {
-        getLogger().info("ACCESSING WELCOME PAGE (lang = " + locale.getLanguage() + ") ...");
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
         model.addAttribute("appName", this.appName);
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
@@ -148,7 +157,7 @@ public class MainController extends MainControllerAbstract
      * @return 
      */
     @RequestMapping(value="/login", method=RequestMethod.GET)
-    public String InitiateLoginEntry() {
+    public String InitiateLoginEntry(Locale locale) {
         getLogger().info("ACCESSING LOGIN PAGE ...");
         StringBuilder strTmp = new StringBuilder(0);
 
@@ -207,6 +216,20 @@ public class MainController extends MainControllerAbstract
             return "error";
         }
 
+        String bankId = userInfo.getSub();
+        Identity identity;
+
+        Optional<Identity> identitySearch = identityRepository.findByBankId(bankId);
+        if (!identitySearch.isPresent()) {
+            identity = new Identity(bankId);
+            this.identityRepository.save(identity);
+            session.setAttribute("identity", identity.getId());
+        } else {
+            identity = identitySearch.get();
+        }
+
+        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.BANKID_VERIFICATION_SUCCESS));
+
         // Mapping BankID user data to a Patron entity (so-called "BankId patron")
         Map<String, Object> patronObjCreation = this.alephService.newPatronTest(userInfo, userProfile);
 
@@ -225,8 +248,10 @@ public class MainController extends MainControllerAbstract
         } catch (JsonProcessingException e) {
             getLogger().error("Error converting patron to JSON", e);
         }
-        
+
         if (patron.isNew()) {
+            this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.NEW_REGISTRATION_INITIATION));
+
             return "callback_registration_new";
         } else {
             Map<String, Object> patronAlephObjCreation = this.alephService.getAlephPatron(patron.getId());
@@ -248,6 +273,8 @@ public class MainController extends MainControllerAbstract
                 getLogger().error("Error converting patronAleph to JSON", e);
             }
 
+            this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.MEMBERSHIP_RENEWAL_INITIATION));
+
             return "callback_registration_renewal";
         }
     }
@@ -266,6 +293,9 @@ public class MainController extends MainControllerAbstract
         Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
         String code = (String) session.getAttribute("code");
+        Identity identity = identityRepository.findById((Long) session.getAttribute("identity")).orElse(null);
+
+        this.patronRepository.delete(patron);
 
         try {
             getLogger().info("new-registration - originalPatron: {}", patron.toJson());
@@ -280,7 +310,7 @@ public class MainController extends MainControllerAbstract
         getLogger().info("new-registration - userProfile: {}", userProfile);
         getLogger().info("new-registration - code: {}", code);
 
-        if (patronSysId == null || patron == null || userProfile == null || code == null) {
+        if (patronSysId == null || patron == null || userProfile == null || code == null || identity == null) {
             return "error_session_expired";
         }
 
@@ -288,58 +318,50 @@ public class MainController extends MainControllerAbstract
             return "error_export_consent";
         }
 
+        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.NEW_REGISTRATION_SUBMISSION));
+
         patron.update(editedPatron);
-        if (patron.getPatronId() == null) {
-            patron.setId(this.alephService.generatePatronId());
-        }
-        if (patron.getBarcode() == null) {
-            patron.setBarcode(this.alephService.generatePatronBarcode());
-        }
+
         try {
             getLogger().info("new-registration - finalPatron: {}", patron.toJson());
         } catch (JsonProcessingException e) {
             getLogger().error("Error converting finalPatron to JSON", e);
         }
 
-        Map<String, Object> patronCreation = alephService.createPatron(patron);
+        Map<String, Object> patronCreation = this.alephService.createPatron(patron);
         if (patronCreation.containsKey("error")) {
             getLogger().info("RESULT: {}", patronCreation);
             getLogger().error("Error creating patron: {}", patronCreation.get("error"));
             return "error";
         }
 
-        model.addAttribute("xml", patronCreation.get("xml-patron"));
-        getLogger().info("Trying saving patron barcode");
-        try {
-            PatronBarcode barcode = new PatronBarcode();
-            String patronBarcode = patron.getBarcode();
-            Long patronBarcodeNoPrefix = Long.valueOf(patronBarcode.substring(5));
-            barcode.setSub(patron.getBankIdSub());
-            barcode.setBarcode(mainConfig.getBarcode_prefix().concat(code));
-            barcode.setBarcodeAleph(patronBarcodeNoPrefix);
-            this.patronBarcodeRepository.save(barcode);
-            getLogger().info("Successful patron barcode saving");
-        } catch (Exception e) {
-            getLogger().error("Error saving patron barcode", e);
-        }
+        identity.setAlephId(patron.getId());
+        identity.setAlephBarcode(patron.getBarcode());
+        identity.setUpdatedAt(LocalDateTime.now());
+        this.identityRepository.save(identity);
 
         if (patron.isCasEmployee) {
-            this.patronRepository.save(patron);
             for (MultipartFile file : mediaFiles) {
-                Map<String, Object> uploadResult = this.uploadMedia(file, patronSysId);
+                Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
                 if (uploadResult.containsKey("error")) {
                     getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
                 }
             }
         }
 
+        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.NEW_REGISTRATION_SUCCESS));
+
         try {
             this.emailService.sendEmailNewRegistration(patron.getEmail(), patron.getId());
+            this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.NEW_REGISTRATION_EMAIL_SENT));
         } catch (Exception e) {
             getLogger().error("Error sending email", e);
         }
 
-        model.addAttribute("patronBarcode", patron.getBarcode());
+        session.setAttribute("alephBarcode", patron.getBarcode());
+
+        model.addAttribute("xml", patronCreation.get("xml-patron"));
+        model.addAttribute("alephBarcode", patron.getBarcode());
 
         return "new_registration_success";
     }
@@ -381,52 +403,5 @@ public class MainController extends MainControllerAbstract
         model.addAttribute("appName", this.appName);
 
         return "privacy_policy";
-    }
-
-    /**
-     * Upload a media file
-     * @param file
-     * @param patronSysId
-     * @return Map<String, Object>
-     */
-    public Map<String, Object> uploadMedia(MultipartFile file, Long patronSysId)
-    {getLogger().info("uploadMedia - patronSysId: {}", patronSysId);
-        Map<String, Object> result = new HashMap<>();
-
-        String contentType = file.getContentType(); getLogger().info("QAZWSX - contentType: {}", contentType);
-        String fileName = file.getOriginalFilename(); getLogger().info("QAZWSX - fileName: {}", fileName);
-
-        if (!contentType.equals("image/jpeg") && !contentType.equals("image/png") && !contentType.equals("application/pdf")) {
-            result.put("error", "Unsupported file type: " + contentType);
-            return result;
-        }
-
-        Patron patron = patronRepository.findById(patronSysId).orElse(null);
-        if (patron == null) {
-            result.put("error", "User not found.");
-            return result;
-        }
-
-        Path path = Paths.get(mainConfig.getStorage_path(), fileName);
-        try {
-            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            result.put("error", "Failed to save file: " + e.getMessage());
-            return result;
-        }
-
-        Media media = new Media();
-        media.setName(fileName);
-        media.setType(contentType);
-        media.setPath(path.toString());
-        media.setPatron(patron);
-
-        if (mediaRepository.save(media) != null) {
-            result.put("success", Boolean.TRUE);
-        } else {
-            result.put("error", "Error uploading media file " + fileName + ".");
-        }
-
-        return result;
     }
 }

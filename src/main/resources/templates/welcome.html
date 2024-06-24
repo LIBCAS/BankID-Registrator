@@ -11,8 +11,8 @@
     <h1 class="mb-5 text-4xl font-extrabold leading-none tracking-tight md:text-5xl lg:text-6xl"
       th:text="#{message.verifyViaBankid}"></h1>
     <a th:href="${loginEndpoint}"
-      class="inline-block mt-5 px-6 py-3.5 text-base font-medium text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 rounded-lg text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-      th:text="#{button.verifyViaBankid}"></a>
+      class="inline-block mt-5 px-6 py-3.5"
+      th:insert="~{fragments/svg/btn-bankid :: btn-bankid}" th:title="#{button.verifyViaBankid}"></a>
   </main>
 </body>
 

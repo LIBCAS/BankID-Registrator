@@ -28,14 +28,6 @@ public class PatronService {
     }
 
     /**
-     * Finds patrons (with their media files) who are CAS employees.
-     * @return
-     */
-    public List<Patron> findCasEmployeesWithMedia() {
-        return patronRepository.findCasEmployeesWithMedia();
-    }
-
-    /**
      * Get patron's DTO from patron
      * @param patron
      */

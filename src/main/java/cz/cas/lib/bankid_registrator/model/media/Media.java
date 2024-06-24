@@ -1,6 +1,6 @@
 package cz.cas.lib.bankid_registrator.model.media;
 
-import cz.cas.lib.bankid_registrator.model.patron.Patron;
+import cz.cas.lib.bankid_registrator.model.identity.Identity;
 
 import javax.persistence.*;
 
@@ -21,8 +21,8 @@ public class Media {
     private String path;
 
     @ManyToOne
-    @JoinColumn(name = "patron_id")
-    private Patron patron;
+    @JoinColumn(name = "identity_id")
+    private Identity identity;
 
     public Long getId() {
         return id;
@@ -52,11 +52,11 @@ public class Media {
         return path;
     }
 
-    public void setPatron(Patron patron) {
-        this.patron = patron;
+    public void setIdentity(Identity identity) {
+        this.identity = identity;
     }
 
-    public Patron getPatron() {
-        return patron;
+    public Identity getIdentity() {
+        return this.identity;
     }
 }

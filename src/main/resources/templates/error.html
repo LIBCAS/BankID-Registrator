@@ -8,12 +8,15 @@
 
 <body class="page-error">
   <main layout:fragment="content" class="text-center container mx-auto">
-    <h1 class="text-4xl font-bold my-4" th:text="${pageTitle}"></h1>
-    <h2 class="text-8xl font-bold my-4" th:text="${errorCode}"></h2>
-    <div class="container my-2" align="center">
+    <h1 class="text-8xl font-bold my-4">
+      <span th:text="${pageTitle}"></span>
+      <br>
+      <span th:text="${errorCode}"></span>
+    </h1>
+    <div class="container my-2 text-4xl font-bold my-4">
       <p th:text="${error}" />
     </div>
-    <div class="container my-10" align="center">
+    <div class="container my-10">
       <a th:href="@{/welcome}"
         class="inline-block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 focus:outline-none"
         th:text="#{message.goToHomepage}"></a>

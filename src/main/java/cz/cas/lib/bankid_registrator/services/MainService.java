@@ -58,16 +58,14 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 /**
  *
  * @author iok
  */
-@Service
-public class MainService extends MainServiceAbstract {
-
+public class MainService extends MainServiceAbstract
+{
     @Autowired
     MainConfiguration mainConfig;
 
@@ -128,7 +126,7 @@ public class MainService extends MainServiceAbstract {
 
         ClientID clientID = new ClientID(this.mainConfig.getClient_id());
 
-        List<ACR> acrList = new ArrayList();
+        List<ACR> acrList = new ArrayList<>();
         acrList.add(new ACR("loa2"));
 
         AuthenticationRequest authRequest = null;
@@ -164,11 +162,13 @@ public class MainService extends MainServiceAbstract {
 
             authRequest = authBuilder.build();
 
+            return authRequest.toQueryString();
+
         } catch (URISyntaxException ex) {
             getLogger().error(MainService.class.getName(), ex);
         }
 
-       return authRequest.toQueryString(); 
+        return null;
     }
 
     /**
@@ -304,15 +304,15 @@ public class MainService extends MainServiceAbstract {
 
     /**
      * 
-     * @param access_token
+     * @param accessToken
      * @return 
      */
     @Override
-    public Connect getUserInfo(String access_token) {
+    public Connect getUserInfo(String accessToken) {
 
-        Assert.notNull(access_token, "\"access_token\" is required");
+        Assert.notNull(accessToken, "\"accessToken\" is required");
 
-        if (!access_token.startsWith("Bearer")) {
+        if (!accessToken.startsWith("Bearer")) {
             // TODO resolve error
         }
 
@@ -322,7 +322,7 @@ public class MainService extends MainServiceAbstract {
 
         try {
 
-            BearerAccessToken token = BearerAccessToken.parse(access_token);
+            BearerAccessToken token = BearerAccessToken.parse(accessToken);
 
             HTTPResponse dataResponse = new UserInfoRequest(userInfoEndpoint, token)
                     .toHTTPRequest()
@@ -364,15 +364,15 @@ public class MainService extends MainServiceAbstract {
 
     /**
      * 
-     * @param access_token
+     * @param accessToken
      * @return 
      */
     @Override
-    public Identify getProfile(String access_token) {
+    public Identify getProfile(String accessToken) {
 
-        Assert.notNull(access_token, "\"access_token\" is required");
+        Assert.notNull(accessToken, "\"accessToken\" is required");
 
-        if (!access_token.startsWith("Bearer")) {
+        if (!accessToken.startsWith("Bearer")) {
             // TODO resolve error
         }
 
@@ -382,7 +382,7 @@ public class MainService extends MainServiceAbstract {
 
         try {
 
-            BearerAccessToken token = BearerAccessToken.parse(access_token);
+            BearerAccessToken token = BearerAccessToken.parse(accessToken);
 
             HTTPResponse dataResponse = new UserInfoRequest(endpoint, token)
                     .toHTTPRequest()
