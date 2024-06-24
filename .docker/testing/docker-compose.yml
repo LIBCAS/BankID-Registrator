@@ -31,6 +31,7 @@ services:
       MAIL_FROM_NAME: ${MAIL_FROM_NAME}
       MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH}
       MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
     volumes:
       - ./../../:/app
       - ./../../.m2:/root/.m2
