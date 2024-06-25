@@ -1491,13 +1491,16 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
-     * Checks if patron already exists in the Aleph Oracle DB
+     * Checks if a patron already exists in the Aleph Oracle DB (based on the name and birthdate)
+     * or if the patron was already verified via Bank ID.
      * @param name Patron's name
      * @param birthDate Patron's birthdate
      * @return true if patron exists, false otherwise
      */
     public boolean isNewAlephPatron(Patron patron) {
-        return (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
+        boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
+        boolean isVerifiedAndAlephLinked = identityService.findAlephLinkedByBankId(patron.getBankIdSub()).isPresent();
+        return isNewInOracle || !isVerifiedAndAlephLinked;
     }
 
     private String generateTestingMname() {

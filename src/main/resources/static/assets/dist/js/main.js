@@ -1,10 +1,20 @@
+const apiUrl = "/bankid-registrator/api";
+const alertDuration = 3000;
+
+function getCsrfTokenAndHeader() {
+    const csrfInput = document.querySelector('input[name="_csrf"]');
+    return {
+        csrfToken: csrfInput ? csrfInput.value : null,
+        csrfHeader: csrfInput ? csrfInput.name : null
+    };
+}
+
 // PAGE: NEW REGISTRATION
 if (document.querySelector(".page-new-registration")) {
-    const apiUrl = "/bankid-registrator/api";
     const filesElm = document.getElementById("files");
     const filesInputElm = document.querySelector('[name="media"]');
     const filesWrapper = document.getElementById("files-control");
-    const alertDuration = 3000;
+    const { csrfToken, csrfHeader } = getCsrfTokenAndHeader();
 
     function showAlert(type, message) {
         const mainElm = document.querySelector("form");
@@ -24,15 +34,15 @@ if (document.querySelector(".page-new-registration")) {
         }, alertDuration);
     }
 
-    const checkRfid = async (rfid, bid, patronId) => {
+    const checkRfid = async (rfid, patronId) => {
         const response = await fetch(`${apiUrl}/check-rfid`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
+                [csrfHeader]: csrfToken
             },
             body: new URLSearchParams({
                 rfid: rfid,
-                bid: bid,
                 patronId: patronId
             })
         });
@@ -60,14 +70,7 @@ if (document.querySelector(".page-new-registration")) {
     document.getElementById("rfid").addEventListener("change", (ev) => {
         const rfidElm = ev.target;
         const rfid = rfidElm.value;
-        const bid = document.querySelector('input[name="bankIdSub"]').value;
         let patronId = document.querySelector('input[name="patronId"]').value;
-
-        if (bid.trim().length === 0) {
-            this.value = "";
-            showAlert("danger", "An error occurred while checking the RFID.");
-            return;
-        }
 
         if (rfid.trim().length === 0) {
             return;
@@ -77,7 +80,7 @@ if (document.querySelector(".page-new-registration")) {
             patronId = null;
         }
 
-        checkRfid(rfid, bid, patronId)
+        checkRfid(rfid, patronId)
             .then(data => {
                 if (data.result === true) {
                     rfidElm.value = "";
@@ -103,5 +106,38 @@ if (document.querySelector(".page-new-registration")) {
             filesInputElm.required = false;
             filesWrapper.style.display = "none";
         }
+    });
+}
+
+// TESTING
+const emptyIdentities = async () => {
+    const response = await fetch(`${apiUrl}/reset-identities`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+    });
+
+    if (!response.ok) {
+        alert(`HTTP-Error: ${response.status} ${response.error}`);
+    }
+
+    const data = await response.json();
+    return data;
+}
+const btnEmptyIdentities = document.getElementById("js-resetIdentities");
+if (btnEmptyIdentities) {
+    btnEmptyIdentities.addEventListener("click", async () => {
+        emptyIdentities()
+            .then(data => {
+                if (data.result === true) {
+                    alert("The identities have been reset.");
+                } else {
+                    alert("An error occurred while resetting the identities.");
+                }
+            })
+            .catch(error => {
+                alert("An error occurred while resetting the identities.");
+            });
     });
 }

@@ -17,32 +17,23 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
-import cz.cas.lib.bankid_registrator.dao.mariadb.PatronBarcodeRepository;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
-import cz.cas.lib.bankid_registrator.dao.mariadb.IdentityRepository;
-import cz.cas.lib.bankid_registrator.dao.mariadb.IdentityActivityRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
-import cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent;
-import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
-import cz.cas.lib.bankid_registrator.model.identity.IdentityActivity;
-import cz.cas.lib.bankid_registrator.model.media.Media;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
-import cz.cas.lib.bankid_registrator.model.patron.PatronBarcode;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
+import cz.cas.lib.bankid_registrator.services.IdentityService;
+import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.MainService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.services.MediaService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 
-import java.io.IOException;
 import java.net.URI;
-import java.nio.file.*;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -58,7 +49,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
@@ -78,12 +68,11 @@ public class MainController extends MainControllerAbstract
     private final MainService mainService;
     private final AlephService alephService;
     private final ServletContext servletContext;
-    private final PatronBarcodeRepository patronBarcodeRepository;
     private final PatronRepository patronRepository;
     private final PatronService patronService;
     private final MediaService mediaService;
-    private final IdentityRepository identityRepository;
-    private final IdentityActivityRepository identityActivityRepository;
+    private final IdentityService identityService;
+    private final IdentityActivityService identityActivityService;
     private final AccessTokenContainer accessTokenContainer;
     private final EmailService emailService;
     private final MessageSource messageSource;
@@ -96,13 +85,12 @@ public class MainController extends MainControllerAbstract
         MainConfiguration mainConfig,
         MainService mainService,
         AlephService alephService,
-        ServletContext servletContext, 
-        PatronBarcodeRepository patronBarcodeRepository,
+        ServletContext servletContext,
         PatronRepository patronRepository,
         PatronService patronService,
         MediaService mediaService,
-        IdentityRepository identityRepository,
-        IdentityActivityRepository identityActivityRepository,
+        IdentityService identityService,
+        IdentityActivityService identityActivityService,
         AccessTokenContainer accessTokenContainer,
         EmailService emailService,
         MessageSource messageSource
@@ -112,12 +100,11 @@ public class MainController extends MainControllerAbstract
         this.mainService = mainService;
         this.alephService = alephService;
         this.servletContext = servletContext;
-        this.patronBarcodeRepository = patronBarcodeRepository;
         this.patronRepository = patronRepository;
         this.patronService = patronService;
         this.mediaService = mediaService;
-        this.identityRepository = identityRepository;
-        this.identityActivityRepository = identityActivityRepository;
+        this.identityService = identityService;
+        this.identityActivityService = identityActivityService;
         this.accessTokenContainer = accessTokenContainer;
         this.emailService = emailService;
         this.messageSource = messageSource;
@@ -143,7 +130,7 @@ public class MainController extends MainControllerAbstract
      * @throws Exception 
      */
     @RequestMapping(value="/welcome", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String WelcomeEntry(Model model, Locale locale) throws Exception {
+    public String WelcomeEntry(Model model, Locale locale, HttpSession session) throws Exception {
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
         model.addAttribute("appName", this.appName);
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
@@ -190,9 +177,11 @@ public class MainController extends MainControllerAbstract
      * @return 
      */
     @RequestMapping(value="/callback", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String CallbackEntry(@RequestParam("code") String code, Model model, HttpSession session)
+    public String CallbackEntry(@RequestParam("code") String code, Model model, Locale locale, HttpSession session)
     {
-        model.addAttribute("appName", appName);
+        model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
+        model.addAttribute("appName", this.appName);
+        model.addAttribute("lang", locale.getLanguage());
 
         Assert.notNull(code, "\"code\" is required");
 
@@ -219,16 +208,16 @@ public class MainController extends MainControllerAbstract
         String bankId = userInfo.getSub();
         Identity identity;
 
-        Optional<Identity> identitySearch = identityRepository.findByBankId(bankId);
+        Optional<Identity> identitySearch = this.identityService.findByBankId(bankId);
         if (!identitySearch.isPresent()) {
             identity = new Identity(bankId);
-            this.identityRepository.save(identity);
+            this.identityService.save(identity);
             session.setAttribute("identity", identity.getId());
         } else {
             identity = identitySearch.get();
         }
 
-        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.BANKID_VERIFICATION_SUCCESS));
+        this.identityActivityService.logBankIdVerificationSuccess(identity);
 
         // Mapping BankID user data to a Patron entity (so-called "BankId patron")
         Map<String, Object> patronObjCreation = this.alephService.newPatronTest(userInfo, userProfile);
@@ -241,6 +230,7 @@ public class MainController extends MainControllerAbstract
         Patron patron = (Patron) patronObjCreation.get("patron");
         patron = patronRepository.save(patron);
         session.setAttribute("patron", patron.getSysId());
+        model.addAttribute("patronId", patron.getSysId());
         model.addAttribute("patron", this.patronService.getPatronDTO(patron));
 
         try {
@@ -250,7 +240,7 @@ public class MainController extends MainControllerAbstract
         }
 
         if (patron.isNew()) {
-            this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.NEW_REGISTRATION_INITIATION));
+            this.identityActivityService.logNewRegistrationInitiation(identity);
 
             return "callback_registration_new";
         } else {
@@ -273,7 +263,7 @@ public class MainController extends MainControllerAbstract
                 getLogger().error("Error converting patronAleph to JSON", e);
             }
 
-            this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.MEMBERSHIP_RENEWAL_INITIATION));
+            this.identityActivityService.logMembershipRenewalInitiation(identity);
 
             return "callback_registration_renewal";
         }
@@ -293,7 +283,7 @@ public class MainController extends MainControllerAbstract
         Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
         String code = (String) session.getAttribute("code");
-        Identity identity = identityRepository.findById((Long) session.getAttribute("identity")).orElse(null);
+        Identity identity = this.identityService.findById((Long) session.getAttribute("identity")).orElse(null);
 
         this.patronRepository.delete(patron);
 
@@ -318,7 +308,7 @@ public class MainController extends MainControllerAbstract
             return "error_export_consent";
         }
 
-        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.NEW_REGISTRATION_SUBMISSION));
+        this.identityActivityService.logNewRegistrationSubmission(identity);
 
         patron.update(editedPatron);
 
@@ -338,7 +328,7 @@ public class MainController extends MainControllerAbstract
         identity.setAlephId(patron.getId());
         identity.setAlephBarcode(patron.getBarcode());
         identity.setUpdatedAt(LocalDateTime.now());
-        this.identityRepository.save(identity);
+        this.identityService.save(identity);
 
         if (patron.isCasEmployee) {
             for (MultipartFile file : mediaFiles) {
@@ -349,11 +339,11 @@ public class MainController extends MainControllerAbstract
             }
         }
 
-        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.NEW_REGISTRATION_SUCCESS));
+        this.identityActivityService.logNewRegistrationSuccess(identity);
 
         try {
             this.emailService.sendEmailNewRegistration(patron.getEmail(), patron.getId());
-            this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.NEW_REGISTRATION_EMAIL_SENT));
+            this.identityActivityService.logNewRegistrationEmailSent(identity);
         } catch (Exception e) {
             getLogger().error("Error sending email", e);
         }

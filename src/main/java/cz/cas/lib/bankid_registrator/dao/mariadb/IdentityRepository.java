@@ -22,4 +22,7 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
 
     @Query(value = "SELECT MAX(i.id) FROM identity i", nativeQuery = true)
     Long getMaxId();
+
+    @Query("SELECT i FROM Identity i WHERE i.bankId = :bankId AND i.alephId IS NOT NULL AND i.alephBarcode IS NOT NULL")
+    Optional<Identity> findAlephLinkedByBankId(String bankId);
 }

@@ -32,8 +32,8 @@ public class SecurityConfig
             .logout(logout -> logout
                     .logoutUrl("/user/logout")
                     .logoutSuccessUrl("/user/login")
-                    .permitAll());
-            // .csrf(csrf -> csrf.disable());
+                    .permitAll())
+            .csrf(csrf -> csrf.and());
         return http.build();
     }
 

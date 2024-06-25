@@ -63,4 +63,8 @@ public class PatronDTO
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(this);
     }
+
+    public boolean getIsCasEmployee() {
+        return isCasEmployee;
+    }
 }

@@ -4,7 +4,6 @@ import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.exceptions.PatronNotFoundException;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
-import java.util.List;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
@@ -43,5 +42,24 @@ public class PatronService {
         Patron patron = patronRepository.findById(id)
             .orElseThrow(() -> new PatronNotFoundException());
         return getPatronDTO(patron);
+    }
+
+   /**
+     * Gets the bankIdSub attribute of the Patron entity with the provided id.
+     * @param id
+     * @return
+     */
+    public String getBankIdSubById(Long id) {
+        return patronRepository.findBankIdSubById(id);
+    }
+
+    /**
+     * Gets the patronId attribute of the Patron entity with the provided id.
+     * @param id
+     * @return
+     */
+    public String getPatronIdById(Long id) {
+        return patronRepository.findPatronIdById(id)
+            .orElseThrow(() -> new PatronNotFoundException());
     }
 }

@@ -11,8 +11,8 @@
         <form action="#" th:action="@{/new-registration}" th:object="${patron}" method="post"
             enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input class="hidden" type="text" th:field="*{patronId}" />
-                <input class="hidden" type="text" th:field="*{bankIdSub}" />
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <input type="hidden" name="patronId" th:value="${patronId}" />
                 <div>
                     <label for="firstname" class="block text-sm font-medium text-gray-700">Jméno *</label>
                     <input type="text" id="firstname" name="firstname"

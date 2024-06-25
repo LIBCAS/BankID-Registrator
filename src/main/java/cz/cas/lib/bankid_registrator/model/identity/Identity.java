@@ -49,6 +49,9 @@ public class Identity
     @OneToMany(mappedBy = "identity", cascade = CascadeType.ALL)
     private List<Media> media = new ArrayList<>();
 
+    public Identity() {
+    }
+
     public Identity(String bankId) {
         this.bankId = bankId;
     }
