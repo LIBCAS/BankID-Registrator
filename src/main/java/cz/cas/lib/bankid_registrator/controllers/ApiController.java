@@ -43,13 +43,12 @@ public class ApiController extends ControllerAbstract
     @PostMapping("/api/check-rfid")
     public ResponseEntity<Map<String, Object>> checkRfid(
         @RequestParam @NotBlank String rfid, 
-        @RequestParam @NotBlank String patronSysId,
-        HttpSession session
+        @RequestParam @NotBlank String patronSysId
     ) {
         Long patronSysIdLong = Long.parseLong(patronSysId);
         String bid = this.patronService.getBankIdSubById(patronSysIdLong);
         Boolean isContinuable = this.patronService.isProcessing(bid);
-getLogger().info("isContinuable: " + isContinuable + ", rfid: " + rfid + ", patronSysId: " + patronSysId  + ", bid: " + bid);
+
         if (!isContinuable) {
             throw new PatronNotProcessableException();
         }

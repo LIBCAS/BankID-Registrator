@@ -9,6 +9,31 @@ function getCsrfTokenAndHeader() {
     };
 }
 
+const checkRfid = async (rfid, patronSysId, csrfToken, csrfHeader = null) => {
+    const request = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            rfid: rfid,
+            patronSysId: patronSysId
+        })
+    };
+
+    request.headers[csrfHeader ?? "X-CSRF-TOKEN"] = csrfToken;
+
+    const response = await fetch(`${apiUrl}/check-rfid`, request);
+
+    if (!response.ok) {
+        alert(`HTTP-Error: ${response.status} ${response.error}`);
+    }
+
+    const data = await response.json();
+
+    return data;
+}
+
 // PAGE: NEW REGISTRATION
 if (document.querySelector(".page-new-registration")) {
     const filesElm = document.getElementById("files");
@@ -32,27 +57,6 @@ if (document.querySelector(".page-new-registration")) {
         setTimeout(() => {
             mainElm.removeChild(alert);
         }, alertDuration);
-    }
-
-    const checkRfid = async (rfid, patronId) => {
-        const response = await fetch(`${apiUrl}/check-rfid`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                [csrfHeader]: csrfToken
-            },
-            body: new URLSearchParams({
-                rfid: rfid,
-                patronId: patronId
-            })
-        });
-
-        if (!response.ok) {
-            alert(`HTTP-Error: ${response.status} ${response.error}`);
-        }
-
-        const data = await response.json();
-        return data;
     }
 
     FilePond.registerPlugin(
@@ -80,7 +84,7 @@ if (document.querySelector(".page-new-registration")) {
             patronId = null;
         }
 
-        checkRfid(rfid, patronId)
+        checkRfid(rfid, patronId, csrfToken)
             .then(data => {
                 if (data.result === true) {
                     rfidElm.value = "";
