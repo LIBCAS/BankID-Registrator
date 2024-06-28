@@ -285,7 +285,7 @@ public class MainController extends MainControllerAbstract
         String code = (String) session.getAttribute("code");
         Identity identity = this.identityService.findById((Long) session.getAttribute("identity")).orElse(null);
 
-        this.patronRepository.delete(patron);
+        this.patronRepository.deleteById(patronSysId);
 
         try {
             getLogger().info("new-registration - originalPatron: {}", patron.toJson());

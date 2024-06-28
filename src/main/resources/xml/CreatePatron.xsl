@@ -559,6 +559,68 @@
     </xsl:template>
     <!-- <<< Z308 - barcode <<< -->
 
+    <!-- <<< Z308 - BankID sub <<< -->
+    <xsl:param name="is-z308-key-type-07-record-action" select="'true'"/>
+    <xsl:param name="z308-key-type-07-record-action" select="'I'"/>
+    <xsl:param name="is-z308-key-type-07-key-type" select="'true'"/>
+    <xsl:param name="z308-key-type-07-key-type" select="'07'"/>
+    <xsl:param name="is-z308-key-type-07-key-data" select="'true'"/>
+    <xsl:param name="z308-key-type-07-key-data" select="''"/>
+    <xsl:param name="is-z308-key-type-07-verification" select="'true'"/>
+    <xsl:param name="z308-key-type-07-verification" select="''"/>
+    <xsl:param name="is-z308-key-type-07-verification-type" select="'true'"/>
+    <xsl:param name="z308-key-type-07-verification-type" select="'00'"/>
+    <xsl:param name="is-z308-key-type-07-id" select="'true'"/>
+    <xsl:param name="z308-key-type-07-id" select="''"/>
+    <xsl:param name="is-z308-key-type-07-status" select="'true'"/>
+    <xsl:param name="z308-key-type-07-status" select="'AC'"/>
+    <xsl:param name="is-z308-key-type-07-encryption" select="'true'"/>
+    <xsl:param name="z308-key-type-07-encryption" select="'N'"/>
+
+    <xsl:template name="z308-key-type-07">
+        <xsl:if test="starts-with($is-z308-key-type-07-record-action, 'true')">
+            <xsl:element name="record-action">
+                <xsl:copy-of select="$z308-key-type-07-record-action"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-07-key-type, 'true')">
+            <xsl:element name="z308-key-type">
+                <xsl:copy-of select="$z308-key-type-07-key-type"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-07-key-data, 'true')">
+            <xsl:element name="z308-key-data">
+                <xsl:copy-of select="$z308-key-type-07-key-data"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-07-verification, 'true')">
+            <xsl:element name="z308-verification">
+                <xsl:copy-of select="$z308-key-type-07-verification"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-07-verification-type, 'true')">
+            <xsl:element name="z308-verification-type">
+                <xsl:copy-of select="$z308-key-type-07-verification-type"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-07-id, 'true')">
+            <xsl:element name="z308-id">
+                <xsl:copy-of select="$z308-key-type-07-id"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-07-status, 'true')">
+            <xsl:element name="z308-status">
+                <xsl:copy-of select="$z308-key-type-07-status"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-07-encryption, 'true')">
+            <xsl:element name="z308-encryption">
+                <xsl:copy-of select="$z308-key-type-07-encryption"/>
+            </xsl:element>
+        </xsl:if>
+    </xsl:template>
+    <!-- <<< Z308 - BankID sub <<< -->
+
     <!-- <<< Z308 - RFID <<< -->
     <xsl:param name="is-z308-key-type-03-record-action" select="'true'"/>
     <xsl:param name="z308-key-type-03-record-action" select="'I'"/>
@@ -634,6 +696,8 @@
     <xsl:param name="is-z308-key-type-00" select="'true'"/>
     <!-- Z308 - barcode -->
     <xsl:param name="is-z308-key-type-01" select="'true'"/>
+    <!-- Z308 - BankID sub -->
+    <xsl:param name="is-z308-key-type-07" select="'true'"/>
     <!-- Z308 - RFID -->
     <xsl:param name="is-z308-key-type-03" select="'false'"/>
 
@@ -667,6 +731,11 @@
             <xsl:if test="starts-with($is-z308-key-type-01, 'true')">
                 <xsl:element name="z308">
                     <xsl:call-template name="z308-key-type-01"/>
+                </xsl:element>
+            </xsl:if>
+            <xsl:if test="starts-with($is-z308-key-type-07, 'true')">
+                <xsl:element name="z308">
+                    <xsl:call-template name="z308-key-type-07"/>
                 </xsl:element>
             </xsl:if>
             <xsl:if test="starts-with($is-z308-key-type-03, 'true')">

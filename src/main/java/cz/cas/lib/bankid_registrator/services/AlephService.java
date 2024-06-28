@@ -31,6 +31,7 @@ import cz.cas.lib.bankid_registrator.entities.patron.PatronHold;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronItem;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
+import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
@@ -766,6 +767,7 @@ logger.info("AAA doHttpRequest method: {}", method);
             String patronId = patron.getId();
             String patronName = patron.getName();
             String patronPassword = patron.getVerification();
+            Optional<Identity> identity = identityService.findByBankId(patron.getBankIdSub());
 
             // z303
             transformer.setParameter("z303-match-id", patronId);
@@ -825,9 +827,12 @@ logger.info("AAA doHttpRequest method: {}", method);
             }
 
             // z308 - BankID
-            // transformer.setParameter("z308-key-type-07-key-data", patron.getBankIdSub());
-            // transformer.setParameter("z308-key-type-07-verification", patronPassword);
-            // transformer.setParameter("z308-key-type-07-id", patronId);
+            if (identity.isPresent()) {
+                Long identityId = identity.get().getId();
+                transformer.setParameter("z308-key-type-07-key-data", identityId.toString());
+                transformer.setParameter("z308-key-type-07-verification", patronPassword);
+                transformer.setParameter("z308-key-type-07-id", patronId);
+            }
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
