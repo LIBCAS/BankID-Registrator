@@ -2,10 +2,9 @@ package cz.cas.lib.bankid_registrator.dao.mariadb;
 
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import java.util.List;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-
 import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface IdentityRepository extends JpaRepository<Identity, Long>
 {
