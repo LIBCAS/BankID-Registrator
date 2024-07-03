@@ -4,12 +4,17 @@ import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.boot.web.servlet.error.ErrorController;
+import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
-public class MainErrorController extends ControllerAbstract implements ErrorController {
+public class MainErrorController extends ControllerAbstract implements ErrorController
+{
+    public MainErrorController(MessageSource messageSource) {
+        super(messageSource);
+    }
 
     @RequestMapping("/error")
     public void handleError(HttpServletRequest request) throws Exception {

@@ -7,9 +7,9 @@ import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.servlet.http.HttpSession;
 import javax.validation.constraints.NotBlank;
+import org.springframework.context.MessageSource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +27,8 @@ public class ApiController extends ControllerAbstract
     private final IdentityService identityService;
     private final IdentityActivityService identityActivityService;
 
-    public ApiController(PatronService patronService, AlephService alephService, IdentityService identityService, IdentityActivityService identityActivityService) {
+    public ApiController(MessageSource messageSource, PatronService patronService, AlephService alephService, IdentityService identityService, IdentityActivityService identityActivityService) {
+        super(messageSource);
         this.patronService = patronService;
         this.alephService = alephService;
         this.identityService = identityService;
