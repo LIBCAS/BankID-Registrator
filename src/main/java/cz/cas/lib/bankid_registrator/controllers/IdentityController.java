@@ -37,12 +37,10 @@ public class IdentityController extends ControllerAbstract
         boolean isTokenValid = this.tokenService.isIdentityTokenValid(token);
 
         if (!isTokenValid) {
-            throw new HttpErrorException(HttpStatus.BAD_REQUEST, "Invalid or missing token.");
+            throw new HttpErrorException(HttpStatus.BAD_REQUEST, this.messageSource.getMessage("error.token.invalidOrMissing", null, locale));
         }
 
-        model.addAttribute("appName", this.appName);
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordReset.title", null, locale));
-        model.addAttribute("lang", locale.getLanguage());
         model.addAttribute("token", token);
 
         return "identity_password_reset";

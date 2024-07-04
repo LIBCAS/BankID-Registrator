@@ -1,21 +1,6 @@
-/*
- * Copyright (C) 2022 Academy of Sciences Library
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package cz.cas.lib.bankid_registrator.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
@@ -32,7 +17,6 @@ import cz.cas.lib.bankid_registrator.services.MainService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.services.MediaService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
-
 import java.net.URI;
 import java.util.Locale;
 import java.util.Map;
@@ -40,9 +24,6 @@ import java.util.Optional;
 import java.time.LocalDateTime;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
-import javax.validation.constraints.NotEmpty;
-
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -55,14 +36,8 @@ import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-/**
- *
- * @author iok
- */
 @Controller
-public class MainController extends MainControllerAbstract
+public class MainController extends ControllerAbstract
 {
     private final MainConfiguration mainConfig;
     private final MainService mainService;
@@ -75,13 +50,9 @@ public class MainController extends MainControllerAbstract
     private final IdentityActivityService identityActivityService;
     private final AccessTokenContainer accessTokenContainer;
     private final EmailService emailService;
-    private final MessageSource messageSource;
-
-    @NotEmpty
-    @Value("${spring.application.name}")
-    private String appName;
 
     public MainController(
+        MessageSource messageSource,
         MainConfiguration mainConfig,
         MainService mainService,
         AlephService alephService,
@@ -92,10 +63,9 @@ public class MainController extends MainControllerAbstract
         IdentityService identityService,
         IdentityActivityService identityActivityService,
         AccessTokenContainer accessTokenContainer,
-        EmailService emailService,
-        MessageSource messageSource
+        EmailService emailService
     ) {
-        super();
+        super(messageSource);
         this.mainConfig = mainConfig;
         this.mainService = mainService;
         this.alephService = alephService;
@@ -107,17 +77,14 @@ public class MainController extends MainControllerAbstract
         this.identityActivityService = identityActivityService;
         this.accessTokenContainer = accessTokenContainer;
         this.emailService = emailService;
-        this.messageSource = messageSource;
         init();
     }
 
-    @Override
     @RequestMapping(value="/", method=RequestMethod.GET)
     public String RootEntry(Locale locale) {
         return "redirect:/welcome";
     }
 
-    @Override
     @RequestMapping(value="/index", method=RequestMethod.GET)
     public String IndexEntry(Locale locale) {
         return "redirect:/welcome";
@@ -130,11 +97,9 @@ public class MainController extends MainControllerAbstract
      * @throws Exception 
      */
     @RequestMapping(value="/welcome", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String WelcomeEntry(Model model, Locale locale, HttpSession session) throws Exception {
+    public String WelcomeEntry(Model model, Locale locale) throws Exception {
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
-        model.addAttribute("appName", this.appName);
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
-        model.addAttribute("lang", locale.getLanguage());
 
         return "welcome";
     }
@@ -180,8 +145,6 @@ public class MainController extends MainControllerAbstract
     public String CallbackEntry(@RequestParam("code") String code, Model model, Locale locale, HttpSession session)
     {
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
-        model.addAttribute("appName", this.appName);
-        model.addAttribute("lang", locale.getLanguage());
 
         Assert.notNull(code, "\"code\" is required");
 
@@ -363,9 +326,6 @@ public class MainController extends MainControllerAbstract
      */
     @RequestMapping(value="/guide", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
     public String AboutEntry(Model model) {
-
-        model.addAttribute("appName", this.appName);
-
         return "guide";
     }
 
@@ -376,9 +336,6 @@ public class MainController extends MainControllerAbstract
      */
     @RequestMapping(value="/tos", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
     public String TermsOfServiceEntry(Model model) {
-
-        model.addAttribute("appName", this.appName);
-
         return "terms_of_service";
     }
 
@@ -389,9 +346,6 @@ public class MainController extends MainControllerAbstract
      */
     @RequestMapping(value="/privacy-policy", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
     public String UsagePolicyEntry(Model model) {
-
-        model.addAttribute("appName", this.appName);
-
         return "privacy_policy";
     }
 }

@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * API controller with endpoints for front-end
  */
 @RestController
-public class ApiController extends ControllerAbstract
+public class ApiController extends ApiControllerAbstract
 {
     private final PatronService patronService;
     private final AlephService alephService;
@@ -63,6 +63,12 @@ public class ApiController extends ControllerAbstract
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * !!! ONLY FOR TESTING PURPOSES !!!
+     * Empty the `identities` and `identity_activities` tables
+     * @param session
+     * @return
+     */
     @GetMapping("/api/reset-identities")
     public ResponseEntity<Map<String, Object>> resetIdentities(HttpSession session)
     {

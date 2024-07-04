@@ -17,8 +17,12 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import java.util.Locale;
+
+import javax.validation.constraints.NotEmpty;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  *
@@ -27,6 +31,10 @@ import org.slf4j.LoggerFactory;
 public abstract class MainControllerAbstract implements ControllerIface {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @NotEmpty
+    @Value("${spring.application.name}")
+    protected String appName;
 
     /**
      * 

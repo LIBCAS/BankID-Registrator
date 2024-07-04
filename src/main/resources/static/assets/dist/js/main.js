@@ -1,6 +1,10 @@
 const apiUrl = "/bankid-registrator/api";
 const alertDuration = 3000;
 
+/**
+ * Get the CSRF token and header from the form.
+ * @returns {Object} csrfToken and csrfHeader
+ */
 function getCsrfTokenAndHeader() {
     const csrfInput = document.querySelector('input[name="_csrf"]');
     return {
