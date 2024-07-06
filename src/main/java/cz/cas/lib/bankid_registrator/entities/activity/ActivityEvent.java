@@ -1,5 +1,8 @@
 package cz.cas.lib.bankid_registrator.entities.activity;
 
+/**
+ * Enum representing an activity event
+ */
 public enum ActivityEvent {
     BANKID_VERIFICATION_INITIATION,
     BANKID_VERIFICATION_SUCCESS,

@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+/**
+ * IdentityActivity is a log of an activity performed by an Identity
+ */
 @Entity
 @Table(name = "identity_activity")
 @Getter

@@ -27,7 +27,7 @@ public class IdentityController extends ControllerAbstract
     }
 
     /**
-     * 
+     * A page for resetting the password of an identity
      * @param token
      * @param model
      * @return 

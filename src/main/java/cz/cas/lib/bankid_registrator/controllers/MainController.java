@@ -290,6 +290,7 @@ public class MainController extends ControllerAbstract
 
         identity.setAlephId(patron.getId());
         identity.setAlephBarcode(patron.getBarcode());
+        identity.setIsEmployee(patron.isCasEmployee);
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 

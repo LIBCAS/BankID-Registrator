@@ -18,6 +18,9 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+/**
+ * Identity is a user who has successfully verified their identity via BankID
+ */
 @Entity
 @Table(name = "identity")
 @Getter
@@ -36,6 +39,9 @@ public class Identity
 
     @Column(name = "aleph_barcode", nullable = true, unique = true)
     private String alephBarcode;
+
+    @Column(name="is_employee", nullable = true)
+    private Boolean isEmployee;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
