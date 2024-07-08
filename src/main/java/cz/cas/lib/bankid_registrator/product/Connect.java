@@ -73,21 +73,22 @@ public class Connect extends ConnectClaims implements IProduct {
             @JsonProperty("txn") String txn,
             @JsonProperty("verified_claims") ConnectVerifiedClaims verified_claims) {
         super(
-                name,
-                given_name,
-                family_name,
-                middle_name,
-                nickname,
-                preferred_username,
-                email,
-                email_verified,
-                gender,
-                birthdate,
-                zoneinfo,
-                locale,
-                phone_number,
-                phone_number_verified,
-                updated_at);
+            name,
+            given_name,
+            family_name,
+            middle_name,
+            nickname,
+            preferred_username,
+            email,
+            email_verified,
+            gender,
+            birthdate,
+            zoneinfo,
+            locale,
+            phone_number,
+            phone_number_verified,
+            updated_at
+        );
         this.sub = sub;
         this.txn = txn;
         this.verified_claims = verified_claims;

@@ -1,24 +1,7 @@
-/*
- * Copyright (C) 2022 Academy of Sciences Library
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.configurations.AlephServiceConfig;
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
-import cz.cas.lib.bankid_registrator.dao.mariadb.PatronBarcodeRepository;
 import cz.cas.lib.bankid_registrator.dao.oracle.OracleRepository;
 import cz.cas.lib.bankid_registrator.entities.entity.Address;
 import cz.cas.lib.bankid_registrator.entities.entity.AddressType;
@@ -35,6 +18,7 @@ import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
+import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.util.TimestampToDate;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -49,7 +33,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -75,7 +58,6 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -112,7 +94,7 @@ public class AlephService extends AlephServiceAbstract
      */
     public Map<String, Object> getAlephPatron(String patronId)
     {
-        Assert.notNull(patronId, "\"patronId\" is required");
+        Assert.notNull(patronId, "getAlephPatron: \"patronId\" is required");
 
         Map<String, Object> result = new HashMap<>();
 
@@ -403,11 +385,11 @@ public class AlephService extends AlephServiceAbstract
 
         Map<String, Object> holdCreation = this.doRestDlfRequest(urlPathParts, urlParams, HttpMethod.PUT, holdXml);
 
-        if (holdCreation.containsKey("error")) {logger.info("BACHA");
+        if (holdCreation.containsKey("error")) {
             result.put("error", holdCreation.get("error"));
             return result;
         }
-        logger.info("OKACKO");
+
         result.put("success", Boolean.TRUE);
 
         return result;
@@ -975,7 +957,11 @@ logger.info("AAA doHttpRequest method: {}", method);
         }
         patron.setBirthDate(birthdate.replace("-", ""));  // 2003-07-25 => 20030725
 
-        patron.setConLng(userInfo.getLocale() == "cs_CZ" ? PatronLanguage.CZE : PatronLanguage.ENG);
+        String smsNumber = userProfile.getPhone_number();
+        patron.setSmsNumber(Optional.ofNullable(smsNumber).orElse(""));
+
+        String conLng = userInfo.getLocale(); logger.info("conLng: {}", conLng);
+        patron.setConLng(conLng.equals("cs_CZ") ? PatronLanguage.CZE : PatronLanguage.ENG); logger.info("patron.getConLng() == {}", patron.getConLng());
 
         // Patron address (permanent residence)
         Address address = userProfile.getAddresses().stream()
@@ -1067,13 +1053,13 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         patron.setVerification(generatePatronPassword());
 
+        // BankID
+        patron.setBankIdSub(userInfo.getSub());
+
         // New registration or registration renewal
         Boolean isNewAlephPatron = this.isNewAlephPatron(patron);
         patron.isNew = isNewAlephPatron;
         patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A);
-
-        // BankID
-        patron.setBankIdSub(userInfo.getSub());
 
         result.put("patron", patron);
 
@@ -1125,6 +1111,7 @@ logger.info("AAA doHttpRequest method: {}", method);
                     patron.setAddress2(getXmlElementValue(z304Nodes.item(i), "z304-address-2"));
                     patron.setZip(getXmlElementValue(z304Nodes.item(i), "z304-zip"));
                     patron.setSmsNumber(getXmlElementValue(z304Nodes.item(i), "z304-sms-number"));
+                    patron.setEmail(getXmlElementValue(z304Nodes.item(i), "z304-email-address"));
                 } else if ("02".equals(addressType)) {
                     patron.setContactAddress0(getXmlElementValue(z304Nodes.item(i), "z304-address-0"));
                     patron.setContactAddress1(getXmlElementValue(z304Nodes.item(i), "z304-address-1"));
@@ -1144,6 +1131,8 @@ logger.info("AAA doHttpRequest method: {}", method);
                     patron.setRfid(getXmlElementValue(z308Nodes.item(i), "z308-key-data"));
                 } else if ("05".equals(keyType)) {
                     patron.setIdCardNumber(getXmlElementValue(z308Nodes.item(i), "z308-key-data"));
+                } else if ("07".equals(keyType)) {
+                    patron.setIdentityRefId(Long.parseLong(getXmlElementValue(z308Nodes.item(i), "z308-key-data")));
                 }
             }
 
@@ -1299,6 +1288,96 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
+     * Generates an XML string for a patron's password update
+     * @param patronId
+     * @param passwordOld - old password
+     * @param passwordNew - new password
+     * @return
+     */
+    public Map<String, String> createPatronPswUpdateXml(String patronId, String passwordOld, String passwordNew) {
+        Map<String, String> result = new HashMap<>();
+
+        Assert.notNull(patronId, "createPatronPswUpdateXml: \"patronId\" is required");
+        Assert.notNull(passwordOld, "createPatronPswUpdateXml: \"passwordOld\" is required");
+        Assert.notNull(passwordNew, "createPatronPswUpdateXml: \"passwordNew\" is required");
+
+        String xmlString = "<?xml version=\"1.0\"?>";
+
+        Source stylesheetSource = new StreamSource();
+        stylesheetSource.setSystemId("classpath:/xml/AlephPatronPswUpdate.xsl");
+        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        try {
+            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+
+            transformer.setParameter("oldPassword", passwordOld);
+            transformer.setParameter("newPassword", passwordNew);            
+
+            StringWriter stringWriter = new StringWriter();
+            Result streamResult = new StreamResult(stringWriter);
+            transformer.transform(stylesheetSource, streamResult);
+            if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
+                xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
+            } else {
+                xmlString = stringWriter.getBuffer().toString();
+            }
+            result.put("xml", xmlString);
+        } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        }
+
+        return result;
+    }
+
+    /**
+     * Updates a patron's password in Aleph
+     * @param patronId - patron ID
+     * @param passwordNew - new password
+     * @return
+     */
+    public Map<String, Object> updatePatronPassword(String patronId, String passwordNew) {
+        Assert.notNull(patronId, "updatePatronPassword: \"patronId\" is required");
+        Assert.notNull(passwordNew, "updatePatronPassword: \"passwordNew\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        Map<String, Object> alephPatronGet = this.getAlephPatron(patronId);
+
+        if (alephPatronGet.containsKey("error")) {
+            result.put("error", alephPatronGet.get("error"));
+            return result;
+        }
+
+        Patron alephPatron = (Patron) alephPatronGet.get("patron");
+        String passwordOld = alephPatron.getVerification();
+
+        String[] urlPathParts = new String[] {
+            "patron", patronId, 
+            "patronInformation",
+            "password"
+        };
+
+        Map<String, String> urlParams = new HashMap<>();
+
+        Map<String, String> patronPswUpdateXml = this.createPatronPswUpdateXml(patronId, passwordOld, passwordNew);
+        if (patronPswUpdateXml.containsKey("error")) {
+            result.put("error", patronPswUpdateXml.get("error"));
+            return result;
+        }
+
+        Map<String, Object> patronPswUpdate = this.doRestDlfRequest(urlPathParts, urlParams, HttpMethod.POST, patronPswUpdateXml.get("xml"));
+
+        if (patronPswUpdate.containsKey("error")) {
+            result.put("error", patronPswUpdate.get("error"));
+            return result;
+        }
+
+        result.put("success", Boolean.TRUE);
+
+        return result;
+    }
+
+    /**
      * Initializes patron's testing data based on the Connect and Identify objects
      * @param userInfo
      * @param userProfile
@@ -1328,7 +1407,7 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         patron.setEmail(Optional.ofNullable(this.generateTestingEmail()).orElse(""));
 
-        String birthdate = this.generateTestingBirthday();   // 2003-07-25
+        String birthdate = userInfo.getBirthdate();   // 2003-07-25
         if (birthdate == null) {
             result.put("error", "chybí datum narození");
             return result;
@@ -1340,13 +1419,6 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         String conLng = userInfo.getLocale(); logger.info("conLng: {}", conLng);
         patron.setConLng(conLng.equals("cs_CZ") ? PatronLanguage.CZE : PatronLanguage.ENG); logger.info("patron.getConLng() == {}", patron.getConLng());
-        if (patron.getConLng().equals(PatronLanguage.CZE)) {
-            logger.info("patron.getConLng() == PatronLanguage.CZE");
-        } else if (patron.getConLng().equals(PatronLanguage.ENG)) {
-            logger.info("patron.getConLng() == PatronLanguage.ENG");
-        } else {
-            logger.info("patron.getConLng() == null");
-        }
 
         // Patron address (permanent residence)
         Address address = userProfile.getAddresses().stream()
@@ -1438,13 +1510,13 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         patron.setVerification(generatePatronPassword());
 
+        // BankID
+        patron.setBankIdSub(userInfo.getSub());
+
         // New registration or registration renewal
         Boolean isNewAlephPatron = this.isNewAlephPatron(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
         patron.isNew = isNewAlephPatron;
         patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A); logger.info("patron.getAction(): {}", patron.getAction());
-
-        // BankID
-        patron.setBankIdSub(userInfo.getSub());
 
         result.put("patron", patron);
 
@@ -1496,20 +1568,56 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
-     * Checks if a patron already exists in the Aleph Oracle DB (based on the name and birthdate)
-     * or if the patron was already verified via Bank ID.
-     * @param name Patron's name
+     * Checks if the patron was already verified via Bank ID 
+     * and if the patron who is currently being verified has the same birthdate as the one in the Aleph
+     * @param Patron Patron's data
      * @param birthDate Patron's birthdate
-     * @return true if patron exists, false otherwise
+     * @return true if patron exists in Aleph, false otherwise
      */
     public boolean isNewAlephPatron(Patron patron) {
-        boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
-        boolean isVerifiedAndAlephLinked = identityService.findAlephLinkedByBankId(patron.getBankIdSub()).isPresent();
-        return isNewInOracle || !isVerifiedAndAlephLinked;
+        // Checking if a patron already exists in the Aleph Oracle DB (based on the name and birthdate) or if the patron was already verified via Bank ID:
+        // boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
+        // boolean isVerifiedAndAlephLinked = identityService.findAlephLinkedByBankId(patron.getBankIdSub()).isPresent();
+        // return isNewInOracle || !isVerifiedAndAlephLinked;
+
+        String patronBankIdSub = patron.getBankIdSub();
+        Optional<Identity> identitySearch = identityService.findByBankId(patronBankIdSub);
+
+        if (identitySearch.isPresent()) {
+            Identity identity = identitySearch.get();
+            String alephPatronId = identity.getAlephId();
+
+            if (alephPatronId == null) {
+                return true;
+            }
+
+            Map<String, Object> alephPatronSearch = this.getAlephPatron(alephPatronId);
+
+            if (alephPatronSearch.containsKey("error")) {
+                return true;
+            }
+
+            Patron alephPatron = (Patron) alephPatronSearch.get("patron");
+
+            String patronBirthdate = DateUtils.convertDateFormat(patron.getBirthDate(), "yyyyMMdd", "dd-MM-yyyy");
+getLogger().info(alephPatron.getBirthDate() + " > " + patronBirthdate + " > " + alephPatron.getIdentityRefId() + " > " + identity.getId());
+            return !(alephPatron.getBirthDate().equals(patronBirthdate) && alephPatron.getIdentityRefId().equals(identity.getId()));
+        }
+
+        return true;
     }
 
     private String generateTestingMname() {
-        return "Test";
+        StringBuilder name = new StringBuilder("Test");
+        Random random = new Random();
+        int lengthOfRandomString = 5;
+
+        for (int i = 0; i < lengthOfRandomString; i++) {
+            char randomChar = (char) ('a' + random.nextInt(26));
+            name.append(randomChar);
+        }
+
+        return name.toString();
     }
 
     private String generateTestingBirthday() {

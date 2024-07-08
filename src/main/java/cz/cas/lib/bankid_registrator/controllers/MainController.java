@@ -5,6 +5,7 @@ import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
+import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
@@ -14,8 +15,9 @@ import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.MainService;
-import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.services.MediaService;
+import cz.cas.lib.bankid_registrator.services.PatronService;
+import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import java.net.URI;
 import java.util.Locale;
@@ -30,6 +32,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
@@ -50,6 +53,7 @@ public class MainController extends ControllerAbstract
     private final IdentityActivityService identityActivityService;
     private final AccessTokenContainer accessTokenContainer;
     private final EmailService emailService;
+    private final TokenService tokenService;
 
     public MainController(
         MessageSource messageSource,
@@ -63,7 +67,8 @@ public class MainController extends ControllerAbstract
         IdentityService identityService,
         IdentityActivityService identityActivityService,
         AccessTokenContainer accessTokenContainer,
-        EmailService emailService
+        EmailService emailService,
+        TokenService tokenService
     ) {
         super(messageSource);
         this.mainConfig = mainConfig;
@@ -77,6 +82,8 @@ public class MainController extends ControllerAbstract
         this.identityActivityService = identityActivityService;
         this.accessTokenContainer = accessTokenContainer;
         this.emailService = emailService;
+        this.tokenService = tokenService;
+
         init();
     }
 
@@ -192,9 +199,12 @@ public class MainController extends ControllerAbstract
 
         Patron patron = (Patron) patronObjCreation.get("patron");
         patron = patronRepository.save(patron);
+
+        PatronDTO patronDTO = this.patronService.getPatronDTO(patron);
+
         session.setAttribute("patron", patron.getSysId());
         model.addAttribute("patronId", patron.getSysId());
-        model.addAttribute("patron", this.patronService.getPatronDTO(patron));
+        model.addAttribute("patron", patronDTO);
 
         try {
             getLogger().info("patron: {}", patron.toJson());
@@ -207,7 +217,7 @@ public class MainController extends ControllerAbstract
 
             return "callback_registration_new";
         } else {
-            Map<String, Object> patronAlephObjCreation = this.alephService.getAlephPatron(patron.getId());
+            Map<String, Object> patronAlephObjCreation = this.alephService.getAlephPatron(identity.getAlephId());
 
             if (patronAlephObjCreation.containsKey("error")) {
                 getLogger().error("Error getting patron from Aleph: {}", patronAlephObjCreation.get("error"));
@@ -217,8 +227,13 @@ public class MainController extends ControllerAbstract
 
             Patron patronAleph = (Patron) patronAlephObjCreation.get("patron");
             patronAleph = patronRepository.save(patronAleph);
+
+            PatronDTO patronAlephDTO = this.patronService.getPatronDTO(patronAleph);
+            PatronDTO patronLatestDTO = PatronDTO.mergePatrons(patronDTO, patronAlephDTO);
+
             session.setAttribute("patronAleph", patronAleph.getSysId());
-            model.addAttribute("patronAleph", this.patronService.getPatronDTO(patronAleph));
+            model.addAttribute("patronAleph", patronAlephDTO);
+            model.addAttribute("patronLatest", patronLatestDTO);
 
             try {
                 getLogger().info("patronAleph: {}", patronAleph.toJson());
@@ -232,6 +247,19 @@ public class MainController extends ControllerAbstract
         }
     }
 
+    // @RequestMapping(value="/testika", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
+    // public String testika(Model model, Locale locale, HttpSession session)
+    // {
+
+
+    //     model.addAttribute("patronId", patron.getSysId());
+    //     model.addAttribute("patron", patronDTO);
+    //     model.addAttribute("patronAleph", patronAlephDTO);
+    //     model.addAttribute("patronLatest", patronLatestDTO);
+
+    //     return "callback_registration_renewal";
+    // }
+
     /**
      * Creating new Aleph patron
      * @param editedPatron - user-edited patron data
@@ -241,7 +269,7 @@ public class MainController extends ControllerAbstract
      * @return String
      */
     @PostMapping("/new-registration")
-    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, @RequestParam("media") MultipartFile[] mediaFiles) {
+    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, Locale locale, @RequestParam("media") MultipartFile[] mediaFiles) {
         Long patronSysId = (Long) session.getAttribute("patron");
         Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
@@ -288,9 +316,12 @@ public class MainController extends ControllerAbstract
             return "error";
         }
 
+        String alephPatronBarcode = patron.getBarcode();
+        String patronEmail = patron.getEmail();
+
         identity.setAlephId(patron.getId());
-        identity.setAlephBarcode(patron.getBarcode());
-        identity.setIsEmployee(patron.isCasEmployee);
+        identity.setAlephBarcode(alephPatronBarcode);
+        identity.setIsCasEmployee(patron.isCasEmployee);
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 
@@ -306,16 +337,17 @@ public class MainController extends ControllerAbstract
         this.identityActivityService.logNewRegistrationSuccess(identity);
 
         try {
-            this.emailService.sendEmailNewRegistration(patron.getEmail(), patron.getId());
+            this.emailService.sendEmailNewRegistration(patronEmail, alephPatronBarcode, patron.isCasEmployee, locale);
             this.identityActivityService.logNewRegistrationEmailSent(identity);
         } catch (Exception e) {
-            getLogger().error("Error sending email", e);
+            getLogger().error("Failed to send new registration confirmation email to " + patronEmail, e);
         }
 
-        session.setAttribute("alephBarcode", patron.getBarcode());
+        session.setAttribute("alephBarcode", alephPatronBarcode);
 
         model.addAttribute("xml", patronCreation.get("xml-patron"));
-        model.addAttribute("alephBarcode", patron.getBarcode());
+        model.addAttribute("alephBarcode", alephPatronBarcode);
+        model.addAttribute("token", this.tokenService.createIdentityToken(identity));
 
         return "new_registration_success";
     }

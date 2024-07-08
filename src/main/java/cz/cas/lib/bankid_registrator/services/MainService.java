@@ -57,6 +57,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
@@ -337,7 +338,10 @@ public class MainService extends MainServiceAbstract
 //                    .addModule(new JSONPModule()).build();
 
             userInfo = mapper.convertValue(dataResponse.getContentAsJSONObject(), Connect.class);
-
+            getLogger().debug("QQQ SUB: {}", userInfo.getSub());
+            JSONObject jsonObject = new JSONObject(dataResponse.getContentAsJSONObject().toJSONString());
+            String sub = jsonObject.getString("sub");
+            getLogger().debug("WWW SUB: {}", sub);
         } catch (ParseException | IOException ex) {
             getLogger().error(MainService.class.getName(), ex);
         }

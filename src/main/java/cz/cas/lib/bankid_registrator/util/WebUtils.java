@@ -1,6 +1,9 @@
 package cz.cas.lib.bankid_registrator.util;
 
 import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -10,6 +13,25 @@ import java.util.stream.Collectors;
  */
 public class WebUtils
 {
+    /**
+     * Get the base URL of the application
+     * @param request
+     * @return
+     */
+    public static String getBaseUrl(HttpServletRequest request) {
+        String baseUrl = ServletUriComponentsBuilder.fromRequestUri(request)
+                .replacePath(null)
+                .build()
+                .toUriString();
+
+        String contextPath = request.getContextPath();
+
+        if (contextPath != null && !contextPath.isEmpty()) {
+            baseUrl = baseUrl + contextPath;
+        }
+
+        return baseUrl;
+    }
 
     /**
      * Get the current URL with URL parameters

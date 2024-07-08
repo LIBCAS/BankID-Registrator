@@ -30,12 +30,12 @@ public abstract class ControllerAbstract
     @ModelAttribute
     public void addCommonAttributes(Model model, Locale locale, HttpServletRequest request) {
         String currentUrl = WebUtils.getCurrentUrl(request, "lang");
-        boolean currentUrlHasParams = currentUrl.contains("?");
+        String currentUrlParamsConnector = currentUrl.contains("?") ? "&" : "?";
 
         model.addAttribute("lang", locale.getLanguage());
         model.addAttribute("appName", this.appName);
         model.addAttribute("currentUrl", currentUrl);
-        model.addAttribute("currentUrlHasParams", currentUrlHasParams);
+        model.addAttribute("currentUrlParamsConnector", currentUrlParamsConnector);
     }
 
     /**
@@ -51,5 +51,12 @@ public abstract class ControllerAbstract
      */
     protected void init() {
         getLogger().debug("initializing controller " + getClass().getSimpleName() + " ...");
+    }
+
+    /**
+     * Get app's base URL
+     */
+    protected String getBaseUrl(HttpServletRequest request) {
+        return WebUtils.getBaseUrl(request);
     }
 }

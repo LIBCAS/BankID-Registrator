@@ -25,6 +25,24 @@ public class DateUtils {
     }
 
     /**
+     * Converts a String date formats
+     * @param dateStr the date String to convert.
+     * @return
+     */
+    public static String convertDateFormat(String dateStr, String inputFormat, String outputFormat) {
+        SimpleDateFormat inputFormatFinal = new SimpleDateFormat(inputFormat);
+        SimpleDateFormat outputFormatFinal = new SimpleDateFormat(outputFormat);
+
+        try {
+            Date date = inputFormatFinal.parse(dateStr);
+            return outputFormatFinal.format(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    /**
      * Converts a String date from the Thymeleaf 'yyyy-MM-dd' format to the Aleph 'yyyyMMdd' format.
      * 
      * @param dateStr the date String to convert.

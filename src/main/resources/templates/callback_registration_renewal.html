@@ -1,15 +1,205 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-    layout:decorate="~{layout}">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
 
-<head>
-    <title th:replace="fragments/head :: head"></title>
-</head>
+    <head>
+        <title th:replace="fragments/head :: head"></title>
+    </head>
 
-<body class="page-callback page-new-registration">
-    <main layout:fragment="content" class="text-center container mx-auto">
-
-    </main>
-</body>
+    <body class="page-callback page-membership-renewal">
+        <main layout:fragment="content" class="mb-10 text-center container mx-auto">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.membershipRenewal.title}"> Membership renewal</h1>
+            <p class="mb-6">To renew your membership, please review the personal information below and fill in the empty fields where the value provided by the BankID service differs from the value entered during the initial registration.</p>
+            <form th:action="@{/membership-renewal}" method="post" th:object="${patronLatest}" class="my-5 space-y-4 max-w-4xl mx-auto">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" required />
+                <input type="hidden" name="patronId" th:value="${patronId}" />
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex flex-wrap gap-4">
+                        <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
+                            <label for="firstname" class="mb-3 block text-sm font-bold text-gray-700">
+                                <span th:text="#{message.firstname}">First name</span>: *
+                            </label>
+                            <input type="text" id="firstname" name="firstname" th:field="*{firstname}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required readonly />
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
+                            <label for="lastname" class="mb-3 block text-sm font-bold text-gray-700">
+                                <span th:text="#{message.lastname}">Last name</span>: *
+                            </label>
+                            <input type="text" id="lastname" name="lastname" th:field="*{lastname}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required readonly />
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
+                            <label for="birthday" class="mb-3 block text-sm font-bold text-gray-700">
+                                <span th:text="#{message.birthday}">Birthdate</span>: *
+                            </label>
+                            <input type="date" id="birthday" name="birthday" th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required readonly />
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
+                        <label for="email" class="mb-3 block text-sm font-bold text-gray-700">
+                            <span th:text="#{message.email}">E-mail</span>: *
+                        </label>
+                        <input type="email" id="email" name="email" th:field="*{email}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
+                    </div>
+                    <button th:if="${patron.email != null and !#strings.isEmpty(patron.email)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed">
+                        <span th:text="#{message.useThisBankIDValue}">Use this BankID value</span>:<br>
+                        <i th:text="${patron.email}"></i>
+                    </button>
+                    <button th:if="${patronAleph.email != null and !#strings.isEmpty(patronAleph.email)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed">
+                        <span th:text="#{message.useThisKnavValue}">Use this KNAV value</span>:<br>
+                        <i th:text="${patronAleph.email}"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
+                        <label for="phone" class="mb-3 block text-sm font-bold text-gray-700">
+                            <span th:text="#{message.mobilePhone}">Mobile phone</span>: *
+                        </label>
+                        <input type="tel" id="phone" name="phone" th:field="*{smsNumber}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
+                    </div>
+                    <button th:if="${patron.smsNumber != null and !#strings.isEmpty(patron.smsNumber)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed">
+                        <span th:text="#{message.useThisBankIDValue}">Use this BankID value</span>:<br>
+                        <i th:text="${patron.smsNumber}"></i>
+                    </button>
+                    <button th:if="${patronAleph.smsNumber != null and !#strings.isEmpty(patronAleph.smsNumber)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed">
+                        <span th:text="#{message.useThisKnavValue}">Use this KNAV value</span>:<br>
+                        <i th:text="${patronAleph.smsNumber}"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
+                        <label for="rfid" class="mb-3 block text-sm font-bold text-gray-700">
+                            <span th:text="#{message.rfid}">RFID (Lítačka, ISIC, etc.)</span>: 
+                        </label>
+                        <input type="text" id="rfid" name="rfid" th:field="*{rfid}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                    </div>
+                    <button th:if="${patron.rfid != null and !#strings.isEmpty(patron.rfid)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed">
+                        <span th:text="#{message.useThisBankIDValue}">Use this BankID value</span>:<br>
+                        <i th:text="${patron.rfid}"></i>
+                    </button>
+                    <button th:if="${patronAleph.rfid != null and !#strings.isEmpty(patronAleph.rfid)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed">
+                        <span th:text="#{message.useThisKnavValue}">Use this KNAV value</span>:<br>
+                        <i th:text="${patronAleph.rfid}"></i>
+                    </button>
+                </div>
+                <fieldset class="space-y-4">
+                    <legend class="mt-3 block font-bold text-gray-700">
+                        <span th:text="#{message.permanentAddress}">Permanent address</span>:
+                    </legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="permanent_address_line1" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.addressName}">Address name</span>: *
+                            </label>
+                            <input type="text" name="permanent_address_line1"
+                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                th:field="*{address0}" required readonly />
+                        </div>
+                        <div>
+                            <label for="permanent_address_line2" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.streetHouseNum}">Street and house number</span>: *
+                            </label>
+                            <input type="text" name="permanent_address_line2"
+                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                th:field="*{address1}" required readonly />
+                        </div>
+                        <div>
+                            <label for="permanent_address_line3" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.municipality}">Municipality</span>: *
+                            </label>
+                            <input type="text" name="permanent_address_line3"
+                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                th:field="*{address2}" required readonly />
+                        </div>
+                        <div>
+                            <label for="permanent_zip" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.zipCode}">ZIP code</span>: *
+                            </label>
+                            <input type="text" name="permanent_zip"
+                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                th:field="*{zip}" required readonly />
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="space-y-4">
+                    <legend class="mt-3 block font-bold text-gray-700">
+                        <span th:text="#{message.contactAddress}">Contact address</span>:
+                    </legend>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="contact_address_line1" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.addressName}">Address name</span>: 
+                            </label>
+                            <input type="text" name="contact_address_line1"
+                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                th:field="*{contactAddress0}" />
+                        </div>
+                        <div>
+                            <label for="contact_address_line2" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.streetHouseNum}">Street and house number</span>: 
+                            </label>
+                            <input type="text" name="contact_address_line2"
+                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                th:field="*{contactAddress1}" />
+                        </div>
+                        <div>
+                            <label for="contact_address_line3" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.municipality}">Municipality</span>: 
+                            </label>
+                            <input type="text" name="contact_address_line3"
+                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                th:field="*{contactAddress2}" />
+                        </div>
+                        <div>
+                            <label for="contact_zip" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.zipCode}">ZIP code</span>: 
+                            </label>
+                            <input type="text" name="contact_zip"
+                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                th:field="*{contactZip}" />
+                        </div>
+                    </div>
+                </fieldset>
+                <div>
+                    <label for="language" class="mt-7 mb-3 block text-left text-sm font-bold text-gray-700">
+                        <span th:text="#{message.language}">Language</span>: *
+                    </label>
+                    <select id="language" name="language" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{conLng}" required />
+                        <option th:value="CZE">
+                            <span th:text="#{message.czech}">Czech</span>
+                        </option>
+                        <option th:value="ENG">
+                            <span th:text="#{message.english}">English</span>
+                        </option>
+                    </select>
+                </div>
+                <div class="flex items-center mt-4">
+                    <input id="isCasEmployee" name="isCasEmployee" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{isCasEmployee == TRUE}" th:field="*{isCasEmployee}" />
+                    <label for="isCasEmployee" class="ml-2 mb-0 text-sm font-medium text-gray-700" th:text="#{message.iAmCasEmployee}">
+                        I am a CAS employee
+                    </label>
+                </div>
+                <div id="files-control" class="flex flex-col items-center mt-4 pl-4">
+                    <label for="media" class="block text-sm font-medium text-gray-700">
+                        <span th:text="#{message.uploadIdFiles}">Upload your ID card, passport or other proof of identity</span> *
+                    </label>
+                    <input id="files" type="file" class="filepond mb-0" name="media" multiple data-max-file-size="10MB" data-max-files="3" />
+                </div>
+                <div class="flex items-center mt-4">
+                    <input id="consent" name="consent" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{exportConsent == 'Y'}" th:field="*{exportConsent}" th:value="Y" required />
+                    <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">
+                        <span th:text="#{message.exportConsent}">I agree with the processing of personal data</span> *
+                    </label>
+                </div>
+                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4" th:text="#{message.renewMembership}">
+                    Membership renewal
+                </button>
+            </form>
+        </main>
+    </body>
 
 </html>

@@ -40,8 +40,8 @@ public class Identity
     @Column(name = "aleph_barcode", nullable = true, unique = true)
     private String alephBarcode;
 
-    @Column(name="is_employee", nullable = true)
-    private Boolean isEmployee;
+    @Column(name="is_cas_employee", nullable = true)
+    private Boolean isCasEmployee;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -18,6 +18,6 @@ public class MainServiceConfig
     @Bean
     @Profile({ "local", "testing" })
     public MainService mainServiceTest() {
-        return new MainServiceTest();
+        return new MainService();
     }
 }

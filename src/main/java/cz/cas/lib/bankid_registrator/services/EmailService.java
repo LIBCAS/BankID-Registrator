@@ -1,27 +1,50 @@
 package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.configurations.EmailConfig;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Locale;
+import javax.annotation.Nullable;
+import javax.mail.internet.MimeMessage;
+
+import org.springframework.context.MessageSource;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring5.SpringTemplateEngine;
 
-import javax.annotation.Nullable;
-import javax.mail.internet.MimeMessage;
-
 @Service
-public class EmailService
+public class EmailService extends ServiceAbstract
 {
-    @Autowired
-    private EmailConfig emailConfig;
+    private final EmailConfig emailConfig;
+    private final JavaMailSender mailSender;
+    private final SpringTemplateEngine templateEngine;
+    private final IdentityActivityService identityActivityService;
 
-    @Autowired
-    private JavaMailSender mailSender;
+    public EmailService(
+        MessageSource messageSource,
+        EmailConfig emailConfig,
+        JavaMailSender mailSender,
+        SpringTemplateEngine templateEngine, 
+        IdentityActivityService identityActivityService
+    ) {
+        super(messageSource);
+        this.emailConfig = emailConfig;
+        this.mailSender = mailSender;
+        this.templateEngine = templateEngine;
+        this.identityActivityService = identityActivityService;
+    }
 
-    @Autowired
-    private SpringTemplateEngine templateEngine;
+    /**
+     * Obfuscate the email address by replacing the first half of the email address with asterisks
+     * @param email
+     */
+    public String getObfuscatedEmail(String email)
+    {
+        String[] parts = email.split("@");
+        String obfuscated = parts[0].substring(0, parts[0].length() / 2).replaceAll(".", "*") + "@" + parts[1];
+        return obfuscated;
+    }
 
     /**
      * Send an email to the specified address with the specified subject and template.
@@ -46,11 +69,45 @@ public class EmailService
         mailSender.send(message);
     }
 
-    public void sendEmailNewRegistration(String to, String registrationId) throws Exception
+    /**
+     * Send a new registration confirmation email to the newly created Aleph patron
+     * @param to
+     * @param alephPatronBarcode
+     * @param isEmployee - whether the patron is an employee of the CAS
+     * @param locale
+     * @throws MailException
+     */
+    public void sendEmailNewRegistration(String to, String alephPatronBarcode, Boolean isCasEmployee, Locale locale) throws Exception
     {
         Context context = new Context();
-        context.setVariable("registrationId", registrationId);
+        context.setVariable("alephPatronBarcode", alephPatronBarcode);
+        context.setVariable("isCasEmployee", isCasEmployee);
 
-        this.sendEmail(to, "Nová registrace", "new_registration_success", context);
+        this.sendEmail(
+            to, 
+            this.messageSource.getMessage("email.newRegistration.subject", null, locale), 
+            locale + "/new_registration_success", 
+            context
+        );
+    }
+
+    /**
+     * Send an email with the link for resetting the identity password
+     * @param to
+     * @param link
+     * @param locale
+     * @throws MailException
+     */
+    public void sendEmailIdentityPasswordReset(String to, String link, Locale locale) throws Exception
+    {
+        Context context = new Context();
+        context.setVariable("pswResetLink", link);
+
+        this.sendEmail(
+            to, 
+            this.messageSource.getMessage("email.identityPasswordReset.subject", null, locale), 
+            locale + "/identity_password_reset", 
+            context
+        );
     }
 }

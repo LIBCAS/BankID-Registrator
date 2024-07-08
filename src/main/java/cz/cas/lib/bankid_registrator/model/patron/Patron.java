@@ -100,6 +100,9 @@ public class Patron {
     @Column(name="bank_id_sub")
     public String bankIdSub;         // bankIdSub
 
+    @Column(name="identity_ref_id", nullable = true)
+    public Long identityRefId;         // reference to the `id` column of the `identity` table
+
     @Column
     @Enumerated(EnumType.STRING)
     public PatronAction action;          // record-action
@@ -153,9 +156,6 @@ public class Patron {
         Optional.ofNullable(patron.conLng).ifPresent(e -> this.conLng = e);
         Optional.ofNullable(patron.exportConsent).ifPresent(e -> this.exportConsent = e);
         Optional.ofNullable(patron.rfid).ifPresent(e -> this.rfid = e);
-        Optional.ofNullable(patron.isCasEmployee).ifPresentOrElse(
-            e -> this.isCasEmployee = true,
-            () -> this.isCasEmployee = false
-        );
+        Optional.ofNullable(patron.isCasEmployee).ifPresent(e -> this.isCasEmployee = e);
     }
 }

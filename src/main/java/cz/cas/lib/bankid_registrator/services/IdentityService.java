@@ -2,17 +2,22 @@ package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.dao.mariadb.IdentityRepository;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 
 @Service
-public class IdentityService
+public class IdentityService extends ServiceAbstract
 {
-    @Autowired
-    private IdentityRepository identityRepository;
+    private final IdentityRepository identityRepository;
+
+    public IdentityService(IdentityRepository identityRepository) {
+        super(null);
+        this.identityRepository = identityRepository;
+    }
 
     @Transactional
     public void emptyTable() {
@@ -29,6 +34,14 @@ public class IdentityService
 
     public Optional<Identity> findByBankId(String bankId) {
         return this.identityRepository.findByBankId(bankId);
+    }
+
+    public Optional<Identity> findByAlephId(String alephId) {
+        return this.identityRepository.findByAlephId(alephId);
+    }
+
+    public Optional<Identity> findByAlephBarcode(String alephBarcode) {
+        return this.identityRepository.findByAlephBarcode(alephBarcode);
     }
 
     /**

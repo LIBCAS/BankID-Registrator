@@ -1,25 +1,29 @@
 <!DOCTYPE html>
-<html lang="cs" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${appName}">callback</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-    <link rel="shortcut icon" href="/bankid-registrator/img/favicon.ico" />
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+    <head>
+        <title th:replace="fragments/head :: head"></title>
+    </head>
 
-<body>
-    <h1 class="text-center m-5 text-xl font-bold">Nova registrace uspesne provedena</h1>
-    <div class="container my-2" align="center">
-        <p class="mb-2">Vaše uživatelké jméno: <b th:text="${alephBarcode}"></b><p>
-        <div align="center" style="width: 90%; padding: 10px; color: firebrick; background-color: lightgrey;">
-            XML dávka pro vytvoření nového patrona v Alephu
-        </div>
-        <pre lang="xml" th:text="${xml}" style="padding: 20px; text-align: left; background-color: lightyellow; width: 90%;" />
-    </div>
-</body>
+    <body class="page-new-registration-success">
+        <main layout:fragment="content" class="mb-10 container mx-auto text-center">
+            <p th:text="#{page.newRegistrationSuccess.text}">KNAV identity registration was successful.</p>
+            <p th:text="#{page.newRegistrationSuccess.emailSent}">A message with a link to pay the membership fee and your username has been sent to your email.</p>
+            <p class="mt-2">
+                <span th:text="#{page.newRegistrationSuccess.username}">Your username</span>: <b th:text="${alephBarcode}"></b>
+            </p>
+            <p class="mt-2">
+                <span th:text="#{page.newRegistrationSuccess.setPassword}">Set your password here</span>:
+            </p>
+            <div th:replace="fragments/form-identity-set-password :: form-identity-set-password"></div>
+
+            <div class="hidden mt-2">
+                <div class="text-center" style="width: 90%; padding: 10px; color: firebrick; background-color: lightgrey;">
+                    Aleph XML batch for creating a new patron
+                </div>
+                <pre lang="xml" th:text="${xml}" style="padding: 20px; text-align: left; background-color: lightyellow; width: 90%;"></pre> 
+            </div>
+        </main>
+    </body>
 
 </html>

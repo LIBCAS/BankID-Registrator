@@ -117,6 +117,38 @@ if (document.querySelector(".page-new-registration")) {
     });
 }
 
+// PAGE: MEMBERSHIP RENEWAL
+if (document.querySelector(".page-membership-renewal")) {
+    const jsbtnUseInputValElms = document.querySelectorAll('.jsbtn-useInputVal');
+
+    jsbtnUseInputValElms.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            const parentElement = this.parentElement;
+            const input = parentElement.querySelector('input');
+            const value = this.querySelector('i').textContent;
+            input.value = value;
+        });
+    });
+}
+
+// FORM: SET/RESET IDENTITY PASSWORD
+if (document.getElementById("form-identity-password")) {
+    const formElm = document.getElementById("form-identity-password");
+    const passwordElm = document.getElementById("newPassword");
+    const passwordConfirmElm = document.getElementById("repeatNewPassword");
+
+    formElm.addEventListener("submit", (ev) => {
+        const password = passwordElm.value;
+        const passwordConfirm = passwordConfirmElm.value;
+
+        if (password !== passwordConfirm) {
+            alert("The passwords do not match.");
+            ev.preventDefault();
+        }
+    });
+}
+
 // TESTING
 const emptyIdentities = async () => {
     const response = await fetch(`${apiUrl}/reset-identities`, {
