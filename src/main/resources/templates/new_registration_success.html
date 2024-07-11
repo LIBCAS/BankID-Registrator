@@ -7,8 +7,12 @@
 
     <body class="page-new-registration-success">
         <main layout:fragment="content" class="mb-10 container mx-auto text-center">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.newRegistration.title}">New registration</h1>
             <p th:text="#{page.newRegistrationSuccess.text}">KNAV identity registration was successful.</p>
             <p th:text="#{page.newRegistrationSuccess.emailSent}">A message with a link to pay the membership fee and your username has been sent to your email.</p>
+            <p>
+                <span th:text="#{message.membershipFee.instructions}">After paying the fee, your membership will be extended until</span> <span th:text="${membershipExpiryDate}"></span>.
+            </p>
             <p class="mt-2">
                 <span th:text="#{page.newRegistrationSuccess.username}">Your username</span>: <b th:text="${alephBarcode}"></b>
             </p>

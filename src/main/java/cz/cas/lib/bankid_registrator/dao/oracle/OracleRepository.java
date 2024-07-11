@@ -82,4 +82,19 @@ public class OracleRepository
     
         return ((Number) query.getSingleResult()).intValue();
     }
+
+    /**
+     * Gets the maximum number from the Z303_REC_KEY column of rows
+     * where Z303_REC_KEY starts with 'KNBD' followed by numeric characters.
+     * @return Maximum number.
+     */
+    public Long getMaxBankIdZ303RecKey()
+    {
+        String sql = "SELECT MAX(TO_NUMBER(TRIM(SUBSTR(Z303_REC_KEY, 5)))) " +
+                     "FROM KNA50.Z303 " +
+                     "WHERE REGEXP_LIKE(TRIM(Z303_REC_KEY), '^KNBD[0-9]+$')";
+
+        Query query = entityManager.createNativeQuery(sql);
+        return ((Number) query.getSingleResult()).longValue();
+    }
 }

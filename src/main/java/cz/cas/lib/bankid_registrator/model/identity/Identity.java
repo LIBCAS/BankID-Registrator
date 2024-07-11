@@ -43,6 +43,9 @@ public class Identity
     @Column(name="is_cas_employee", nullable = true)
     private Boolean isCasEmployee;
 
+    @Column(name="checked_by_admin", nullable = true)
+    private Boolean checkedByAdmin;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

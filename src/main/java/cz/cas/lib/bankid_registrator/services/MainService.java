@@ -59,12 +59,14 @@ import java.util.ArrayList;
 import java.util.List;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 /**
  *
  * @author iok
  */
+@Service
 public class MainService extends MainServiceAbstract
 {
     @Autowired

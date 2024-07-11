@@ -35,7 +35,7 @@ public class GlobalExceptionHandler extends ExceptionHandlerAbstract
         mav.addObject("appName", this.appName);
         mav.addObject("pageTitle", this.messageSource.getMessage("error.500.text", null, locale));
         mav.addObject("errorCode", this.messageSource.getMessage("error.500.code", null, locale));
-        getLogger().error("Exception: " + e.getMessage());
+        getLogger().error("Exception: " + e.getMessage(), e);
         mav.setViewName("error");
         return mav;
     }

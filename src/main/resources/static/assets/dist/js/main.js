@@ -38,8 +38,8 @@ const checkRfid = async (rfid, patronSysId, csrfToken, csrfHeader = null) => {
     return data;
 }
 
-// PAGE: NEW REGISTRATION
-if (document.querySelector(".page-new-registration")) {
+// PAGES: NEW REGISTRATION, MEMBERSHIP RENEWAL
+if (document.querySelector(".page-new-registration, .page-membership-renewal")) {
     const filesElm = document.getElementById("files");
     const filesInputElm = document.querySelector('[name="media"]');
     const filesWrapper = document.getElementById("files-control");
@@ -63,17 +63,33 @@ if (document.querySelector(".page-new-registration")) {
         }, alertDuration);
     }
 
+    function handleCasEmployeeChange(ev) {
+        const casEmployeeValue = ev ? ev.target.checked : document.getElementById("isCasEmployee").checked;
+    
+        if (casEmployeeValue) {
+            filesInputElm.required = true;
+            filesWrapper.style.display = "block";
+        } else {
+            filesInputElm.required = false;
+            filesWrapper.style.display = "none";
+        }
+    }
+
     FilePond.registerPlugin(
         FilePondPluginFileValidateSize,
         FilePondPluginImageExifOrientation,
         FilePondPluginImagePreview
     );
 
-    FilePond.create(filesElm);
+    const pond = FilePond.create(filesElm);
 
     FilePond.setOptions({
-        storeAsFile: true
+        storeAsFile: true,
+        acceptedFileTypes: ['image/png', 'image/jpeg', 'application/pdf'],
+        maxFileSize: '10MB'
     });
+
+    handleCasEmployeeChange();
 
     document.getElementById("rfid").addEventListener("change", (ev) => {
         const rfidElm = ev.target;
@@ -103,16 +119,16 @@ if (document.querySelector(".page-new-registration")) {
             });
     });
 
-    document.getElementById("isCasEmployee").addEventListener("change", (ev) => {
-        const casEmployee = ev.target;
-        const casEmployeeValue = casEmployee.checked;
+    document.getElementById("isCasEmployee").addEventListener("change", handleCasEmployeeChange);
 
-        if (casEmployeeValue) {
-            filesInputElm.required = true;
-            filesWrapper.style.display = "block";
-        } else {
-            filesInputElm.required = false;
-            filesWrapper.style.display = "none";
+    document.querySelector("form").addEventListener("submit", (event) => {
+        const casEmployeeChecked = document.getElementById("isCasEmployee").checked;
+        console.log(pond.getFiles());
+        const validFiles = pond.getFiles();
+
+        if (casEmployeeChecked && validFiles.length === 0) {
+            event.preventDefault();
+            showAlert("danger", "Please upload at least one valid file.");
         }
     });
 }

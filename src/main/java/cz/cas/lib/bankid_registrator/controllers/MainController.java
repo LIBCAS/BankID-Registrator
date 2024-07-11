@@ -1,10 +1,12 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
+import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
 import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
@@ -19,6 +21,7 @@ import cz.cas.lib.bankid_registrator.services.MediaService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
+import cz.cas.lib.bankid_registrator.util.DateUtils;
 import java.net.URI;
 import java.util.Locale;
 import java.util.Map;
@@ -182,86 +185,86 @@ public class MainController extends ControllerAbstract
         if (!identitySearch.isPresent()) {
             identity = new Identity(bankId);
             this.identityService.save(identity);
-            session.setAttribute("identity", identity.getId());
         } else {
             identity = identitySearch.get();
         }
 
+        session.setAttribute("identity", identity.getId());
+
         this.identityActivityService.logBankIdVerificationSuccess(identity);
 
         // Mapping BankID user data to a Patron entity (so-called "BankId patron")
-        Map<String, Object> patronObjCreation = this.alephService.newPatronTest(userInfo, userProfile);
+        Map<String, Object> bankIdPatronCreation = this.alephService.newPatronTest(userInfo, userProfile);
 
-        if (patronObjCreation.containsKey("error")) {
-            model.addAttribute("error", "Registrace byla zamítnuta: " + (String) patronObjCreation.get("error"));
+        if (bankIdPatronCreation.containsKey("error")) {
+            model.addAttribute("error", "Registrace byla zamítnuta: " + (String) bankIdPatronCreation.get("error"));
             return "error";
         }
 
-        Patron patron = (Patron) patronObjCreation.get("patron");
-        patron = patronRepository.save(patron);
-
-        PatronDTO patronDTO = this.patronService.getPatronDTO(patron);
-
-        session.setAttribute("patron", patron.getSysId());
-        model.addAttribute("patronId", patron.getSysId());
-        model.addAttribute("patron", patronDTO);
+        Patron bankIdPatron = (Patron) bankIdPatronCreation.get("patron");
+        PatronDTO bankIdPatronDTO = this.patronService.getPatronDTO(bankIdPatron);
 
         try {
-            getLogger().info("patron: {}", patron.toJson());
+            getLogger().info("patron: {}", bankIdPatron.toJson());
         } catch (JsonProcessingException e) {
             getLogger().error("Error converting patron to JSON", e);
         }
 
-        if (patron.isNew()) {
+        if (bankIdPatron.isNew()) {
             this.identityActivityService.logNewRegistrationInitiation(identity);
+
+            bankIdPatron = this.patronRepository.save(bankIdPatron);
+
+            session.setAttribute("patron", bankIdPatron.getSysId());
+
+            model.addAttribute("patronId", bankIdPatron.getSysId());
+            model.addAttribute("patron", bankIdPatronDTO);
 
             return "callback_registration_new";
         } else {
-            Map<String, Object> patronAlephObjCreation = this.alephService.getAlephPatron(identity.getAlephId());
+            // Mapping Aleph patron data to a Patron entity (so-called "Aleph patron")
+            Map<String, Object> alephPatronCreation = this.alephService.getAlephPatron(identity.getAlephId(), true);
 
-            if (patronAlephObjCreation.containsKey("error")) {
-                getLogger().error("Error getting patron from Aleph: {}", patronAlephObjCreation.get("error"));
-                model.addAttribute("error", "Registrace byla zamítnuta: " + (String) patronAlephObjCreation.get("error"));
+            if (alephPatronCreation.containsKey("error")) {
+                getLogger().error("Error getting patron from Aleph: {}", alephPatronCreation.get("error"));
+                model.addAttribute("error", "Registrace byla zamítnuta: " + (String) alephPatronCreation.get("error"));
                 return "error";
             }
 
-            Patron patronAleph = (Patron) patronAlephObjCreation.get("patron");
-            patronAleph = patronRepository.save(patronAleph);
+            Patron alephPatron = (Patron) alephPatronCreation.get("patron");
+            PatronDTO alephPatronDTO = this.patronService.getPatronDTO(alephPatron);
+            String alephPatronExpiryDate = alephPatron.getExpiryDate();
 
-            PatronDTO patronAlephDTO = this.patronService.getPatronDTO(patronAleph);
-            PatronDTO patronLatestDTO = PatronDTO.mergePatrons(patronDTO, patronAlephDTO);
+            // Merging BankId patron and Aleph patron into a Patron with the latest data (so-called "the latest patron")
+            Patron latestPatron = PatronService.mergePatrons(bankIdPatron, alephPatron);
+            PatronDTO latestPatronDTO = this.patronService.getPatronDTO(latestPatron);
 
-            session.setAttribute("patronAleph", patronAleph.getSysId());
-            model.addAttribute("patronAleph", patronAlephDTO);
-            model.addAttribute("patronLatest", patronLatestDTO);
+            latestPatron = this.patronRepository.save(latestPatron);
 
             try {
-                getLogger().info("patronAleph: {}", patronAleph.toJson());
+                getLogger().info("latestPatron: {}", latestPatron.toJson());
             } catch (JsonProcessingException e) {
-                getLogger().error("Error converting patronAleph to JSON", e);
+                getLogger().error("Error converting latestPatron to JSON", e);
             }
 
             this.identityActivityService.logMembershipRenewalInitiation(identity);
+
+            session.setAttribute("patron", latestPatron.getSysId());
+
+            model.addAttribute("patronId", latestPatron.getSysId());
+            model.addAttribute("patron", latestPatronDTO);
+            model.addAttribute("bankIdPatron", bankIdPatronDTO);
+            model.addAttribute("alephPatron", alephPatronDTO);
+            model.addAttribute("membershipExpiryDate", alephPatronExpiryDate);
+            model.addAttribute("membershipHasExpired", DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy"));
+            model.addAttribute("membershipExpiresToday", DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy"));
 
             return "callback_registration_renewal";
         }
     }
 
-    // @RequestMapping(value="/testika", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    // public String testika(Model model, Locale locale, HttpSession session)
-    // {
-
-
-    //     model.addAttribute("patronId", patron.getSysId());
-    //     model.addAttribute("patron", patronDTO);
-    //     model.addAttribute("patronAleph", patronAlephDTO);
-    //     model.addAttribute("patronLatest", patronLatestDTO);
-
-    //     return "callback_registration_renewal";
-    // }
-
     /**
-     * Creating new Aleph patron
+     * Creating new Aleph patron (new registration)
      * @param editedPatron - user-edited patron data
      * @param session
      * @param model
@@ -321,11 +324,11 @@ public class MainController extends ControllerAbstract
 
         identity.setAlephId(patron.getId());
         identity.setAlephBarcode(alephPatronBarcode);
-        identity.setIsCasEmployee(patron.isCasEmployee);
+        identity.setIsCasEmployee(patron.getIsCasEmployee());
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 
-        if (patron.isCasEmployee) {
+        if (patron.getIsCasEmployee()) {
             for (MultipartFile file : mediaFiles) {
                 Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
                 if (uploadResult.containsKey("error")) {
@@ -336,8 +339,10 @@ public class MainController extends ControllerAbstract
 
         this.identityActivityService.logNewRegistrationSuccess(identity);
 
+        String membershipExpiryDate = patron.getExpiryDate();
+
         try {
-            this.emailService.sendEmailNewRegistration(patronEmail, alephPatronBarcode, patron.isCasEmployee, locale);
+            this.emailService.sendEmailNewRegistration(patronEmail, alephPatronBarcode, patron.getIsCasEmployee(), membershipExpiryDate, locale);
             this.identityActivityService.logNewRegistrationEmailSent(identity);
         } catch (Exception e) {
             getLogger().error("Failed to send new registration confirmation email to " + patronEmail, e);
@@ -345,11 +350,107 @@ public class MainController extends ControllerAbstract
 
         session.setAttribute("alephBarcode", alephPatronBarcode);
 
+        model.addAttribute("membershipExpiryDate", membershipExpiryDate);
         model.addAttribute("xml", patronCreation.get("xml-patron"));
         model.addAttribute("alephBarcode", alephPatronBarcode);
         model.addAttribute("token", this.tokenService.createIdentityToken(identity));
 
         return "new_registration_success";
+    }
+
+    /**
+     * Updating Aleph patron (membership renewal)
+     * @param editedPatron - user-edited patron data
+     * @param session
+     * @param model
+     * @param media
+     * @return
+     */
+    @PostMapping("/membership-renewal")
+    public String membershipRenewalEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, Locale locale, @RequestParam("media") MultipartFile[] mediaFiles) {
+        Long patronSysId = (Long) session.getAttribute("patron");
+        Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original Aleph patron data
+        Identify userProfile = (Identify) session.getAttribute("userProfile");
+        String code = (String) session.getAttribute("code");
+        Identity identity = this.identityService.findById((Long) session.getAttribute("identity")).orElse(null);
+
+        getLogger().info("membership-renewal - patronSysId: {}", patronSysId);
+        getLogger().info("AAAAAAAA: {}", patronSysId instanceof Long ? "true" : "false");
+
+        try {
+            getLogger().info("membership-renewal - originalPatron: {}", patron.toJson());
+        } catch (JsonProcessingException e) {
+            getLogger().error("Error converting originalPatron to JSON", e);
+        }
+        try {
+            getLogger().info("membership-renewal - submitted patron: {}", editedPatron.toJson());
+        } catch (JsonProcessingException e) {
+            getLogger().error("Error converting submitted patron to JSON", e);
+        }
+        getLogger().info("membership-renewal - userProfile: {}", userProfile);
+        getLogger().info("membership-renewal - code: {}", code);
+
+        if (patronSysId == null || patron == null || userProfile == null || code == null || identity == null) {
+            return "error_session_expired";
+        }
+
+        if (editedPatron.getExportConsent() != PatronBoolean.Y) {
+            return "error_export_consent";
+        }
+        getLogger().info("membership-renewal 111 - originalPatron deleted");
+        this.patronRepository.deleteById(patronSysId); getLogger().info("membership-renewal 222 - originalPatron deleted");
+
+        this.identityActivityService.logMembershipRenewalSubmission(identity);
+
+        patron.update(editedPatron);
+
+        try {
+            getLogger().info("membership-renewal - finalPatron: {}", patron.toJson());
+        } catch (JsonProcessingException e) {
+            getLogger().error("Error converting finalPatron to JSON", e);
+        }
+
+        Map<String, Object> patronUpdate = this.alephService.updatePatron(patron);
+        if (patronUpdate.containsKey("error")) {
+            getLogger().info("RESULT: {}", patronUpdate);
+            getLogger().error("Error updating patron: {}", patronUpdate.get("error"));
+            return "error";
+        }
+
+        String alephPatronBarcode = patron.getBarcode();
+        String patronEmail = patron.getEmail();
+
+        identity.setIsCasEmployee(patron.getIsCasEmployee());
+        identity.setUpdatedAt(LocalDateTime.now());
+        this.identityService.save(identity);
+
+        if (patron.getIsCasEmployee()) {
+            for (MultipartFile file : mediaFiles) {
+                Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
+                if (uploadResult.containsKey("error")) {
+                    getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
+                }
+            }
+        }
+
+        this.identityActivityService.logMembershipRenewalSuccess(identity);
+
+        String membershipExpiryDate = patron.getExpiryDate();
+
+        try {
+            this.emailService.sendEmailMembershipRenewal(patronEmail, alephPatronBarcode, patron.getIsCasEmployee(), membershipExpiryDate, locale);
+            this.identityActivityService.logNewRegistrationEmailSent(identity);
+        } catch (Exception e) {
+            getLogger().error("Failed to send a membership renewal confirmation email to " + patronEmail, e);
+        }
+
+        session.setAttribute("alephBarcode", alephPatronBarcode);
+
+        model.addAttribute("membershipExpiryDate", membershipExpiryDate);
+        model.addAttribute("xml", patronUpdate.get("xml-patron"));
+        model.addAttribute("alephBarcode", alephPatronBarcode);
+
+        return "membership_renewal_success";
     }
 
     /**

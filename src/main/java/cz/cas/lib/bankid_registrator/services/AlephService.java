@@ -27,7 +27,9 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -83,21 +85,25 @@ public class AlephService extends AlephServiceAbstract
         this.identityService = identityService;
         this.oracleRepository = oracleRepository;
         this.borXOpsNoSuccessMsg = new String[] {
-            PatronBorXOp.BOR_INFO.getValue()
+            PatronBorXOp.BOR_INFO.getValue(),
+            PatronBorXOp.BOR_AUTH.getValue()
         };
     }
 
     /**
      * Retrieves a (existing) patron from Aleph by ID
      * @param patronId
+     * @param includeAdvancedData - whether to include advanced patron data such as patron's membership expiry date
      * @return Map<String, Object>
      */
-    public Map<String, Object> getAlephPatron(String patronId)
+    public Map<String, Object> getAlephPatron(String patronId, boolean includeAdvancedData)
     {
         Assert.notNull(patronId, "getAlephPatron: \"patronId\" is required");
+        Assert.notNull(includeAdvancedData, "getAlephPatron: \"includeAdvancedData\" is required");
 
         Map<String, Object> result = new HashMap<>();
 
+        // Get basic patron data
         Map<String, String> urlParams = new HashMap<>();
         urlParams.put("bor_id", patronId);
         urlParams.put("library", this.alephServiceConfig.getAdmLibrary());
@@ -106,35 +112,80 @@ public class AlephService extends AlephServiceAbstract
         urlParams.put("hold", "N");
         urlParams.put("format", "1");
 
-        Map<String, Object> alephPatron = this.doXRequestUsingPost(PatronBorXOp.BOR_INFO, urlParams);
+        Map<String, Object> patronDataGet = this.doXRequestUsingPost(PatronBorXOp.BOR_INFO, urlParams);
 
-        if (alephPatron.containsKey("error")) {
-            result.put("error", alephPatron.get("error"));
+        if (patronDataGet.containsKey("error")) {
+            result.put("error", patronDataGet.get("error"));
             return result;
         }
 
-        result.put("success", Boolean.TRUE);
+        String patronDataResponse = patronDataGet.get("response").toString();
+        result.put("patronData", patronDataResponse);
 
-        result.put("patronData", alephPatron.get("response"));
+        Patron patron;
 
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
-            InputSource is = new InputSource(new StringReader((String) alephPatron.get("response")));
+            InputSource is = new InputSource(new StringReader(patronDataResponse));
             Document doc = builder.parse(is);
 
-            Map<String, Object> existingPatron = this.existingPatron(doc);
+            Map<String, Object> patronDataParse = this.parseAlephPatron(doc);
 
-            if (existingPatron.containsKey("error")) {
-                result.put("error", existingPatron.get("error"));
+            if (patronDataParse.containsKey("error")) {
+                result.put("error", patronDataParse.get("error"));
                 return result;
             }
 
-            result.put("patron", existingPatron.get("patron"));
+            patron = (Patron) patronDataParse.get("patron");
         } catch (Exception e) {
             logger.error("Failed to parse patron data: {}", e.getMessage());
             result.put("error", "Failed to parse patron data");
+            return result;
         }
+
+        if (includeAdvancedData) {
+            // Get advanced patron data (expiry date)
+            urlParams = new HashMap<>();
+            urlParams.put("bor_id", patron.getBarcode());
+            urlParams.put("library", this.alephServiceConfig.getAdmLibrary());
+            urlParams.put("verification", patron.getVerification());
+            urlParams.put("sub_library", this.alephServiceConfig.getHomeLibrary());
+            urlParams.put("lang", "cze");
+
+            patronDataGet = this.doXRequestUsingPost(PatronBorXOp.BOR_AUTH, urlParams);
+
+            if (patronDataGet.containsKey("error")) {
+                result.put("error", patronDataGet.get("error"));
+                return result;
+            }
+    
+            patronDataResponse = patronDataGet.get("response").toString();
+            result.put("patronDataAdvanced", patronDataResponse);
+    
+            try {
+                DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                DocumentBuilder builder = factory.newDocumentBuilder();
+                InputSource is = new InputSource(new StringReader(patronDataResponse));
+                Document doc = builder.parse(is);
+    
+                Map<String, Object> patronDataParse = this.parseAlephPatronAdvanced(doc, patron);
+    
+                if (patronDataParse.containsKey("error")) {
+                    result.put("error", patronDataParse.get("error"));
+                    return result;
+                }
+    
+                patron = (Patron) patronDataParse.get("patron");
+            } catch (Exception e) {
+                logger.error("Failed to parse patron data: {}", e.getMessage());
+                result.put("error", "Failed to parse patron data");
+                return result;
+            }
+        }
+
+        result.put("patron", patron);
+        result.put("success", Boolean.TRUE);
 
         return result;
     }
@@ -148,7 +199,10 @@ public class AlephService extends AlephServiceAbstract
     {
         Map<String, Object> result = new HashMap<>();
 
-        Boolean patronIsCasEmployee = patron.isCasEmployee();
+        boolean patronIsCasEmployee = patron.getIsCasEmployee();
+
+        // Patron action
+        patron.setAction(PatronAction.I);
 
         // Patron status (Aleph reader membership status)
         if (patronIsCasEmployee) {
@@ -158,8 +212,9 @@ public class AlephService extends AlephServiceAbstract
         }
 
         // Patron Aleph ID and Aleph barcode
-        patron.setId(this.generatePatronId());
-        patron.setBarcode(this.generatePatronBarcode());
+        Long maxBankidPatronId = this.getMaxBankIdZ303RecKey();
+        patron.setId(this.generatePatronId(maxBankidPatronId));
+        patron.setBarcode(this.generatePatronBarcode(maxBankidPatronId));
 
         // Create a patron
         Map<String, String> patronXmlCreation = this.createPatronXML(patron);
@@ -197,12 +252,15 @@ public class AlephService extends AlephServiceAbstract
 
         // Create an item (Aleph registration fee)
         if (!patronIsCasEmployee) {
+            String actionDescription = "Registrace";
+
             Map<String, Object> newItem = this.newItem(patron);
             if (newItem.containsKey("error")) {
                 result.put("error", newItem.get("error"));
                 return result;
             }
             PatronItem item = (PatronItem) newItem.get("item");
+            item.setDescription(actionDescription);
             Map<String, String> itemXmlCreation = this.createItemXml(item);
             if (itemXmlCreation.containsKey("error")) {
                 result.put("error", itemXmlCreation.get("error"));
@@ -230,7 +288,7 @@ public class AlephService extends AlephServiceAbstract
             }
     
             // Place a hold request
-            Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong);
+            Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong, actionDescription);
             if (holdRequestPlacement.containsKey("error")) {
                 result.put("error", holdRequestPlacement.get("error"));
                 return result;
@@ -266,9 +324,19 @@ public class AlephService extends AlephServiceAbstract
     {
         Map<String, Object> result = new HashMap<>();
 
-        Boolean patronIsCasEmployee = patron.isCasEmployee();
+        boolean patronIsCasEmployee = patron.getIsCasEmployee();
 
-        // Update a patron
+        // Patron action
+        patron.setAction(PatronAction.A);
+
+        // Patron status (Aleph reader membership status)
+        if (patronIsCasEmployee) {
+            patron.setStatus(PatronStatus.STATUS_03.getId());
+        } else {
+            patron.setStatus(PatronStatus.STATUS_16.getId());
+        }
+
+        // Update the patron
         Map<String, String> patronXmlUpdate = this.updatePatronXML(patron);
         if (patronXmlUpdate.containsKey("error")) {
             result.put("error", patronXmlUpdate.get("error"));
@@ -276,9 +344,100 @@ public class AlephService extends AlephServiceAbstract
         }
         String patronXml = patronXmlUpdate.get("xml");
         result.put("xml-patron", patronXml);
-        Map<String, Object> patronUpdate = this.updateBorX(patronXml);
-        if (patronUpdate.containsKey("error")) {
-            result.put("error", patronUpdate.get("error"));
+        Map<String, Object> patronCreation = this.updateBorX(patronXml);
+        if (patronCreation.containsKey("error")) {
+            result.put("error", patronCreation.get("error"));
+            return result;
+        }
+
+        // Create libraries
+        for (String library : this.alephServiceConfig.getLibraries()) {
+            Map<String, String> libraryXmlCreation = this.createLibraryXml(patron, library);
+
+            if (libraryXmlCreation.containsKey("error")) {
+                result.put("error", libraryXmlCreation.get("error"));
+                return result;
+            }
+
+            String libraryXml = libraryXmlCreation.get("xml");
+            result.put("xml-library", libraryXml);
+
+            Map<String, Object> libraryCreation = this.updateBorX(libraryXml);
+
+            if (libraryCreation.containsKey("error")) {
+                result.put("error", libraryCreation.get("error"));
+                return result;
+            }
+        }
+
+        // Create an item (Aleph registration fee)
+        if (!patronIsCasEmployee) {
+            String actionDescription = "Obnovení registrace";
+
+            Map<String, Object> newItem = this.newItem(patron);
+            if (newItem.containsKey("error")) {
+                result.put("error", newItem.get("error"));
+                return result;
+            }
+            PatronItem item = (PatronItem) newItem.get("item");
+            item.setDescription(actionDescription);
+            Map<String, String> itemXmlCreation = this.createItemXml(item);
+            if (itemXmlCreation.containsKey("error")) {
+                result.put("error", itemXmlCreation.get("error"));
+                return result;
+            }
+            String itemXml = itemXmlCreation.get("xml");
+            result.put("xml-item", itemXml);
+            Map<String, Object> itemCreation = this.createItem(itemXml, this.alephServiceConfig.getSysno());
+            if (itemCreation.containsKey("error")) {
+                result.put("error", itemCreation.get("error"));
+                return result;
+            }
+            Map<String, String> itemDetails = this.getItemDetails((String) itemCreation.get("response"));
+            if (itemDetails.containsKey("error")) {
+                result.put("error", itemDetails.get("error"));
+                return result;
+            }
+            String itemId = itemDetails.get("id");
+            String itemSequence = itemDetails.get("sequence");
+            String itemBarcode = itemDetails.get("barcode");
+            String itemIdLong = itemDetails.get("idLong");
+            if (itemId == null || itemSequence == null || itemBarcode == null || itemIdLong == null) {
+                result.put("error", "chybí údaje o vytvořené jednotce");
+                return result;
+            }
+    
+            // Place a hold request
+            Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong, actionDescription);
+            if (holdRequestPlacement.containsKey("error")) {
+                result.put("error", holdRequestPlacement.get("error"));
+                return result;
+            }
+    
+            // Cancel the hold request
+            Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
+            if (holdRequestCancellation.containsKey("error")) {
+                result.put("error", holdRequestCancellation.get("error"));
+                return result;
+            }
+    
+            // Delete the item
+            Map<String, Object> itemDeletion = this.deleteItem(itemId, itemSequence, itemBarcode);
+            if (itemDeletion.containsKey("error")) {
+                result.put("error", itemDeletion.get("error"));
+                return result;
+            }
+        }
+
+        // Update patron's status (patron membership status + membership expiry date)
+        List<String> libraries = new ArrayList<>(Arrays.asList(this.alephServiceConfig.getLibraries()));
+        libraries.add(this.alephServiceConfig.getHomeLibrary());
+        String updatePatronStatusXml = this.updatePatronStatusXml(patron, libraries);
+
+        Map<String, Object> updatePatronStatus = this.updateBorX(updatePatronStatusXml);
+
+        if (updatePatronStatus.containsKey("error")) {
+            result.put("error", updatePatronStatus.get("error"));
             return result;
         }
 
@@ -351,12 +510,14 @@ public class AlephService extends AlephServiceAbstract
      * @param patron - the patron
      * @param itemId - the item ID
      * @param itemIdLong - the item ID long
+     * @param description - the hold request description
      * @return Map<String, Object>
      */
-    public Map<String, Object> placeHoldRequest(Patron patron, String itemId, String itemIdLong) {
+    public Map<String, Object> placeHoldRequest(Patron patron, String itemId, String itemIdLong, String description) {
         Assert.notNull(patron, "\"patron\" is required");
         Assert.notNull(itemId, "\"itemId\" is required");
         Assert.notNull(itemIdLong, "\"itemIdLong\" is required");
+        Assert.notNull(description, "\"description\" is required");
 
         Map<String, Object> result = new HashMap<>();
 
@@ -370,7 +531,7 @@ public class AlephService extends AlephServiceAbstract
         Map<String, String> urlParams = new HashMap<>();
         urlParams.put("lang", patron.getConLng().toString());
 
-        Map<String, Object> newHold = this.newHold("Registrace");
+        Map<String, Object> newHold = this.newHold(description);
         if (newHold.containsKey("error")) {
             result.put("error", newHold.get("error"));
             return result;
@@ -667,7 +828,6 @@ logger.info("AAA doHttpRequest method: {}", method);
     
         if (response.getStatusCode().is2xxSuccessful()) {
             String responseBody = response.getBody();
-            // logger.info("Complete response body: {}", responseBody);
             
             if (responseBody.contains("Login record belongs to another user") || 
                 responseBody.contains("Match found for ID") || 
@@ -732,8 +892,8 @@ logger.info("AAA doHttpRequest method: {}", method);
      * @param patron - the patron to be created
      * @return 
      */
-    public Map<String, String> createPatronXML(Patron patron) {
-
+    public Map<String, String> createPatronXML(Patron patron)
+    {
         Map<String, String> result = new HashMap<>();
 
         Assert.notNull(patron, "\"patron\" is required");
@@ -838,8 +998,8 @@ logger.info("AAA doHttpRequest method: {}", method);
      * @param patron - the patron to be created
      * @return 
      */
-    public Map<String, String> updatePatronXML(Patron patron) {
-
+    public Map<String, String> updatePatronXML(Patron patron)
+    {
         Map<String, String> result = new HashMap<>();
 
         Assert.notNull(patron, "\"patron\" is required");
@@ -895,11 +1055,6 @@ logger.info("AAA doHttpRequest method: {}", method);
                 transformer.setParameter("z308-key-type-03-key-data", patron.getRfid());
                 transformer.setParameter("z308-key-type-03-id", patronId);
             }
-
-            // z308 - BankID
-            // transformer.setParameter("z308-key-type-07-key-data", patron.getBankIdSub());
-            // transformer.setParameter("z308-key-type-07-verification", patronPassword);
-            // transformer.setParameter("z308-key-type-07-id", patronId);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
@@ -1057,9 +1212,8 @@ logger.info("AAA doHttpRequest method: {}", method);
         patron.setBankIdSub(userInfo.getSub());
 
         // New registration or registration renewal
-        Boolean isNewAlephPatron = this.isNewAlephPatron(patron);
+        boolean isNewAlephPatron = this.isNewAlephPatron(patron);
         patron.isNew = isNewAlephPatron;
-        patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A);
 
         result.put("patron", patron);
 
@@ -1071,7 +1225,7 @@ logger.info("AAA doHttpRequest method: {}", method);
      * @param alephPatronXml - existing patron data in the Aleph system
      * @return  Map<String, Object>
      */
-    public Map<String, Object> existingPatron(Document alephPatronXml)
+    public Map<String, Object> parseAlephPatron(Document alephPatronXml)
     {
         Assert.notNull(alephPatronXml, "\"alephPatronXml\" is required");
 
@@ -1137,10 +1291,40 @@ logger.info("AAA doHttpRequest method: {}", method);
             }
 
             result.put("patron", patron);
-            logger.info("Existing patron: {}", patron.toJson());
+            logger.info("Aleph patron: {}", patron.toJson());
         } catch (Exception e) {
-            logger.error("Failed to parse existing patron data: {}", e.getMessage());
-            result.put("error", "Failed to parse existing patron data");
+            logger.error("Failed to parse Aleph patron data: {}", e.getMessage());
+            result.put("error", "Failed to parse Aleph patron data");
+        }
+
+        return result;
+    }
+
+    /**
+     * Initializes patron's advanced data based on the Aleph patron data
+     * @param alephPatronXml - existing advanced patron data in the Aleph system
+     * @param patron - the patron to be updated with advanced data
+     * @return  Map<String, Object>
+     */
+    public Map<String, Object> parseAlephPatronAdvanced(Document alephPatronXml, Patron patron)
+    {
+        Assert.notNull(alephPatronXml, "\"alephPatronXml\" is required");
+        Assert.notNull(patron, "\"patron\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            String expiryDate = getXmlElementValue(alephPatronXml, "z305-expiry-date");
+            String membershipTypeName = getXmlElementValue(alephPatronXml, "z305-bor-status");
+
+            patron.setExpiryDate(expiryDate);
+            patron.setIsCasEmployee(PatronStatus.getByName(membershipTypeName).isEmployee());
+
+            result.put("patron", patron);
+            logger.info("Aleph patron (advanced): {}", patron.toJson());
+        } catch (Exception e) {
+            logger.error("Failed to parse Aleph patron advanced data: {}", e.getMessage());
+            result.put("error", "Failed to parse Aleph patron advanced data");
         }
 
         return result;
@@ -1185,6 +1369,49 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
+     * Generates an XML string for updating an Aleph patron status (i.e. patron membership status + membership expiry date)
+     * @param patron
+     * @param libraries - an array of libraries where the update should be applied
+     * @return
+     */
+    private String updatePatronStatusXml(Patron patron, List<String> libraries)
+    {
+        String patronId = patron.getId();
+        String todayDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String expiryDate = DateUtils.convertDateFormat(patron.getExpiryDate(), "dd/MM/yyyy", "yyyyMMdd");
+        String patronStatus = patron.getStatus();
+
+        StringBuilder xmlBuilder = new StringBuilder();
+
+        xmlBuilder.append("<?xml version='1.0'?>")
+            .append("<p-file-20>")
+            .append("<patron-record>")
+            .append("<z303>")
+                .append("<match-id-type>00</match-id-type>")
+                .append("<match-id>").append(patronId).append("</match-id>")
+                .append("<record-action>A</record-action>")
+                .append("<z303-id>").append(patronId).append("</z303-id>")
+            .append("</z303>");
+
+        for (String library : libraries) {
+            xmlBuilder.append("<z305>")
+                    .append("<record-action>A</record-action>")
+                    .append("<z305-id>").append(patronId).append("</z305-id>")
+                    .append("<z305-sub-library>").append(library).append("</z305-sub-library>")
+                    .append("<z305-open-date>").append(todayDate).append("</z305-open-date>")
+                    .append("<z305-update-date>").append(todayDate).append("</z305-update-date>")
+                    .append("<z305-bor-status>").append(patronStatus).append("</z305-bor-status>")
+                    .append("<z305-expiry-date>").append(expiryDate).append("</z305-expiry-date>")
+                .append("</z305>");
+        }
+
+        xmlBuilder.append("</patron-record>")
+            .append("</p-file-20>");
+
+        return xmlBuilder.toString();
+    }
+
+    /**
      * Generates an XML string for an item
      * @param item
      * @return
@@ -1206,6 +1433,7 @@ logger.info("AAA doHttpRequest method: {}", method);
             transformer.setParameter("z30-doc-number", item.getDocNumber());
             transformer.setParameter("z30-barcode", item.getBarcode());
             transformer.setParameter("z30-item-status", item.getStatus());
+            transformer.setParameter("z30-description", item.getDescription());
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
@@ -1280,7 +1508,7 @@ logger.info("AAA doHttpRequest method: {}", method);
      * @param patronId
      * @return Boolean
      */
-    public Boolean isRfidInUse(String rfid, String patronId) {
+    public boolean isRfidInUse(String rfid, String patronId) {
         Assert.notNull(rfid, "\"rfid\" is required");
 
         // TRUE if RFID is already in use by any patron except the given one (if any)
@@ -1341,7 +1569,7 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         Map<String, Object> result = new HashMap<>();
 
-        Map<String, Object> alephPatronGet = this.getAlephPatron(patronId);
+        Map<String, Object> alephPatronGet = this.getAlephPatron(patronId, false);
 
         if (alephPatronGet.containsKey("error")) {
             result.put("error", alephPatronGet.get("error"));
@@ -1514,7 +1742,7 @@ logger.info("AAA doHttpRequest method: {}", method);
         patron.setBankIdSub(userInfo.getSub());
 
         // New registration or registration renewal
-        Boolean isNewAlephPatron = this.isNewAlephPatron(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
+        boolean isNewAlephPatron = this.isNewAlephPatron(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
         patron.isNew = isNewAlephPatron;
         patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A); logger.info("patron.getAction(): {}", patron.getAction());
 
@@ -1524,11 +1752,20 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
-     * Generates patron's id, at least 9 characters long
+     * Get the maximum Aleph patron ID created so far via the Bank ID
+     * @return Long
      */
-    public String generatePatronId() {
+    public Long getMaxBankIdZ303RecKey() {
+        // return this.identityService.getMaxId();  // TODO: Use this line in production
+        return this.oracleRepository.getMaxBankIdZ303RecKey();
+    }
+
+    /**
+     * Generates patron's id, at least 9 characters long
+     * @param maxVal - the maximum Aleph patron ID created so far via the Bank ID
+     */
+    public String generatePatronId(Long maxVal) {
         String prefix = this.mainConfig.getId_prefix();
-        Long maxVal = this.identityService.getMaxId();
         Long newVal = 1L;
 
         if (maxVal != null) {
@@ -1540,10 +1777,10 @@ logger.info("AAA doHttpRequest method: {}", method);
 
     /**
      * Generates patron's barcode, at least 10 characters long
+     * @param maxVal - the maximum Aleph patron ID created so far via the Bank ID
      */
-    public String generatePatronBarcode() {
+    public String generatePatronBarcode(Long maxVal) {
         String prefix = mainConfig.getBarcode_prefix();
-        Long maxVal = this.identityService.getMaxId();
         Long newVal = 1L;
 
         if (maxVal != null) {
@@ -1591,7 +1828,7 @@ logger.info("AAA doHttpRequest method: {}", method);
                 return true;
             }
 
-            Map<String, Object> alephPatronSearch = this.getAlephPatron(alephPatronId);
+            Map<String, Object> alephPatronSearch = this.getAlephPatron(alephPatronId, true);
 
             if (alephPatronSearch.containsKey("error")) {
                 return true;

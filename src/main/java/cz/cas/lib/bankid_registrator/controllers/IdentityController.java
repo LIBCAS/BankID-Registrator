@@ -87,7 +87,7 @@ public class IdentityController extends ControllerAbstract
         Identity identity = identitySearch.get();
         String patronId = identity.getAlephId();
 
-        Map<String, Object> patronSearch = this.alephService.getAlephPatron(patronId);
+        Map<String, Object> patronSearch = this.alephService.getAlephPatron(patronId, false);
 
         if (patronSearch.containsKey("error")) {
             getLogger().error("Error while searching for patron with id " + patronId + ": " + patronSearch.get("error").toString());

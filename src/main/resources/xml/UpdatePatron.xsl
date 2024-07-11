@@ -11,7 +11,7 @@
     <xsl:param name="is-z303-match-id" select="'true'"/>
     <xsl:param name="z303-match-id" select="''"/>
     <xsl:param name="is-z303-record-action" select="'true'"/>
-    <xsl:param name="z303-record-action" select="'I'"/>
+    <xsl:param name="z303-record-action" select="'A'"/>
     <xsl:param name="is-z303-id" select="'true'"/>
     <xsl:param name="z303-id" select="''"/>
     <xsl:param name="is-z303-proxy-for-id" select="'true'"/>
@@ -195,7 +195,7 @@
 
     <!-- >>> Z304 - sequence 01 >>> -->
     <xsl:param name="is-z304-seq01-record-action" select="'true'"/>
-    <xsl:param name="z304-seq01-record-action" select="'I'"/>
+    <xsl:param name="z304-seq01-record-action" select="'A'"/>
     <xsl:param name="is-z304-seq01-id" select="'true'"/>
     <xsl:param name="z304-seq01-id" select="''"/>
     <xsl:param name="is-z304-seq01-sequence" select="'true'"/>
@@ -306,7 +306,7 @@
 
     <!-- >>> Z304 - sequence 02 >>> -->
     <xsl:param name="is-z304-seq02-record-action" select="'true'"/>
-    <xsl:param name="z304-seq02-record-action" select="'I'"/>
+    <xsl:param name="z304-seq02-record-action" select="'A'"/>
     <xsl:param name="is-z304-seq02-id" select="'true'"/>
     <xsl:param name="z304-seq02-id" select="''"/>
     <xsl:param name="is-z304-seq02-sequence" select="'true'"/>
@@ -389,7 +389,7 @@
 
     <!-- <<< Z308 - RFID <<< -->
     <xsl:param name="is-z308-key-type-03-record-action" select="'true'"/>
-    <xsl:param name="z308-key-type-03-record-action" select="'I'"/>
+    <xsl:param name="z308-key-type-03-record-action" select="'A'"/>
     <xsl:param name="is-z308-key-type-03-key-type" select="'true'"/>
     <xsl:param name="z308-key-type-03-key-type" select="'03'"/>
     <xsl:param name="is-z308-key-type-03-key-data" select="'true'"/>

@@ -6,6 +6,8 @@ import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronAction;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
+import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
+import cz.cas.lib.bankid_registrator.util.DateUtils;
 import java.util.Optional;
 import javax.persistence.*;
 import lombok.AllArgsConstructor;
@@ -46,7 +48,7 @@ public class Patron {
     public String email;         // z304-email-address
 
     @Column(name="birth_date")
-    public String birthDate;         // z303-birth-date
+    public String birthDate;         // z303-birth-date, format dd-mm-yyyy
 
     @Column(name="con_lng")
     @Enumerated(EnumType.STRING)
@@ -117,6 +119,9 @@ public class Patron {
     @Column
     public String rfid;
 
+    @Column(name="expiry_date", nullable = true)
+    public String expiryDate;      // z305-expiry-date, format dd/mm/yyyy
+
     public Long getSysId() {
         return id;
     }
@@ -135,6 +140,14 @@ public class Patron {
     
     public void setPatronId(String patronId) {
         this.patronId = patronId;
+    }
+
+    public boolean getIsCasEmployee() {
+        return isCasEmployee;
+    }
+
+    public void setIsCasEmployee(boolean isCasEmployee) {
+        this.isCasEmployee = isCasEmployee;
     }
 
     public String toJson() throws JsonProcessingException {
@@ -156,6 +169,17 @@ public class Patron {
         Optional.ofNullable(patron.conLng).ifPresent(e -> this.conLng = e);
         Optional.ofNullable(patron.exportConsent).ifPresent(e -> this.exportConsent = e);
         Optional.ofNullable(patron.rfid).ifPresent(e -> this.rfid = e);
-        Optional.ofNullable(patron.isCasEmployee).ifPresent(e -> this.isCasEmployee = e);
+        Optional.ofNullable(patron.isCasEmployee).ifPresent(e -> {
+            this.isCasEmployee = e;
+
+            PatronStatus patronStatus = e ? PatronStatus.STATUS_03 : PatronStatus.STATUS_16;
+            this.status = patronStatus.getId();
+
+            if (this.expiryDate != null && !this.expiryDate.isEmpty()) {
+                this.expiryDate = DateUtils.addDaysToDateString(this.expiryDate, patronStatus.getMembershipLength(), "dd/MM/yyyy", "dd/MM/yyyy");
+            } else {
+                this.expiryDate = DateUtils.addDaysToToday(patronStatus.getMembershipLength(), "dd/MM/yyyy");
+            }
+        });
     }
 }

@@ -2,9 +2,7 @@ package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.dao.mariadb.IdentityRepository;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;

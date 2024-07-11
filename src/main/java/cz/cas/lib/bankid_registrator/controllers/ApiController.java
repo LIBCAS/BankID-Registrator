@@ -48,7 +48,7 @@ public class ApiController extends ApiControllerAbstract
     ) {
         Long patronSysIdLong = Long.parseLong(patronSysId);
         String bid = this.patronService.getBankIdSubById(patronSysIdLong);
-        Boolean isContinuable = this.patronService.isProcessing(bid);
+        boolean isContinuable = this.patronService.isProcessing(bid);
 
         if (!isContinuable) {
             throw new PatronNotProcessableException();

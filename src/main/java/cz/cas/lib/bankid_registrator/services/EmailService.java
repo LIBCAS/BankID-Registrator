@@ -74,19 +74,45 @@ public class EmailService extends ServiceAbstract
      * @param to
      * @param alephPatronBarcode
      * @param isEmployee - whether the patron is an employee of the CAS
+     * @param membershipExpiryDate
      * @param locale
      * @throws MailException
      */
-    public void sendEmailNewRegistration(String to, String alephPatronBarcode, Boolean isCasEmployee, Locale locale) throws Exception
+    public void sendEmailNewRegistration(String to, String alephPatronBarcode, boolean isCasEmployee, String membershipExpiryDate, Locale locale) throws Exception
     {
         Context context = new Context();
         context.setVariable("alephPatronBarcode", alephPatronBarcode);
         context.setVariable("isCasEmployee", isCasEmployee);
+        context.setVariable("membershipExpiryDate", membershipExpiryDate);
 
         this.sendEmail(
             to, 
             this.messageSource.getMessage("email.newRegistration.subject", null, locale), 
             locale + "/new_registration_success", 
+            context
+        );
+    }
+
+    /**
+     * Send a membership renewal request confirmation email
+     * @param to
+     * @param alephPatronBarcode
+     * @param isEmployee - whether the patron is an employee of the CAS
+     * @param membershipExpiryDate
+     * @param locale
+     * @throws MailException
+     */
+    public void sendEmailMembershipRenewal(String to, String alephPatronBarcode, boolean isCasEmployee, String membershipExpiryDate, Locale locale) throws Exception
+    {
+        Context context = new Context();
+        context.setVariable("alephPatronBarcode", alephPatronBarcode);
+        context.setVariable("isCasEmployee", isCasEmployee);
+        context.setVariable("membershipExpiryDate", membershipExpiryDate);
+
+        this.sendEmail(
+            to, 
+            this.messageSource.getMessage("email.membershipRenewal.subject", null, locale), 
+            locale + "/membership_renewal_success", 
             context
         );
     }

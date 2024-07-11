@@ -27,7 +27,7 @@
     <xsl:param name="z30-call-no-2-type" select="''"/>
     <xsl:param name="z30-call-no-2" select="''"/>
     <xsl:param name="z30-call-no-2-key" select="''"/>
-    <xsl:param name="z30-description" select="'Registrace'"/>
+    <xsl:param name="z30-description" select="''"/>
     <xsl:param name="z30-note-opac" select="''"/>
     <xsl:param name="z30-note-circulation" select="''"/>
     <xsl:param name="z30-note-internal" select="''"/>
