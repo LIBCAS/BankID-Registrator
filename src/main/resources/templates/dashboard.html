@@ -1,66 +1,108 @@
-<html lang="cs" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${appName}">Admin dashboard</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-    <link rel="shortcut icon" href="/bankid-registrator/img/favicon.ico" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
-</head>
+    <head>
+        <title th:replace="fragments/head :: head"></title>
+    </head>
 
-<body class="bg-gray-100">
-    <div class="min-h-screen flex items-center justify-center">
-        <div class="w-full max-w-4xl p-5 bg-white shadow-lg rounded-lg">
-            <h1 class="text-xl font-semibold text-center text-gray-900 mb-6">Dashboard</h1>
-            <div class="text-right mb-4">
-                <a href="/bankid-registrator/user/logout" class="px-4 py-2 bg-red-500 text-white rounded-lg">Odhlášení</a>
+    <body class="page-dashboard">
+        <main layout:fragment="content" class="mb-10 container text-center mx-auto">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900">Identity Dashboard</h1>
+
+            <div class="mb-4 flex items-center justify-center gap-4">
+                <form th:action="@{/dashboard}" method="GET">
+                    <input type="text" name="searchAlephId" placeholder="Search Aleph ID" th:value="${searchAlephId}" class="border p-2"/>
+                    <input type="text" name="searchAlephBarcode" placeholder="Search Aleph Barcode" th:value="${searchAlephBarcode}" class="border p-2"/>
+                    <select name="filterCasEmployee" class="border p-2">
+                        <option value="">Filter CAS Employee</option>
+                        <option th:selected="${filterCasEmployee == true}" th:value="true">Yes</option>
+                        <option th:selected="${filterCasEmployee == false}" th:value="false">No</option>
+                    </select>
+                    <select name="filterCheckedByAdmin" class="border p-2">
+                        <option value="">Filter Checked By Admin</option>
+                        <option th:selected="${filterCheckedByAdmin == true}" th:value="true">Yes</option>
+                        <option th:selected="${filterCheckedByAdmin == false}" th:value="false">No</option>
+                    </select>
+                    <button type="submit" class="bg-blue-500 text-white p-2">Filter</button>
+                </form>
+                <a th:href="@{/dashboard}" class="bg-red-500 text-white p-2">Clear Filters</a>
             </div>
-            <pre th:text="${dataJson}"></pre>
-            <div th:each="patron, patronStat : ${data}">
-                <div class="mb-4 p-4 border-b border-gray-200">
-                    <div class="flex justify-between">
-                        <h2 class="text-lg font-semibold text-gray-800">
-                            <span th:text="${patronStat.count}"></span>) <span th:text="${patron.name}"></span>
-                        </h2>
-                        <div>
-                            <button class="px-4 py-2 bg-green-500 text-white rounded-lg">Vytvořit</button>
-                            <button class="px-4 py-2 bg-red-500 text-white rounded-lg">Smazat</button>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-gray-700 font-semibold">Osobní údaje</h3>
-                        <div class="text-gray-600">
-                            <p>Jméno: <span th:text="${patron.firstname}"></span></p>
-                            <p>Příjmení: <span th:text="${patron.lastname}"></span></p>
-                            <p>Datum narození: <span th:text="${patron.birthDate}"></span></p>
-                            <p>Adresa: <span th:text="${patron.address0 + ' ' + patron.address1 + ' ' + patron.address2 + ' ' + patron.zip}"></span></p>
-                            <p>Kontaktní adresa: <span th:text="${patron.contactAddress0 + ' ' + patron.contactAddress1 + ' ' + patron.contactAddress2 + ' ' + patron.contactZip}"></span></p>
-                            <p>Telefon: <span th:text="${patron.smsNumber}"></span></p>
-                            <p>Email: <span th:text="${patron.email}"></span></p>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <h3 class="text-gray-700 font-semibold">Soubory</h3>
-                        <div class="space-y-2">
-                            <div th:each="media, mediaStat : ${patron.media}">
-                                <div>
-                                    <span th:text="${mediaStat.count}"></span>) <span th:text="${media.name}"></span>
-                                </div>
-                                <a th:href="@{'/files/' + ${media.name}}" target="_blank">
-                                    <img th:src="@{'/files/' + ${media.name}}" th:alt="${media.name}" class="max-w-xs h-auto"/>
+
+            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                <table class="w-full text-sm text-left rtl:text-right text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">
+                                <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
+                                    <span>ID</span>
+                                    <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z"></path>
+                                    </svg>
                                 </a>
-                            </div>
-                            <p th:if="${patron.media.size() == 0}" class="text-gray-600">Žádné soubory</p>
-                        </div>
-                    </div>
-                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
+                                    <span>Created At</span>
+                                    <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z"></path>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
+                                    <span>Updated At</span>
+                                    <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z"></path>
+                                    </svg>
+                                </a>
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                Aleph ID
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                Aleph Barcode
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                CAS Employee
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                Checked By Admin
+                            </th>
+                            <th scope="col" class="px-6 py-3">
+                                <span class="sr-only">View</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="identity : ${identityPage.content}" class="bg-white border-b">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap" th:text="${identity.id}"></th>
+                            <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}"></td>
+                            <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(identity.updatedAt)}"></td>
+                            <td class="px-6 py-4" th:text="${identity.alephId}"></td>
+                            <td class="px-6 py-4" th:text="${identity.alephBarcode}"></td>
+                            <td class="px-6 py-4" th:text="${identity.isCasEmployee == null ? 'No' : (identity.isCasEmployee ? 'Yes' : 'No')}"></td>
+                            <td class="px-6 py-4" th:text="${identity.checkedByAdmin == null ? 'No' : (identity.checkedByAdmin ? 'Yes' : 'No')}"></td>
+                            <td class="px-6 py-4 text-right">
+                                <a th:href="@{/dashboard/identity/{id}(id=${identity.id})}" class="font-medium text-blue-600 hover:underline">View</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>            
+            
+            <div class="mt-4 flex items-center justify-center gap-4">
+                <a th:if="${currentPage > 0}" 
+                        th:href="@{/dashboard(page=${currentPage - 1}, sortField=${sortField}, sortDir=${sortDir}, searchAlephId=${searchAlephId}, searchAlephBarcode=${searchAlephBarcode}, filterCasEmployee=${filterCasEmployee}, filterCheckedByAdmin=${filterCheckedByAdmin})}"
+                        class="bg-blue-500 text-white p-2">
+                    Previous
+                </a>
+                <span th:text="'Page ' + (${currentPage + 1}) + ' of ' + ${totalPages}"></span>
+                <a th:if="${currentPage < totalPages - 1}" 
+                        th:href="@{/dashboard(page=${currentPage + 1}, sortField=${sortField}, sortDir=${sortDir}, searchAlephId=${searchAlephId}, searchAlephBarcode=${searchAlephBarcode}, filterCasEmployee=${filterCasEmployee}, filterCheckedByAdmin=${filterCheckedByAdmin})}"
+                        class="bg-blue-500 text-white p-2">
+                    Next
+                </a>
             </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
-</body>
+        </main>
+    </body>
 
 </html>

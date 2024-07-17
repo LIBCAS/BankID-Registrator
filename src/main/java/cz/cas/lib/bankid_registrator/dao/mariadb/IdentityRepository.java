@@ -3,6 +3,8 @@ package cz.cas.lib.bankid_registrator.dao.mariadb;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -27,4 +29,13 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
 
     @Query("SELECT i.alephId FROM Identity i WHERE i.alephId IS NOT NULL")
     List<String> findAllAlephIds();
+
+    @Query(
+        "SELECT i FROM Identity i WHERE " +
+        "(:searchAlephId IS NULL OR i.alephId LIKE %:searchAlephId%) AND " +
+        "(:searchAlephBarcode IS NULL OR i.alephBarcode LIKE %:searchAlephBarcode%) AND " +
+        "(:filterCasEmployee IS NULL OR i.isCasEmployee = :filterCasEmployee) AND " +
+        "(:filterCheckedByAdmin IS NULL OR i.checkedByAdmin = :filterCheckedByAdmin)"
+    )
+    Page<Identity> findIdentities(Pageable pageable, String searchAlephId, String searchAlephBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin);
 }

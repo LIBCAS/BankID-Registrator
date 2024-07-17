@@ -146,4 +146,15 @@ public class DateUtils
             return null;
         }
     }
+
+    /**
+     * Converts a MySQL datetime-formatted string (which was converted for Spring) into a human-friendly string.
+     * It converts the format 'dd.MM.yy H:mm' to 'dd/MM/yyyy HH:mm'.
+     * @param originalDateTime
+     * @return
+     */
+    public static String convertDateTimeFormat(String originalDateTime)
+    {    
+        return DateUtils.convertDateFormat(originalDateTime, "dd.MM.yy H:mm", "dd/MM/yyyy HH:mm");
+    }
 }

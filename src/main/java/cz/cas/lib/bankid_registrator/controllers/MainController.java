@@ -184,6 +184,7 @@ public class MainController extends ControllerAbstract
         Optional<Identity> identitySearch = this.identityService.findByBankId(bankId);
         if (!identitySearch.isPresent()) {
             identity = new Identity(bankId);
+            identity.setCheckedByAdmin(false);
             this.identityService.save(identity);
         } else {
             identity = identitySearch.get();
@@ -426,6 +427,7 @@ public class MainController extends ControllerAbstract
         String patronEmail = patron.getEmail();
 
         identity.setIsCasEmployee(patron.getIsCasEmployee());
+        identity.setCheckedByAdmin(false);
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 

@@ -4,8 +4,10 @@ import cz.cas.lib.bankid_registrator.dao.mariadb.IdentityRepository;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class IdentityService extends ServiceAbstract
@@ -73,5 +75,18 @@ public class IdentityService extends ServiceAbstract
     public String[] getAllAlephIds() {
         List<String> alephIds = this.identityRepository.findAllAlephIds();
         return alephIds.toArray(new String[0]);
+    }
+
+    /**
+     * Find identities by search criteria
+     * @param pageable
+     * @param searchAlephId
+     * @param searchAlephBarcode
+     * @param filterCasEmployee
+     * @param filterCheckedByAdmin
+     * @return
+     */
+    public Page<Identity> findIdentities(Pageable pageable, String searchAlephId, String searchAlephBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin) {
+        return identityRepository.findIdentities(pageable, searchAlephId, searchAlephBarcode, filterCasEmployee, filterCheckedByAdmin);
     }
 }
