@@ -50,6 +50,7 @@ public class ApiController extends ApiControllerAbstract
         String bid = this.patronService.getBankIdSubById(patronSysIdLong);
         boolean isContinuable = this.patronService.isProcessing(bid);
 
+        // Check the validity of the request by checking if the application is currently working with the given bankIdSub, i.e. if the associated patron is being processed
         if (!isContinuable) {
             throw new PatronNotProcessableException();
         }
@@ -72,11 +73,27 @@ public class ApiController extends ApiControllerAbstract
     @GetMapping("/api/reset-identities")
     public ResponseEntity<Map<String, Object>> resetIdentities(HttpSession session)
     {
-        this.identityActivityService.emptyTable();
-        this.identityService.emptyTable();
-
         Map<String, Object> result = new HashMap<>();
-        result.put("result", true);
+
+        try {
+            // Get patron IDs of all BankID-verified identities which have an Aleph patron linked to them
+            String[] alephIds = this.identityService.getAllAlephIds();
+
+            // Delete those identities from the application database
+            this.identityActivityService.emptyTable();
+            this.identityService.emptyTable();
+
+            // Delete the reference to those identities from the Aleph database
+            for (String alephId : alephIds) {
+                this.alephService.deletePatronBankIdSub(alephId);
+            }
+
+            result.put("result", true);
+            result.put("message", alephIds.length == 1 ? "1 identity deleted" : (alephIds.length + " identities deleted"));
+        } catch (Exception e) {
+            result.put("result", false);
+            result.put("message", e.getMessage());
+        }
 
         return ResponseEntity.ok(result);
     }

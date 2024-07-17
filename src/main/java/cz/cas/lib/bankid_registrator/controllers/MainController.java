@@ -222,6 +222,8 @@ public class MainController extends ControllerAbstract
 
             return "callback_registration_new";
         } else {
+            this.identityActivityService.logMembershipRenewalInitiation(identity);
+
             // Mapping Aleph patron data to a Patron entity (so-called "Aleph patron")
             Map<String, Object> alephPatronCreation = this.alephService.getAlephPatron(identity.getAlephId(), true);
 
@@ -246,8 +248,6 @@ public class MainController extends ControllerAbstract
             } catch (JsonProcessingException e) {
                 getLogger().error("Error converting latestPatron to JSON", e);
             }
-
-            this.identityActivityService.logMembershipRenewalInitiation(identity);
 
             session.setAttribute("patron", latestPatron.getSysId());
 
@@ -279,7 +279,10 @@ public class MainController extends ControllerAbstract
         String code = (String) session.getAttribute("code");
         Identity identity = this.identityService.findById((Long) session.getAttribute("identity")).orElse(null);
 
-        this.patronRepository.deleteById(patronSysId);
+        session.removeAttribute("patron");
+        session.removeAttribute("userProfile");
+        session.removeAttribute("code");
+        session.removeAttribute("identity");
 
         try {
             getLogger().info("new-registration - originalPatron: {}", patron.toJson());
@@ -303,6 +306,8 @@ public class MainController extends ControllerAbstract
         }
 
         this.identityActivityService.logNewRegistrationSubmission(identity);
+
+        this.patronRepository.deleteById(patronSysId);
 
         patron.update(editedPatron);
 
@@ -374,8 +379,10 @@ public class MainController extends ControllerAbstract
         String code = (String) session.getAttribute("code");
         Identity identity = this.identityService.findById((Long) session.getAttribute("identity")).orElse(null);
 
-        getLogger().info("membership-renewal - patronSysId: {}", patronSysId);
-        getLogger().info("AAAAAAAA: {}", patronSysId instanceof Long ? "true" : "false");
+        session.removeAttribute("patron");
+        session.removeAttribute("userProfile");
+        session.removeAttribute("code");
+        session.removeAttribute("identity");
 
         try {
             getLogger().info("membership-renewal - originalPatron: {}", patron.toJson());
@@ -387,8 +394,6 @@ public class MainController extends ControllerAbstract
         } catch (JsonProcessingException e) {
             getLogger().error("Error converting submitted patron to JSON", e);
         }
-        getLogger().info("membership-renewal - userProfile: {}", userProfile);
-        getLogger().info("membership-renewal - code: {}", code);
 
         if (patronSysId == null || patron == null || userProfile == null || code == null || identity == null) {
             return "error_session_expired";
@@ -397,10 +402,10 @@ public class MainController extends ControllerAbstract
         if (editedPatron.getExportConsent() != PatronBoolean.Y) {
             return "error_export_consent";
         }
-        getLogger().info("membership-renewal 111 - originalPatron deleted");
-        this.patronRepository.deleteById(patronSysId); getLogger().info("membership-renewal 222 - originalPatron deleted");
 
         this.identityActivityService.logMembershipRenewalSubmission(identity);
+
+        this.patronRepository.deleteById(patronSysId);
 
         patron.update(editedPatron);
 

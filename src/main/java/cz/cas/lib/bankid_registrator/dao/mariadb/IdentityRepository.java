@@ -24,4 +24,7 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
 
     @Query("SELECT i FROM Identity i WHERE i.bankId = :bankId AND i.alephId IS NOT NULL AND i.alephBarcode IS NOT NULL")
     Optional<Identity> findAlephLinkedByBankId(String bankId);
+
+    @Query("SELECT i.alephId FROM Identity i WHERE i.alephId IS NOT NULL")
+    List<String> findAllAlephIds();
 }

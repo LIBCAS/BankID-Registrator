@@ -65,10 +65,6 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-/**
- *
- * @author iok
- */
 @Service
 public class AlephService extends AlephServiceAbstract
 {
@@ -446,13 +442,32 @@ public class AlephService extends AlephServiceAbstract
         return result;
     }
 
+    /**
+     * Deletes patron's BankIdSub identifier in Aleph
+     * TODO: This method is only for testing purposes to delete patron's BankIdSub identifier in Aleph because you cannot create a new patron with the same BankIdSub identifier in Aleph
+     * @param patronId
+     * @return void
+     * @throws Exception
+     */
+    public void deletePatronBankIdSub(String patronId) throws Exception
+    {
+        try {
+            Integer deletedRows = this.oracleRepository.deleteZ308RecordType07(patronId);
+            getLogger().info("deletedRows: {}", deletedRows);
+        } catch (Exception e) {
+            getLogger().error(MainService.class.getName(), e);
+            throw new Exception("Failed to delete patron's (" + patronId + ") BankIdSub identifier in Aleph");
+        }
+    }
+
     /** Deletes an item in Aleph
      * @param itemId - the item ID
      * @param itemSequence - the item sequence
      * @param itemBarcode - the item barcode
      * @return Map<String, Object>
      */
-    public Map<String, Object> deleteItem(String itemId, String itemSequence, String itemBarcode) {
+    public Map<String, Object> deleteItem(String itemId, String itemSequence, String itemBarcode)
+    {
         Assert.notNull(itemId, "\"itemId\" is required");
         Assert.notNull(itemSequence, "\"itemSequence\" is required");
 
@@ -909,7 +924,6 @@ logger.info("AAA doHttpRequest method: {}", method);
             String patronId = patron.getId();
             String patronName = patron.getName();
             String patronPassword = patron.getVerification();
-            Optional<Identity> identity = identityService.findByBankId(patron.getBankIdSub());
 
             // z303
             transformer.setParameter("z303-match-id", patronId);
@@ -969,12 +983,9 @@ logger.info("AAA doHttpRequest method: {}", method);
             }
 
             // z308 - BankID
-            if (identity.isPresent()) {
-                Long identityId = identity.get().getId();
-                transformer.setParameter("z308-key-type-07-key-data", identityId.toString());
-                transformer.setParameter("z308-key-type-07-verification", patronPassword);
-                transformer.setParameter("z308-key-type-07-id", patronId);
-            }
+            transformer.setParameter("z308-key-type-07-key-data", patron.getBankIdSub());
+            transformer.setParameter("z308-key-type-07-verification", patronPassword);
+            transformer.setParameter("z308-key-type-07-id", patronId);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
@@ -1286,7 +1297,7 @@ logger.info("AAA doHttpRequest method: {}", method);
                 } else if ("05".equals(keyType)) {
                     patron.setIdCardNumber(getXmlElementValue(z308Nodes.item(i), "z308-key-data"));
                 } else if ("07".equals(keyType)) {
-                    patron.setIdentityRefId(Long.parseLong(getXmlElementValue(z308Nodes.item(i), "z308-key-data")));
+                    patron.setBankIdSub(getXmlElementValue(z308Nodes.item(i), "z308-key-data").toLowerCase());  // We need to convert to lowercase because Aleph z308-key-data store values in uppercase and BankIdSub is in lowercase (BankIdSub is in a standard UUID)
                 }
             }
 
@@ -1837,8 +1848,8 @@ logger.info("AAA doHttpRequest method: {}", method);
             Patron alephPatron = (Patron) alephPatronSearch.get("patron");
 
             String patronBirthdate = DateUtils.convertDateFormat(patron.getBirthDate(), "yyyyMMdd", "dd-MM-yyyy");
-getLogger().info(alephPatron.getBirthDate() + " > " + patronBirthdate + " > " + alephPatron.getIdentityRefId() + " > " + identity.getId());
-            return !(alephPatron.getBirthDate().equals(patronBirthdate) && alephPatron.getIdentityRefId().equals(identity.getId()));
+getLogger().info(alephPatron.getBirthDate() + " > " + patronBirthdate + " > " + alephPatron.getBankIdSub() + " > " + patronBankIdSub);
+            return !(alephPatron.getBirthDate().equals(patronBirthdate) && alephPatron.getBankIdSub().equals(patronBankIdSub));
         }
 
         return true;
@@ -1867,7 +1878,7 @@ getLogger().info(alephPatron.getBirthDate() + " > " + patronBirthdate + " > " + 
 
     private String generateTestingEmail() {
         Random random = new Random();
-        int randomNum = 1000 + random.nextInt(9000);
+        int randomNum = 100000 + random.nextInt(900000);
         return "test" + randomNum + "@testing.com";
     }
 
@@ -1875,5 +1886,11 @@ getLogger().info(alephPatron.getBirthDate() + " > " + patronBirthdate + " > " + 
         Random random = new Random();
         int randomNum = 100000000 + random.nextInt(900000000);
         return "+420" + randomNum;
+    }
+
+    private String generateTestingBankIdSub() {
+        Random random = new Random();
+        int randomNum = 10000 + random.nextInt(90000);
+        return LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + randomNum;
     }
 }

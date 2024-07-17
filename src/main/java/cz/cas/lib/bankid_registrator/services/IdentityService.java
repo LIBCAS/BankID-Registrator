@@ -65,4 +65,13 @@ public class IdentityService extends ServiceAbstract
     public Long getMaxId() {
         return this.identityRepository.getMaxId();
     }
+
+    /**
+     * Get all Aleph IDs
+     * @return
+     */
+    public String[] getAllAlephIds() {
+        List<String> alephIds = this.identityRepository.findAllAlephIds();
+        return alephIds.toArray(new String[0]);
+    }
 }

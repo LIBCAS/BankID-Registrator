@@ -102,9 +102,6 @@ public class Patron {
     @Column(name="bank_id_sub")
     public String bankIdSub;         // bankIdSub
 
-    @Column(name="identity_ref_id", nullable = true)
-    public Long identityRefId;         // reference to the `id` column of the `identity` table
-
     @Column
     @Enumerated(EnumType.STRING)
     public PatronAction action;          // record-action

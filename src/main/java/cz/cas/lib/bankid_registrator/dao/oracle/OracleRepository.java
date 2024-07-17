@@ -21,12 +21,10 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
-/**
- *
- * @author iok
- */
 @Repository
+@Transactional(transactionManager = "oracleTransactionManager")
 public class OracleRepository
 {
     @PersistenceContext(unitName = "oracleEntityManager")
@@ -96,5 +94,22 @@ public class OracleRepository
 
         Query query = entityManager.createNativeQuery(sql);
         return ((Number) query.getSingleResult()).longValue();
+    }
+
+    /**
+     * Deletes a record of 07 type from the z308 table for a specific patron.
+     *
+     * @param patronId The ID of the record to delete.
+     *
+     * @return The number of rows affected by the DELETE operation.
+     */
+    public int deleteZ308RecordType07(String patronId)
+    {
+        String sql = "DELETE FROM KNA50.Z308 WHERE Z308_ID LIKE :patronId AND Z308_REC_KEY LIKE '07%'";
+        
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("patronId", patronId + " %");
+
+        return ((Number) query.executeUpdate()).intValue();
     }
 }

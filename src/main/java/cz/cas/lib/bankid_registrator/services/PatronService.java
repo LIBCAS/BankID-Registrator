@@ -105,7 +105,6 @@ public class PatronService extends PatronServiceAbstract
         latestPatron.setIdCardDetail(mergeField(bankIdPatron.getIdCardDetail(), alephPatron.getIdCardDetail()));
         latestPatron.setVerification(alephPatron.getVerification());
         latestPatron.setBankIdSub(bankIdPatron.getBankIdSub());
-        latestPatron.setIdentityRefId(alephPatron.getIdentityRefId());
         latestPatron.setExportConsent(PatronBoolean.Y);
         latestPatron.setIsCasEmployee(alephPatron.getIsCasEmployee());
         latestPatron.setRfid(mergeField(bankIdPatron.getRfid(), alephPatron.getRfid()));

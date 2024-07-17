@@ -187,7 +187,7 @@ if (btnEmptyIdentities) {
         emptyIdentities()
             .then(data => {
                 if (data.result === true) {
-                    alert("The identities have been reset.");
+                    alert(data.message);
                 } else {
                     alert("An error occurred while resetting the identities.");
                 }
