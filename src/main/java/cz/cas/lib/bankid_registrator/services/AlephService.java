@@ -1247,12 +1247,19 @@ logger.info("AAA doHttpRequest method: {}", method);
             String id = getXmlElementValue(alephPatronXml, "z303-id");
             String status = PatronStatus.getByName(getXmlElementValue(alephPatronXml, "z305-bor-status")).getId();
             String fullName = getXmlElementValue(alephPatronXml, "z303-name");
-            String firstName = getXmlElementValue(alephPatronXml, "z303-first-name");
-            String lastName = getXmlElementValue(alephPatronXml, "z303-last-name");
             String conLng = getXmlElementValue(alephPatronXml, "z303-con-lng");
             String birthDate = getXmlElementValue(alephPatronXml, "z303-birth-date");
             String exportConsent = getXmlElementValue(alephPatronXml, "z303-export-consent");
             String homeLibrary = getXmlElementValue(alephPatronXml, "z303-home-library");
+
+            // Retrieving the first and last name in this way is impossible because our Aleph is configured to store both the first and last name in the z303-name field:
+            // String firstName = getXmlElementValue(alephPatronXml, "z303-first-name");
+            // String lastName = getXmlElementValue(alephPatronXml, "z303-last-name");
+
+            // To retrieve the first and last name, we need to split the z303-name field in the same way as it was stored (i.e. the middle name is a part of the last name):
+            String[] nameParts = fullName.split(" ");
+            String firstName = nameParts[nameParts.length - 1];
+            String lastName = fullName.substring(0, fullName.length() - firstName.length() - 1);
 
             // Setting patron details
             patron.setPatronId(id);

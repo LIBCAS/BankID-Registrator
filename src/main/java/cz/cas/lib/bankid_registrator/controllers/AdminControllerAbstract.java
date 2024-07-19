@@ -1,5 +1,6 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
+import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.util.WebUtils;
 import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
@@ -36,6 +37,7 @@ public abstract class AdminControllerAbstract
         model.addAttribute("appName", this.appName);
         model.addAttribute("currentUrl", currentUrl);
         model.addAttribute("currentUrlParamsConnector", currentUrlParamsConnector);
+        model.addAttribute("dateUtils", new DateUtils());
     }
 
     /**

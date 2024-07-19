@@ -6,25 +6,25 @@
 
     <body class="page-dashboard">
         <main layout:fragment="content" class="mb-10 container text-center mx-auto">
-            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900">Identity Dashboard</h1>
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="${pageTitle}"></h1>
 
             <div class="mb-4 flex items-center justify-center gap-4">
                 <form th:action="@{/dashboard}" method="GET">
-                    <input type="text" name="searchAlephId" placeholder="Search Aleph ID" th:value="${searchAlephId}" class="border p-2"/>
-                    <input type="text" name="searchAlephBarcode" placeholder="Search Aleph Barcode" th:value="${searchAlephBarcode}" class="border p-2"/>
+                    <input type="text" name="searchAlephId" th:placeholder="#{message.searchIdentityByPatronId}" th:value="${searchAlephId}" class="border p-2"/>
+                    <input type="text" name="searchAlephBarcode" th:placeholder="#{message.searchIdentityByPatronBarcode}" th:value="${searchAlephBarcode}" class="border p-2"/>
                     <select name="filterCasEmployee" class="border p-2">
-                        <option value="">Filter CAS Employee</option>
-                        <option th:selected="${filterCasEmployee == true}" th:value="true">Yes</option>
-                        <option th:selected="${filterCasEmployee == false}" th:value="false">No</option>
+                        <option value="" th:text="#{message.isIdentityCasEmployee}"></option>
+                        <option th:selected="${filterCasEmployee == true}" th:value="true" th:text="#{message.yes}"></option>
+                        <option th:selected="${filterCasEmployee == false}" th:value="false" th:text="#{message.no}"></option>
                     </select>
                     <select name="filterCheckedByAdmin" class="border p-2">
-                        <option value="">Filter Checked By Admin</option>
-                        <option th:selected="${filterCheckedByAdmin == true}" th:value="true">Yes</option>
-                        <option th:selected="${filterCheckedByAdmin == false}" th:value="false">No</option>
+                        <option value="" th:text="#{message.isIdentityAdminChecked}">Filter Checked By Admin</option>
+                        <option th:selected="${filterCheckedByAdmin == true}" th:value="true" th:text="#{message.yes}"></option>
+                        <option th:selected="${filterCheckedByAdmin == false}" th:value="false" th:text="#{message.no}"></option>
                     </select>
-                    <button type="submit" class="bg-blue-500 text-white p-2">Filter</button>
+                    <button type="submit" th:text="#{message.filter}" class="bg-blue-500 text-white p-2"></button>
                 </form>
-                <a th:href="@{/dashboard}" class="bg-red-500 text-white p-2">Clear Filters</a>
+                <a th:href="@{/dashboard}" th:text="#{message.clearFilters}" class="bg-red-500 text-white p-2"></a>
             </div>
 
             <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -33,7 +33,7 @@
                         <tr>
                             <th scope="col" class="px-6 py-3">
                                 <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
-                                    <span>ID</span>
+                                    <span th:text="#{message.id}"></span>
                                     <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z"></path>
                                     </svg>
@@ -41,7 +41,7 @@
                             </th>
                             <th scope="col" class="px-6 py-3">
                                 <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
-                                    <span>Created At</span>
+                                    <span th:text="#{message.createdAt}"></span>
                                     <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z"></path>
                                     </svg>
@@ -49,40 +49,36 @@
                             </th>
                             <th scope="col" class="px-6 py-3">
                                 <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
-                                    <span>Updated At</span>
+                                    <span th:text="#{message.updatedAt}"></span>
                                     <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z"></path>
                                     </svg>
                                 </a>
                             </th>
-                            <th scope="col" class="px-6 py-3">
-                                Aleph ID
-                            </th>
-                            <th scope="col" class="px-6 py-3">
-                                Aleph Barcode
-                            </th>
-                            <th scope="col" class="px-6 py-3">
-                                CAS Employee
-                            </th>
-                            <th scope="col" class="px-6 py-3">
-                                Checked By Admin
-                            </th>
-                            <th scope="col" class="px-6 py-3">
-                                <span class="sr-only">View</span>
-                            </th>
+                            <th th:text="#{message.patronId}" scope="col" class="px-6 py-3"></th>
+                            <th th:text="#{message.patronBarcode}" scope="col" class="px-6 py-3"></th>
+                            <th th:text="#{message.isIdentityCasEmployee}" scope="col" class="px-6 py-3"></th>
+                            <th th:text="#{message.isIdentityAdminChecked}" scope="col" class="px-6 py-3"></th>
+                            <th scope="col" class="px-6 py-3"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:each="identity : ${identityPage.content}" class="bg-white border-b">
-                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap" th:text="${identity.id}"></th>
-                            <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}"></td>
-                            <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(identity.updatedAt)}"></td>
-                            <td class="px-6 py-4" th:text="${identity.alephId}"></td>
-                            <td class="px-6 py-4" th:text="${identity.alephBarcode}"></td>
-                            <td class="px-6 py-4" th:text="${identity.isCasEmployee == null ? 'No' : (identity.isCasEmployee ? 'Yes' : 'No')}"></td>
-                            <td class="px-6 py-4" th:text="${identity.checkedByAdmin == null ? 'No' : (identity.checkedByAdmin ? 'Yes' : 'No')}"></td>
+                            <th scope="row" th:text="${identity.id}" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"></th>
+                            <td th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}" class="px-6 py-4"></td>
+                            <td th:text="${dateUtils.convertDateTimeFormat(identity.updatedAt)}" class="px-6 py-4"></td>
+                            <td th:text="${identity.alephId}" class="px-6 py-4"></td>
+                            <td th:text="${identity.alephBarcode}" class="px-6 py-4"></td>
+                            <td class="px-6 py-4">
+                                <span th:if="${identity.isCasEmployee == null || identity.isCasEmployee == false}" th:text="#{message.no}"></span>
+                                <span th:if="${identity.isCasEmployee == true}" th:text="#{message.yes}"></span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.no}"></span>
+                                <span th:if="${identity.checkedByAdmin == true}" th:text="#{message.yes}"></span>
+                            </td>
                             <td class="px-6 py-4 text-right">
-                                <a th:href="@{/dashboard/identity/{id}(id=${identity.id})}" class="font-medium text-blue-600 hover:underline">View</a>
+                                <a th:href="@{/dashboard/identity/{id}(id=${identity.id})}" th:text="#{message.view}" class="font-medium text-blue-600 hover:underline"></a>
                             </td>
                         </tr>
                     </tbody>
@@ -91,15 +87,16 @@
             
             <div class="mt-4 flex items-center justify-center gap-4">
                 <a th:if="${currentPage > 0}" 
-                        th:href="@{/dashboard(page=${currentPage - 1}, sortField=${sortField}, sortDir=${sortDir}, searchAlephId=${searchAlephId}, searchAlephBarcode=${searchAlephBarcode}, filterCasEmployee=${filterCasEmployee}, filterCheckedByAdmin=${filterCheckedByAdmin})}"
-                        class="bg-blue-500 text-white p-2">
-                    Previous
+                    th:href="@{/dashboard(page=${currentPage - 1}, sortField=${sortField}, sortDir=${sortDir}, searchAlephId=${searchAlephId}, searchAlephBarcode=${searchAlephBarcode}, filterCasEmployee=${filterCasEmployee}, filterCheckedByAdmin=${filterCheckedByAdmin})}"
+                    th:text="#{message.previous}" class="bg-blue-500 text-white p-2">
                 </a>
-                <span th:text="'Page ' + (${currentPage + 1}) + ' of ' + ${totalPages}"></span>
+                <div>
+                    <span th:text="#{message.page}"></span>
+                    <span th:text="${currentPage + 1} + ' / ' + ${totalPages}"></span>
+                </div>
                 <a th:if="${currentPage < totalPages - 1}" 
-                        th:href="@{/dashboard(page=${currentPage + 1}, sortField=${sortField}, sortDir=${sortDir}, searchAlephId=${searchAlephId}, searchAlephBarcode=${searchAlephBarcode}, filterCasEmployee=${filterCasEmployee}, filterCheckedByAdmin=${filterCheckedByAdmin})}"
-                        class="bg-blue-500 text-white p-2">
-                    Next
+                    th:href="@{/dashboard(page=${currentPage + 1}, sortField=${sortField}, sortDir=${sortDir}, searchAlephId=${searchAlephId}, searchAlephBarcode=${searchAlephBarcode}, filterCasEmployee=${filterCasEmployee}, filterCheckedByAdmin=${filterCheckedByAdmin})}"
+                    th:text="#{message.next}" class="bg-blue-500 text-white p-2">
                 </a>
             </div>
         </main>

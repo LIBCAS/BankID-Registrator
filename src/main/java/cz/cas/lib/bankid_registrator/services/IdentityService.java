@@ -45,6 +45,16 @@ public class IdentityService extends ServiceAbstract
     }
 
     /**
+     * Get an Aleph ID (Aleph Patron's ID) by the identity's id
+     * @param identityId
+     * @return
+     */
+    public String findAlephIdById(Long identityId) {
+        Optional<Identity> identity = findById(identityId);
+        return identity.map(Identity::getAlephId).orElse(null);
+    }
+
+    /**
      * Get an Aleph-linked identity by its bank_id column. 
      * Aleph-linked identity is an identity which has an Aleph patron linked to it.
      */

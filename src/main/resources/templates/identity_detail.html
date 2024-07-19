@@ -4,9 +4,190 @@
         <title th:replace="fragments/head :: head"></title>
     </head>
 
-    <body class="page-dashboard">
-        <main layout:fragment="content" class="mb-10 container text-center mx-auto">
-            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900">Patron</h1>
+    <body class="page-dashboard print:page">
+        <main layout:fragment="content" class="mb-10 container text-center mx-auto print:my-0">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900 print:hidden" th:text="${pageTitle}"></h1>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 print:grid-cols-1">
+                <div class="bg-white p-6">
+                    <div class="flex flex-col gap-5 mb-10 print:hidden">
+                        <h2 th:text="#{message.identity}" class="text-2xl font-bold">Identity</h2>
+                        <div class="flex justify-center">
+                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                                <table class="text-sm text-left rtl:text-right text-gray-500">
+                                    <tbody>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.id}">ID</th>
+                                            <td class="px-6 py-4" th:text="${identity.id}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.patronId}">Patron ID</th>
+                                            <td class="px-6 py-4" th:text="${identity.alephId}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.patronBarcode}">Patron barcode</th>
+                                            <td class="px-6 py-4" th:text="${identity.alephBarcode}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.casEmployee}">CAS employee</th>
+                                            <td class="px-6 py-4" th:if="${identity.isCasEmployee == null || identity.isCasEmployee == false}" th:text="#{message.no}">No</td>
+                                            <td class="px-6 py-4" th:if="${identity.isCasEmployee == true}" th:text="#{message.yes}">Yes</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.checked}">Checked</th>
+                                            <td class="px-6 py-4" th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.no}">No</td>
+                                            <td class="px-6 py-4" th:if="${identity.checkedByAdmin == true}" th:text="#{message.yes}">Yes</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.createdAt}">Created at</th>
+                                            <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="patron-detail" class="flex flex-col gap-5 mb-10 print:m-0">
+                        <h2 th:text="#{message.patron}" class="text-2xl font-bold print:hidden">Patron</h2>
+                        <div class="flex justify-center print:block">
+                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                                <table class="text-sm text-left rtl:text-right text-gray-500">
+                                    <tbody>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.patronId}">Patron ID</th>
+                                            <td class="px-6 py-4" th:text="${patron.patronId}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50">
+                                                <span th:text="#{message.patronBarcode}">Patron barcode</span> (<span th:text="#{message.username}">Username</span>)
+                                            </th>
+                                            <td class="px-6 py-4" th:text="${patron.barcode}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.firstname}">First name</th>
+                                            <td class="px-6 py-4" th:text="${patron.firstname}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.lastname}">Last name</th>
+                                            <td class="px-6 py-4" th:text="${patron.lastname}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.fullName}">Full name</th>
+                                            <td class="px-6 py-4" th:text="${patron.name}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.birthday}">Birth date</th>
+                                            <td class="px-6 py-4" th:text="${patron.birthDate}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.email}">E-mail</th>
+                                            <td class="px-6 py-4" th:text="${patron.email}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.mobilePhone}">Mobile phone</th>
+                                            <td class="px-6 py-4" th:text="${patron.smsNumber}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.language}">Language</th>
+                                            <td class="px-6 py-4" th:text="${patron.conLng}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.rfid}">RFID (Lítačka, ISIC, etc.)</th>
+                                            <td class="px-6 py-4" th:text="${patron.rfid}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.membership}">Membership</th>
+                                            <td class="px-6 py-4" th:if="${membershipHasExpired}">
+                                                <span th:text="#{message.hasExpiredOnDate}">Expired on</span> <span th:text="${membershipExpiryDate}"></span>
+                                            </td>
+                                            <td class="px-6 py-4" th:if="${membershipExpiresToday}">
+                                                <span th:text="#{message.expiresToday}">Expires today</span> (<span th:text="${membershipExpiryDate}"></span>)
+                                            </td>
+                                            <td class="px-6 py-4" th:if="${!membershipHasExpired && !membershipExpiresToday}">
+                                                <span th:text="#{message.willExpireOnDate}">Will expire on</span> <span th:text="${membershipExpiryDate}"></span>
+                                            </td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.permanentAddress}" colspan="2">Permanent address</th>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.streetHouseNum}">Street and house number</th>
+                                            <td class="px-6 py-4" th:text="${patron.address1}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.municipality}">Municipality</th>
+                                            <td class="px-6 py-4" th:text="${patron.address2}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.zipCode}">ZIP code</th>
+                                            <td class="px-6 py-4" th:text="${patron.zip}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.contactAddress}" colspan="2">Contact address</th>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.streetHouseNum}">Street and house number</th>
+                                            <td class="px-6 py-4" th:text="${patron.contactAddress1}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.municipality}">Municipality</th>
+                                            <td class="px-6 py-4" th:text="${patron.contactAddress2}"></td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.zipCode}">ZIP code</th>
+                                            <td class="px-6 py-4" th:text="${patron.contactZip}"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 print:hidden">
+                    <div class="flex flex-col gap-5 mb-10">
+                        <h2 th:text="#{message.activity}" class="text-2xl font-bold">Activity</h2>
+                        <div class="flex justify-center">
+                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                                <table class="text-sm text-left rtl:text-right text-gray-500">
+                                    <tbody>
+                                        <tr th:each="activity : ${activities}" class="border-b border-gray-200">
+                                            <th th:text="${dateUtils.convertDateTimeFormat(activity.createdAt)}" scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50"></th>
+                                            <td th:text="#{${'identityActivity.event.' + activity.activityEvent}}" class="px-6 py-4"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-5 mb-10">
+                        <h2 th:text="#{message.attachments}" class="text-2xl font-bold">Attachments</h2>
+                        <div class="flex justify-center">
+                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                                <table class="text-sm text-left rtl:text-right text-gray-500">
+                                    <tbody th:each="media : ${medias}">
+                                        <tr class="border-b border-gray-200">
+                                            <th th:text="${media.name}" class="px-6 py-4 font-medium text-center text-gray-900 whitespace-nowrap bg-gray-50"></th>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <td class="px-6 py-4">
+                                                <a th:href="@{'/files/' + ${media.name}}" target="_blank">
+                                                    <img th:src="@{'/files/' + ${media.name}}" th:alt="${media.name}" class="max-w-xs h-auto"/>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-center gap-5 mb-10 print:hidden">
+                <button th:text="#{message.print}" id="js-printPage" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">Print</button>
+                <a th:href="@{/dashboard/identity/{id}/toggle-checked(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">
+                    <span th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.markAsAdminChecked}">Mark as checked</span>
+                    <span th:if="${identity.checkedByAdmin == true}" th:text="#{message.markAsAdminUnchecked}">Mark as unchecked</span>
+                </a>
+            </div>
         </main>
     </body>
 

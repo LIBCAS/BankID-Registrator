@@ -154,7 +154,16 @@ public class DateUtils
      * @return
      */
     public static String convertDateTimeFormat(String originalDateTime)
-    {    
-        return DateUtils.convertDateFormat(originalDateTime, "dd.MM.yy H:mm", "dd/MM/yyyy HH:mm");
+    {
+        String inputFormat;
+        if (originalDateTime.contains("AM") || originalDateTime.contains("PM")) {
+            inputFormat = "M/dd/yy, h:mm a";
+        } else if (originalDateTime.contains("T")) {
+            inputFormat = "yyyy-MM-dd'T'HH:mm:ss";
+        } else {
+            inputFormat = "dd.MM.yy H:mm";
+        }
+
+        return DateUtils.convertDateFormat(originalDateTime, inputFormat, "dd/MM/yyyy HH:mm");
     }
 }

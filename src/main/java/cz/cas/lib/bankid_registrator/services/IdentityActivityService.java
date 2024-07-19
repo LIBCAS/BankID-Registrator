@@ -1,12 +1,13 @@
 package cz.cas.lib.bankid_registrator.services;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.stereotype.Service;
 import cz.cas.lib.bankid_registrator.dao.mariadb.IdentityActivityRepository;
 import cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.identity.IdentityActivity;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
 
 @Service
 public class IdentityActivityService
@@ -73,5 +74,14 @@ public class IdentityActivityService
 
     public void logAppExit(Identity identity) {
         this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.APP_EXIT));
+    }
+
+    /**
+     * Get all activities of an identity ordered by creation date
+     * @param identityId
+     * @return
+     */
+    public List<IdentityActivity> findByIdentityId(Long identityId) {
+        return identityActivityRepository.findByIdentityIdOrderByCreatedAtAsc(identityId);
     }
 }

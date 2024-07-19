@@ -7,6 +7,7 @@ import cz.cas.lib.bankid_registrator.model.media.Media;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -60,5 +61,14 @@ public class MediaService
         }
 
         return result;
+    }
+
+    /**
+     * Find media by identity ID
+     * @param identityId
+     * @return
+     */
+    public List<Media> findByIdentityId(Long identityId) {
+        return mediaRepository.findByIdentityId(identityId);
     }
 }

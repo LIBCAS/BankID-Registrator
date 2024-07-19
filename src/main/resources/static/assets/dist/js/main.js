@@ -13,6 +13,13 @@ function getCsrfTokenAndHeader() {
     };
 }
 
+/**
+ * Trigger the print page
+ */
+function triggerPrintPage() {
+    window.print();
+}
+
 const checkRfid = async (rfid, patronSysId, csrfToken, csrfHeader = null) => {
     const request = {
         method: "POST",
@@ -163,6 +170,11 @@ if (document.getElementById("form-identity-password")) {
             ev.preventDefault();
         }
     });
+}
+
+// COMMON
+if (document.getElementById("js-printPage")) {
+    document.getElementById("js-printPage").addEventListener("click", triggerPrintPage);
 }
 
 // TESTING

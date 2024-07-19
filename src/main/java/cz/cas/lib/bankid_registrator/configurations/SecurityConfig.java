@@ -22,7 +22,7 @@ public class SecurityConfig
     {
         http
             .authorizeHttpRequests(authorize -> authorize
-                    .antMatchers("/dashboard").authenticated()
+                    .antMatchers("/dashboard/**").authenticated()
                     .antMatchers("/user/register", "/user/login").permitAll())
             .formLogin(formLogin -> formLogin
                     .loginPage("/user/login")
@@ -34,6 +34,7 @@ public class SecurityConfig
                     .logoutSuccessUrl("/user/login")
                     .permitAll())
             .csrf(csrf -> csrf.and());
+
         return http.build();
     }
 
