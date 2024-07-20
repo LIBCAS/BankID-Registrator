@@ -141,7 +141,7 @@
         }
 
         /**
-         * Toggles the checkedByAdmin status of an identity and redirects to the identity detail view.
+         * Toggles the checked-by-admin status of an identity and redirects to the identity detail view.
          */
         @RequestMapping(value = "/dashboard/identity/{id}/toggle-checked", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
         public String toggleCheckedByAdmin(

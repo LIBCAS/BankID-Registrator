@@ -1107,12 +1107,12 @@ logger.info("AAA doHttpRequest method: {}", method);
         String lname = userInfo.getFamily_name();     // Rowling
 
         patron.setFirstname(fname);
-        patron.setLastname(Stream.of(mname, lname)
+        patron.setLastname(Stream.of(lname, mname)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Kathleen Rowling
-        patron.setName(Stream.of(mname, lname, fname)
+            .collect(Collectors.joining(" ")));       // Rowling Kathleen
+        patron.setName(Stream.of(lname, mname, fname)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Kathleen Rowling Joanne
+            .collect(Collectors.joining(" ")));       // Rowling Kathleen Joanne
 
         patron.setEmail(Optional.ofNullable(userInfo.getEmail()).orElse(""));
 
@@ -1644,12 +1644,12 @@ logger.info("AAA doHttpRequest method: {}", method);
         String mname = this.generateTestingMname();   // Kathleen
         String lname = userInfo.getFamily_name();     // Rowling
         patron.setFirstname(fname);
-        patron.setLastname(Stream.of(mname, lname)
+        patron.setLastname(Stream.of(lname, mname)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Kathleen Rowling
-        patron.setName(Stream.of(mname, lname, fname)
+            .collect(Collectors.joining(" ")));       // Rowling Kathleen
+        patron.setName(Stream.of(lname, mname, fname)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Kathleen Rowling Joanne
+            .collect(Collectors.joining(" ")));       // Rowling Kathleen Joanne
 
         patron.setEmail(Optional.ofNullable(this.generateTestingEmail()).orElse(""));
 
@@ -1855,8 +1855,11 @@ logger.info("AAA doHttpRequest method: {}", method);
             Patron alephPatron = (Patron) alephPatronSearch.get("patron");
 
             String patronBirthdate = DateUtils.convertDateFormat(patron.getBirthDate(), "yyyyMMdd", "dd-MM-yyyy");
-getLogger().info(alephPatron.getBirthDate() + " > " + patronBirthdate + " > " + alephPatron.getBankIdSub() + " > " + patronBankIdSub);
-            return !(alephPatron.getBirthDate().equals(patronBirthdate) && alephPatron.getBankIdSub().equals(patronBankIdSub));
+getLogger().info(alephPatron.getBirthDate() + " > " + patronBirthdate + " > " + alephPatron.getBankIdSub() + " > " + patronBankIdSub + " > " + alephPatron.getName() + " > " + patron.getName());
+            return !(
+                (alephPatron.getBirthDate().equals(patronBirthdate) && alephPatron.getBankIdSub().equals(patronBankIdSub)) || 
+                (alephPatron.getBirthDate().equals(patronBirthdate) && alephPatron.getName().equals(patron.getName()))
+            );
         }
 
         return true;
