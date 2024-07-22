@@ -154,6 +154,12 @@ public class MainController extends ControllerAbstract
     @RequestMapping(value="/callback", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
     public String CallbackEntry(@RequestParam("code") String code, Model model, Locale locale, HttpSession session)
     {
+        if (session.isNew()) {
+            model.addAttribute("error", "Session expired. Please try again.");
+            session.invalidate();
+            return "error";
+        }
+
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
 
         Assert.notNull(code, "\"code\" is required");

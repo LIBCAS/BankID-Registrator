@@ -129,9 +129,10 @@
                     model.addAttribute("membershipExpiryDate", alephPatronExpiryDate);
                     model.addAttribute("membershipHasExpired", DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy"));
                     model.addAttribute("membershipExpiresToday", DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy"));
+                } else {
+                    model.addAttribute("pageTitle", this.messageSource.getMessage("message.identity", null, locale));
                 }
 
-                model.addAttribute("pageTitle", this.messageSource.getMessage("message.identity", null, locale));
                 model.addAttribute("identity", identity);
                 model.addAttribute("medias", medias);
                 model.addAttribute("activities", activities);
