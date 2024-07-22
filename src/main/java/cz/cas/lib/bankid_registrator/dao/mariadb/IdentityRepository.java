@@ -32,8 +32,8 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
 
     @Query(
         "SELECT i FROM Identity i WHERE " +
-        "(:searchAlephId IS NULL OR i.alephId LIKE %:searchAlephId%) AND " +
-        "(:searchAlephBarcode IS NULL OR i.alephBarcode LIKE %:searchAlephBarcode%) AND " +
+        "(:searchAlephId IS NULL OR i.alephId IS NULL OR i.alephId LIKE %:searchAlephId%) AND " +
+        "(:searchAlephBarcode IS NULL OR i.alephBarcode IS NULL OR i.alephBarcode LIKE %:searchAlephBarcode%) AND " +
         "(:filterCasEmployee IS NULL OR i.isCasEmployee = :filterCasEmployee) AND " +
         "(:filterCheckedByAdmin IS NULL OR i.checkedByAdmin = :filterCheckedByAdmin)"
     )

@@ -46,7 +46,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="patron-detail" class="flex flex-col gap-5 mb-10 print:m-0">
+                    <div th:if="${patron != null}" id="patron-detail" class="flex flex-col gap-5 mb-10 print:m-0">
                         <h2 th:text="#{message.patron}" class="text-2xl font-bold print:hidden">Patron</h2>
                         <div class="flex justify-center print:block">
                             <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -158,7 +158,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-5 mb-10">
+                    <div th:if="${patron != null && identity.isCasEmployee == true}" class="flex flex-col gap-5 mb-10">
                         <h2 th:text="#{message.attachments}" class="text-2xl font-bold">Attachments</h2>
                         <div class="flex justify-center">
                             <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
@@ -181,7 +181,7 @@
                     </div>
                 </div>
             </div>
-            <div class="flex justify-center gap-5 mb-10 print:hidden">
+            <div th:if="${patron != null}" class="flex justify-center gap-5 mb-10 print:hidden">
                 <button th:text="#{message.print}" id="js-printPage" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">Print</button>
                 <a th:href="@{/dashboard/identity/{id}/toggle-checked(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">
                     <span th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.markAsAdminChecked}">Mark as checked</span>
