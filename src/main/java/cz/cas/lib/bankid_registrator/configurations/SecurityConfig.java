@@ -22,17 +22,18 @@ public class SecurityConfig
     {
         http
             .authorizeHttpRequests(authorize -> authorize
-                    .antMatchers("/dashboard/**").authenticated()
-                    .antMatchers("/user/register", "/user/login").permitAll())
+                .antMatchers("/dashboard/**").authenticated()
+                .antMatchers("/files/**").authenticated()
+                .antMatchers("/user/register", "/user/login").permitAll())
             .formLogin(formLogin -> formLogin
-                    .loginPage("/user/login")
-                    .failureUrl("/user/login?error=true")
-                    .defaultSuccessUrl("/dashboard", true)
-                    .permitAll())
+                .loginPage("/user/login")
+                .failureUrl("/user/login?error=true")
+                .defaultSuccessUrl("/dashboard", true)
+                .permitAll())
             .logout(logout -> logout
-                    .logoutUrl("/user/logout")
-                    .logoutSuccessUrl("/user/login")
-                    .permitAll())
+                .logoutUrl("/user/logout")
+                .logoutSuccessUrl("/user/login")
+                .permitAll())
             .csrf(csrf -> csrf.and());
 
         return http.build();
