@@ -18,12 +18,12 @@ public interface PatronRepository extends JpaRepository<Patron, Long> {
     long countByBankIdSub(String bankIdSub);
 
     /**
-     * Gets the bankIdSub attribute of the Patron entity with the provided id.
+     * Gets the bankIdSub attribute of the Patron entity with the provided id (Patron System ID `id`, not Patron Aleph ID `patronId`).
      * @param id
      * @return
      */
     @Query("SELECT p.bankIdSub FROM Patron p WHERE p.id = :id")
-    String findBankIdSubById(Long id);
+    Optional<String> findBankIdSubById(Long id);
 
     /**
      * Gets the patronId attribute of the Patron entity with the provided id.

@@ -2,7 +2,7 @@ package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
-import cz.cas.lib.bankid_registrator.util.RandomStringUtil;
+import cz.cas.lib.bankid_registrator.util.StringUtils;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -102,7 +102,7 @@ public class MainServiceTest extends MainService
     private String generateEmailTest(String originalEmail, String accessToken) {
         String seed = getHash(accessToken);
         Random random = new Random(seed.hashCode());
-        return originalEmail.substring(0, originalEmail.indexOf('@')) + "+" + RandomStringUtil.generateRandomAlphanumeric(5, random) + originalEmail.substring(originalEmail.indexOf('@'));
+        return originalEmail.substring(0, originalEmail.indexOf('@')) + "+" + StringUtils.generateRandomAlphanumeric(5, random) + originalEmail.substring(originalEmail.indexOf('@'));
     }
 
     /**

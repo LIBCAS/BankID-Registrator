@@ -10,9 +10,10 @@
         <span th:text="${alephPatronBarcode}"></span>
     </div>
     <div>
-        <p>Zde je váš <a href="#">odkaz</a> pro platbu.</p>
+        <p th:if="${!isCasEmployee}">Zde je váš <a href="#">odkaz</a> pro platbu.</p>
         <p>
-            <span>Po zaplacení poplatku bude vaše členství platné do</span> <b th:text="${membershipExpiryDate}"></b>.
+            <span th:if="${!isCasEmployee}">Po zaplacení poplatku bude vaše členství platné do</span>
+            <span th:if="${isCasEmployee}">Vaše členství bude platné do</span> <b th:text="${membershipExpiryDate}"></b>.
         </p>
     </div>
 </body>

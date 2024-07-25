@@ -18,9 +18,10 @@
                 <p class="font-bold" th:if="${!membershipHasExpired and !membershipExpiresToday}">
                     <span th:text="#{message.membershipStatus.willExpireOnDate}">Your membership will expire on</span> <span th:text="${membershipExpiryDate}"></span>.
                 </p>
-                <p th:text="#{message.membershipRenewal.instructions}">To renew your membership, review the personal information below and fill in the required information.</p>
+                <p th:if="${expiryDateIn1MonthOrLess}" th:text="#{message.membershipRenewal.instructions}">To renew your membership, review the personal information below and fill in the required information.</p>
+                <p th:if="${!expiryDateIn1MonthOrLess}" th:text="#{message.membershipRenewal.epiryDateTooFarAway}">Your membership can be renewed at the earliest 1 month before the expiration date.</p>
             </div>
-            <form th:action="@{/membership-renewal}" method="post" th:object="${patron}" enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto">
+            <form th:if="${expiryDateIn1MonthOrLess}" th:action="@{/membership-renewal}" method="post" th:object="${patron}" enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" required />
                 <input type="hidden" name="patronId" th:value="${patronId}" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -52,9 +53,9 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
                         <label for="email" class="mb-3 block text-sm font-bold text-gray-700">
-                            <span th:text="#{message.email}">E-mail</span>: *
+                            <span th:text="#{message.email}">E-mail</span>: **
                         </label>
-                        <input type="email" id="email" name="email" th:field="*{email}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
+                        <input type="email" id="email" name="email" th:field="*{email}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                     </div>
                     <button th:if="${patron.email == null && bankIdPatron.email != null and !#strings.isEmpty(bankIdPatron.email)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
                         <span th:text="#{message.useThisBankIDValue}">Use this BankID value</span>:<br>
@@ -68,9 +69,9 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
                         <label for="phone" class="mb-3 block text-sm font-bold text-gray-700">
-                            <span th:text="#{message.mobilePhone}">Mobile phone</span>: *
+                            <span th:text="#{message.mobilePhone}">Mobile phone</span>:
                         </label>
-                        <input type="tel" id="phone" name="phone" th:field="*{smsNumber}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
+                        <input type="tel" id="phone" name="phone" th:field="*{smsNumber}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                     </div>
                     <button th:if="${patron.smsNumber == null && bankIdPatron.smsNumber != null and !#strings.isEmpty(bankIdPatron.smsNumber)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
                         <span th:text="#{message.useThisBankIDValue}">Use this BankID value</span>:<br>
@@ -154,8 +155,9 @@
                                 <span th:text="#{message.streetHouseNum}">Street and house number</span>: 
                             </label>
                             <input type="text" name="contact_address_line2"
-                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                class="js-autocomplete-address block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 th:field="*{contactAddress1}" />
+                            <div class="address-suggestions" style="position: absolute; z-index: 1000; background: white; border: 1px solid #ccc;"></div>
                         </div>
                         <div>
                             <label for="contact_address_line3" class="mb-3 block text-left text-sm font-bold text-gray-700">
@@ -196,7 +198,7 @@
                 </div>
                 <div id="files-control" class="flex flex-col items-center mt-4 pl-4">
                     <label for="media" class="mb-3 block text-sm font-medium text-gray-700">
-                        <span th:text="#{message.uploadIdFiles}">Upload your ID card, passport or other proof of identity (PDF, JPG, JPEG or PNG formats with a maximum size of 10 MB)</span> *
+                        <span th:text="#{message.uploadIdFiles}">Upload your ID card, passport or other proof of identity (PDF, JPG, JPEG or PNG formats with a maximum size of 10 MB)</span> **
                     </label>
                     <input id="files" type="file" class="filepond mb-0" name="media" multiple data-max-file-size="10MB" data-max-files="3" />
                 </div>
@@ -205,6 +207,14 @@
                     <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">
                         <span th:text="#{message.exportConsent}">I agree with the processing of personal data</span> *
                     </label>
+                </div>
+                <div class="text-left">
+                    <p class="text-gray-500">
+                        <b>*</b>&nbsp;<span th:text="#{form.text.requiredInformation}">Required information</span>
+                    </p>
+                    <p class="text-gray-500">
+                        <b>**</b>&nbsp;<span th:text="#{form.text.requiredCasEmployeeInformation}">CAS employees must fill in a valid CAS e-mail address or upload an identity document (identity card / passport)</span>
+                    </p>
                 </div>
                 <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4" th:text="#{message.renewMembership}">
                     Membership renewal

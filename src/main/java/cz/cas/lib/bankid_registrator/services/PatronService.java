@@ -53,21 +53,22 @@ public class PatronService extends PatronServiceAbstract
      * @return
      */
     public String getBankIdSubById(Long id) {
-        return patronRepository.findBankIdSubById(id);
+        Optional<String> patronBankIdSubOpt = patronRepository.findBankIdSubById(id);
+
+        return patronBankIdSubOpt.orElse(null);
     }
 
     /**
      * Gets the patronId attribute of the Patron entity with the provided id.
      * @param id
      * @return
-     * @throws PatronNotFoundException if the patron does not exist
      */
     public String getPatronIdById(Long id) {
         Optional<String> patronIdOpt = patronRepository.findPatronIdById(id);
 
-        if (!patronRepository.existsById(id)) {
-            throw new PatronNotFoundException("Patron with app ID " + id + " does not exist");
-        }
+        // if (!patronRepository.existsById(id)) {
+        //     throw new PatronNotFoundException("Patron with app ID " + id + " does not exist");
+        // }
 
         return patronIdOpt.orElse(null);
     }

@@ -157,15 +157,15 @@ public class Patron {
      * @param patron
      */
     public void update(PatronDTO patron) {
-        Optional.ofNullable(patron.email).ifPresent(e -> this.email = e);
-        Optional.ofNullable(patron.smsNumber).ifPresent(e -> this.smsNumber = e);
-        Optional.ofNullable(patron.contactAddress0).ifPresent(e -> this.contactAddress0 = e);
-        Optional.ofNullable(patron.contactAddress1).ifPresent(e -> this.contactAddress1 = e);
-        Optional.ofNullable(patron.contactAddress2).ifPresent(e -> this.contactAddress2 = e);
-        Optional.ofNullable(patron.contactZip).ifPresent(e -> this.contactZip = e);
+        Optional.ofNullable(patron.email).ifPresent(e -> this.email = e.trim());
+        Optional.ofNullable(patron.smsNumber).ifPresent(e -> this.smsNumber = e.trim());
+        Optional.ofNullable(patron.contactAddress0).ifPresent(e -> this.contactAddress0 = e.trim());
+        Optional.ofNullable(patron.contactAddress1).ifPresent(e -> this.contactAddress1 = e.trim());
+        Optional.ofNullable(patron.contactAddress2).ifPresent(e -> this.contactAddress2 = e.trim());
+        Optional.ofNullable(patron.contactZip).ifPresent(e -> this.contactZip = e.trim());
         Optional.ofNullable(patron.conLng).ifPresent(e -> this.conLng = e);
         Optional.ofNullable(patron.exportConsent).ifPresent(e -> this.exportConsent = e);
-        Optional.ofNullable(patron.rfid).ifPresent(e -> this.rfid = e);
+        Optional.ofNullable(patron.rfid).ifPresent(e -> this.rfid = e.trim());
         Optional.ofNullable(patron.isCasEmployee).ifPresent(e -> {
             this.isCasEmployee = e;
 

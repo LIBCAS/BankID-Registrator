@@ -1,5 +1,6 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
+import cz.cas.lib.bankid_registrator.configurations.ApiConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -11,9 +12,11 @@ public abstract class ApiControllerAbstract
 {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final MessageSource messageSource;
+    protected final ApiConfig apiConfig;
 
-    public ApiControllerAbstract(MessageSource messageSource) {
+    public ApiControllerAbstract(MessageSource messageSource, ApiConfig apiConfig) {
         this.messageSource = messageSource;
+        this.apiConfig = apiConfig;
     }
 
     /**

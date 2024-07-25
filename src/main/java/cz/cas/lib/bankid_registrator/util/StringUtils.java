@@ -3,10 +3,10 @@ package cz.cas.lib.bankid_registrator.util;
 import java.util.Random;
 import org.apache.commons.lang3.RandomStringUtils;
 
-public class RandomStringUtil
+public class StringUtils
 {
     /**
-     * Generate random alphanumeric string of given length
+     * Generates a random alphanumeric string of given length
      * @param length
      * @return
      */
@@ -15,7 +15,7 @@ public class RandomStringUtil
     }
 
     /**
-     * Generate random alphanumeric string of given length using given random generator
+     * Generates a random alphanumeric string of given length using given random generator
      * @param length
      * @param random
      * @return
@@ -27,5 +27,28 @@ public class RandomStringUtil
             sb.append(possibleCharacters[random.nextInt(possibleCharacters.length)]);
         }
         return sb.toString();
+    }
+
+    /**
+     * Checks if a trimmed string is null or empty
+     * @param str
+     * @return
+     */
+    public static boolean isEmpty(String str) {
+        return str == null || str.trim().isEmpty();
+    }
+
+    /**
+     * Trims all strings in an array and checks each is either null or empty
+     * @param strArr
+     * @return
+     */
+    public static boolean isEmpty(String... strArr) {
+        for (String str : strArr) {
+            if (!isEmpty(str)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

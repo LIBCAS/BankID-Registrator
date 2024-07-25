@@ -6,8 +6,6 @@ import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
-import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
-import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
@@ -22,6 +20,7 @@ import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
+import cz.cas.lib.bankid_registrator.util.StringUtils;
 import java.net.URI;
 import java.util.Locale;
 import java.util.Map;
@@ -29,13 +28,14 @@ import java.util.Optional;
 import java.time.LocalDateTime;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
+
+import org.checkerframework.checker.units.qual.m;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
@@ -154,11 +154,11 @@ public class MainController extends ControllerAbstract
     @RequestMapping(value="/callback", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
     public String CallbackEntry(@RequestParam("code") String code, Model model, Locale locale, HttpSession session)
     {
-        if (session.isNew()) {
-            model.addAttribute("error", "Session expired. Please try again.");
-            session.invalidate();
-            return "error";
-        }
+        // if (session.isNew()) {
+        //     model.addAttribute("error", this.messageSource.getMessage("error.session.expired", null, locale));
+        //     session.invalidate();
+        //     return "error";
+        // }
 
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
 
@@ -242,7 +242,12 @@ public class MainController extends ControllerAbstract
 
             Patron alephPatron = (Patron) alephPatronCreation.get("patron");
             PatronDTO alephPatronDTO = this.patronService.getPatronDTO(alephPatron);
+
+            // Patron expiry date data
             String alephPatronExpiryDate = alephPatron.getExpiryDate();
+            boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
+            boolean membershipExpiresToday = DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy");
+            boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
 
             // Merging BankId patron and Aleph patron into a Patron with the latest data (so-called "the latest patron")
             Patron latestPatron = PatronService.mergePatrons(bankIdPatron, alephPatron);
@@ -263,8 +268,9 @@ public class MainController extends ControllerAbstract
             model.addAttribute("bankIdPatron", bankIdPatronDTO);
             model.addAttribute("alephPatron", alephPatronDTO);
             model.addAttribute("membershipExpiryDate", alephPatronExpiryDate);
-            model.addAttribute("membershipHasExpired", DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy"));
-            model.addAttribute("membershipExpiresToday", DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy"));
+            model.addAttribute("membershipHasExpired", membershipHasExpired);
+            model.addAttribute("membershipExpiresToday", membershipExpiresToday);
+            model.addAttribute("expiryDateIn1MonthOrLess", expiryDateIn1MonthOrLess);
 
             return "callback_registration_renewal";
         }
@@ -332,15 +338,17 @@ public class MainController extends ControllerAbstract
         }
 
         String alephPatronBarcode = patron.getBarcode();
+        Boolean patronIsCasEmployee = patron.getIsCasEmployee();
         String patronEmail = patron.getEmail();
+        boolean patronHasEmail = !StringUtils.isEmpty(patronEmail);
 
         identity.setAlephId(patron.getId());
         identity.setAlephBarcode(alephPatronBarcode);
-        identity.setIsCasEmployee(patron.getIsCasEmployee());
+        identity.setIsCasEmployee(patronIsCasEmployee);
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 
-        if (patron.getIsCasEmployee()) {
+        if (patronIsCasEmployee) {
             for (MultipartFile file : mediaFiles) {
                 Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
                 if (uploadResult.containsKey("error")) {
@@ -354,14 +362,18 @@ public class MainController extends ControllerAbstract
         String membershipExpiryDate = patron.getExpiryDate();
 
         try {
-            this.emailService.sendEmailNewRegistration(patronEmail, alephPatronBarcode, patron.getIsCasEmployee(), membershipExpiryDate, locale);
-            this.identityActivityService.logNewRegistrationEmailSent(identity);
+            if (patronHasEmail) {
+                this.emailService.sendEmailNewRegistration(patronEmail, alephPatronBarcode, patronIsCasEmployee, membershipExpiryDate, locale);
+                this.identityActivityService.logNewRegistrationEmailSent(identity);
+            }
         } catch (Exception e) {
             getLogger().error("Failed to send new registration confirmation email to " + patronEmail, e);
         }
 
         session.setAttribute("alephBarcode", alephPatronBarcode);
 
+        model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
+        model.addAttribute("patronHasEmail", patronHasEmail);
         model.addAttribute("membershipExpiryDate", membershipExpiryDate);
         model.addAttribute("xml", patronCreation.get("xml-patron"));
         model.addAttribute("alephBarcode", alephPatronBarcode);
@@ -430,14 +442,16 @@ public class MainController extends ControllerAbstract
         }
 
         String alephPatronBarcode = patron.getBarcode();
+        Boolean patronIsCasEmployee = patron.getIsCasEmployee();
         String patronEmail = patron.getEmail();
+        boolean patronHasEmail = !StringUtils.isEmpty(patronEmail);
 
-        identity.setIsCasEmployee(patron.getIsCasEmployee());
+        identity.setIsCasEmployee(patronIsCasEmployee);
         identity.setCheckedByAdmin(false);
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 
-        if (patron.getIsCasEmployee()) {
+        if (patronIsCasEmployee) {
             for (MultipartFile file : mediaFiles) {
                 Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
                 if (uploadResult.containsKey("error")) {
@@ -451,14 +465,18 @@ public class MainController extends ControllerAbstract
         String membershipExpiryDate = patron.getExpiryDate();
 
         try {
-            this.emailService.sendEmailMembershipRenewal(patronEmail, alephPatronBarcode, patron.getIsCasEmployee(), membershipExpiryDate, locale);
-            this.identityActivityService.logNewRegistrationEmailSent(identity);
+            if (patronHasEmail) {
+                this.emailService.sendEmailMembershipRenewal(patronEmail, alephPatronBarcode, patronIsCasEmployee, membershipExpiryDate, locale);
+                this.identityActivityService.logNewRegistrationEmailSent(identity);
+            }
         } catch (Exception e) {
             getLogger().error("Failed to send a membership renewal confirmation email to " + patronEmail, e);
         }
 
         session.setAttribute("alephBarcode", alephPatronBarcode);
 
+        model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
+        model.addAttribute("patronHasEmail", patronHasEmail);
         model.addAttribute("membershipExpiryDate", membershipExpiryDate);
         model.addAttribute("xml", patronUpdate.get("xml-patron"));
         model.addAttribute("alephBarcode", alephPatronBarcode);

@@ -19,6 +19,7 @@ import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
+import cz.cas.lib.bankid_registrator.util.StringUtils;
 import cz.cas.lib.bankid_registrator.util.TimestampToDate;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -952,12 +953,17 @@ logger.info("AAA doHttpRequest method: {}", method);
             // transformer.setParameter("z304-seq01-telephone-4", patron.getIdCardNumber());
 
             // z304 - sequence 02
-            transformer.setParameter("z304-seq02-id", patronId);
-            transformer.setParameter("z304-seq02-address-0", patron.getContactAddress0());
-            transformer.setParameter("z304-seq02-address-1", patron.getContactAddress1());
-            transformer.setParameter("z304-seq02-address-2", patron.getContactAddress2());
-            transformer.setParameter("z304-seq02-zip", patron.getContactZip());
-            transformer.setParameter("z304-seq02-date-from", today);
+            if (!StringUtils.isEmpty(patron.getContactAddress1(), patron.getContactAddress2(), patron.getContactZip())) {
+                // Do not set if the contact address (street, municipality, ZIP code) is empty
+                this.getLogger().info("Contact address is empty");
+                transformer.setParameter("is-z304-seq02", Boolean.TRUE);
+                transformer.setParameter("z304-seq02-id", patronId);
+                transformer.setParameter("z304-seq02-address-0", patron.getContactAddress0());
+                transformer.setParameter("z304-seq02-address-1", patron.getContactAddress1());
+                transformer.setParameter("z304-seq02-address-2", patron.getContactAddress2());
+                transformer.setParameter("z304-seq02-zip", patron.getContactZip());
+                transformer.setParameter("z304-seq02-date-from", today);
+            }
 
             // z305
             transformer.setParameter("z305-id", patronId);
@@ -1053,12 +1059,16 @@ logger.info("AAA doHttpRequest method: {}", method);
             // transformer.setParameter("z304-seq01-telephone-4", patron.getIdCardNumber());
 
             // z304 - sequence 02
-            transformer.setParameter("z304-seq02-id", patronId);
-            transformer.setParameter("z304-seq02-address-0", patron.getContactAddress0());
-            transformer.setParameter("z304-seq02-address-1", patron.getContactAddress1());
-            transformer.setParameter("z304-seq02-address-2", patron.getContactAddress2());
-            transformer.setParameter("z304-seq02-zip", patron.getContactZip());
-            transformer.setParameter("z304-seq02-date-from", today);
+            if (!StringUtils.isEmpty(patron.getContactAddress1(), patron.getContactAddress2(), patron.getContactZip())) {
+                // Do not set if the contact address (street, municipality, ZIP code) is empty
+                transformer.setParameter("is-z304-seq02", Boolean.TRUE);
+                transformer.setParameter("z304-seq02-id", patronId);
+                transformer.setParameter("z304-seq02-address-0", patron.getContactAddress0());
+                transformer.setParameter("z304-seq02-address-1", patron.getContactAddress1());
+                transformer.setParameter("z304-seq02-address-2", patron.getContactAddress2());
+                transformer.setParameter("z304-seq02-zip", patron.getContactZip());
+                transformer.setParameter("z304-seq02-date-from", today);
+            }
 
             // z308 - RFID
             if (patron.getRfid().equals("") == Boolean.FALSE) {
@@ -1531,6 +1541,19 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         // TRUE if RFID is already in use by any patron except the given one (if any)
         return this.oracleRepository.getRFIDRowsCount(rfid, patronId) > 0;
+    }
+
+    /**
+     * Checks if an email is already in use by any patron except the given one (if any).
+     * @param email
+     * @param patronId
+     * @return Boolean
+     */
+    public boolean isEmailInUse(String email, String patronId) {
+        Assert.notNull(email, "\"email\" is required");
+
+        // TRUE if email is already in use by any patron except the given one (if any)
+        return this.oracleRepository.isExistingPatronEmail(email, patronId);
     }
 
     /**

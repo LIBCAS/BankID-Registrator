@@ -10,9 +10,10 @@
         <span th:text="${alephPatronBarcode}"></span>
     </div>
     <div>
-        <p>Here is your <a href="#">link</a> for payment.</p>
+        <p th:if="${!isCasEmployee}">Here is your <a href="#">link</a> for payment.</p>
         <p>
-            <span>After paying the fee, your membership will be extended until</span> <b th:text="${membershipExpiryDate}"></b>.
+            <span th:if="${!isCasEmployee}">After paying the fee, your membership will be extended until</span>
+            <span th:if="${isCasEmployee}">Your membership will be extended until</span> <b th:text="${membershipExpiryDate}"></b>.
         </p>
     </div>
 </body>

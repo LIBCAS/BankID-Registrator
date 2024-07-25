@@ -166,4 +166,25 @@ public class DateUtils
 
         return DateUtils.convertDateFormat(originalDateTime, inputFormat, "dd/MM/yyyy HH:mm");
     }
+
+    /**
+     * Checks if the given date is less than or equal to one month from today.
+     * @param dateString The date to check, as a String.
+     * @param format The format of the input date string.
+     * @return true if the date is less than or equal to one month from today, false otherwise.
+     */
+    public static boolean isLessThanOrEqualToOneMonthFromToday(String dateString, String format)
+    {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+            LocalDate givenDate = LocalDate.parse(dateString, formatter);
+            LocalDate today = LocalDate.now();
+            LocalDate oneMonthFromToday = today.plusMonths(1);
+
+            return !givenDate.isAfter(oneMonthFromToday);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

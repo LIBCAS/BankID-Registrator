@@ -34,16 +34,16 @@
                         required readonly />
                 </div>
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">E-mail *</label>
+                    <label for="email" class="block text-sm font-medium text-gray-700">E-mail **</label>
                     <input type="email" id="email" name="email"
                         class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        th:field="*{email}" required />
+                        th:field="*{email}" />
                 </div>
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700">Mobil *</label>
+                    <label for="phone" class="block text-sm font-medium text-gray-700">Mobil</label>
                     <input type="tel" id="phone" name="phone"
                         class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        th:field="*{smsNumber}" required />
+                        th:field="*{smsNumber}" />
                 </div>
                 <div>
                     <label for="rfid" class="block text-sm font-medium text-gray-700">RFID (Lítačka, ISIC apod.)</label>
@@ -80,7 +80,7 @@
                                 class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 th:field="*{contactAddress0}">
                             <input type="text" name="contact_address_line2" placeholder="Ulice a číslo domu"
-                                class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 th:field="*{contactAddress1}">
                             <input type="text" name="contact_address_line3" placeholder="Obec"
                                 class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -109,7 +109,7 @@
             </div>
             <div id="files-control" class="flex flex-col items-center mt-4 pl-4">
                 <label for="media" class="block text-sm font-medium text-gray-700">Nahrajte občanský průkaz, pas nebo
-                    jiný doklad totožnosti *</label>
+                    jiný doklad totožnosti **</label>
                 <input id="files" type="file" class="filepond mb-0" name="media" multiple data-max-file-size="10MB"
                     data-max-files="3" />
             </div>
@@ -120,6 +120,14 @@
                 <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">Souhlasím se zpracováním
                     osobních
                     údajů *</label>
+            </div>
+            <div class="text-left">
+                <p class="text-gray-500">
+                    <b>*</b>&nbsp;<span th:text="#{form.text.requiredInformation}">Required information</span>
+                </p>
+                <p class="text-gray-500">
+                    <b>**</b>&nbsp;<span th:text="#{form.text.requiredCasEmployeeInformation}">CAS employees must fill in a valid CAS e-mail address or upload an identity document (identity card / passport)</span>
+                </p>
             </div>
             <button type="submit"
                 class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">

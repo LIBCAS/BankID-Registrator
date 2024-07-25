@@ -1,18 +1,5 @@
-/*
- * Copyright (C) 2022 Academy of Sciences Library
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/**
+ * Repository for the Aleph Oracle database.
  */
 package cz.cas.lib.bankid_registrator.dao.oracle;
 
@@ -79,6 +66,35 @@ public class OracleRepository
         }
     
         return ((Number) query.getSingleResult()).intValue();
+    }
+
+    /**
+     * Checks if the given email is already in use by any patron except the given one (if any).
+     * @param email The email address to check.
+     * @param patronId The patron ID to exclude from the check.
+     * @return true if the email exists, false otherwise.
+     */
+    public boolean isExistingPatronEmail(String email, @Nullable String patronId)
+    {
+        String sanitizedPatronId = (patronId != null) ? patronId.replace("%", "\\%").replace("_", "\\_") : null;
+
+        String sql = "SELECT COUNT(*) AS count " +
+                    "FROM KNA50.Z304 " +
+                    "WHERE LOWER(Z304_EMAIL_ADDRESS) = LOWER(:email)";
+
+        if (sanitizedPatronId != null) {
+            sql += " AND Z304_REC_KEY NOT LIKE :patronId ESCAPE '\\'";
+        }        
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("email", email);
+
+        if (sanitizedPatronId != null) {
+            query.setParameter("patronId", sanitizedPatronId + " %");
+        }
+        
+        int count = ((Number) query.getSingleResult()).intValue();
+        return count > 0;
     }
 
     /**

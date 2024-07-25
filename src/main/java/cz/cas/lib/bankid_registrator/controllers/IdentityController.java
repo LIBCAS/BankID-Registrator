@@ -8,6 +8,7 @@ import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.util.WebUtils;
+import cz.cas.lib.bankid_registrator.util.StringUtils;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -97,6 +98,11 @@ public class IdentityController extends ControllerAbstract
         String token = this.tokenService.createIdentityToken(identity);
         String resetLink = WebUtils.getBaseUrl(request) + "/identity/reset-password?token=" + token;
         String emailTo = patron.getEmail();
+
+        if (StringUtils.isEmpty(emailTo)) {
+            getLogger().error("Patron with id " + patronId + " has no email address");
+            throw new HttpErrorException(HttpStatus.BAD_REQUEST, this.messageSource.getMessage("error.email.patronNoEmail", null, locale));
+        }
 
         try {
             this.emailService.sendEmailIdentityPasswordReset(emailTo, resetLink, locale);
