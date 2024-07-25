@@ -1109,9 +1109,6 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         Patron patron = new Patron();
 
-        // patron.setId(generatePatronId());
-        // patron.setBarcode(generatePatronBarcode());
-
         String fname = userInfo.getGiven_name();      // Joanne
         String mname = Optional.ofNullable(userInfo.getMiddle_name()).orElse("");     // Kathleen
         String lname = userInfo.getFamily_name();     // Rowling
@@ -1660,9 +1657,6 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         Patron patron = new Patron();
 
-        // patron.setId(generatePatronId());
-        // patron.setBarcode(generatePatronBarcode());
-
         String fname = userInfo.getGiven_name();      // Joanne
         String mname = this.generateTestingMname();   // Kathleen
         String lname = userInfo.getFamily_name();     // Rowling
@@ -1821,14 +1815,14 @@ logger.info("AAA doHttpRequest method: {}", method);
      * @param maxVal - the maximum Aleph patron ID created so far via the Bank ID
      */
     public String generatePatronBarcode(Long maxVal) {
-        String prefix = mainConfig.getBarcode_prefix();
+        String prefix = this.mainConfig.getBarcode_prefix();
         Long newVal = 1L;
 
         if (maxVal != null) {
             newVal = maxVal + 1;
         }
 
-        return String.format("%s%04d", prefix, newVal);
+        return String.format("%s%05d", prefix, newVal);
     }
 
     /**
