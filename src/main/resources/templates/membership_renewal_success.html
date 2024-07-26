@@ -12,8 +12,8 @@
             <p th:if="${patronHasEmail && !patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.emailSent}">A confirmation with a link to pay the membership fee has been sent to your email.</p>
             <p th:if="${patronHasEmail && patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.emailSentToEmployee}">A confirmation has been sent to your email.</p>
             <p>
-                <span th:if="${!patronIsCasEmployee}" $th:text="#{page.membershipRenewalSuccess.fee.instructions}">After paying the fee, your membership will be extended until</span>
-                <span th:if="${patronIsCasEmployee}" $th:text="#{page.membershipRenewalSuccess.instructsToEmployee}">Your membership will be extended until</span> <span class="font-bold" th:text="${membershipExpiryDate}"></span>.
+                <span th:if="${!patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.fee.instructions}">After paying the fee, your membership will be extended until</span>
+                <span th:if="${patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.instructsToEmployee}">Your membership will be extended until</span> <span class="font-bold" th:text="${membershipExpiryDate}"></span>.
             </p>
             <p class="mt-2">
                 <span th:text="#{page.membershipRenewalSuccess.username}">Your username</span>: <b th:text="${alephBarcode}"></b>
