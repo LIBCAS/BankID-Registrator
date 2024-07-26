@@ -34,10 +34,13 @@ services:
       MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS}
       API_MAPYCZ_KEY: ${API_MAPYCZ_KEY}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      TZ: Europe/Prague
     volumes:
       - ./../../:/app
       - ./../../.m2:/root/.m2
       - ./../../storage:/app/storage
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     working_dir: /app
     command: sh ./.docker/local/run.sh
     ports:
