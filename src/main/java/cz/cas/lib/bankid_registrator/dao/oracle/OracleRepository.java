@@ -109,7 +109,9 @@ public class OracleRepository
                      "WHERE REGEXP_LIKE(TRIM(Z303_REC_KEY), '^KNBD[0-9]+$')";
 
         Query query = entityManager.createNativeQuery(sql);
-        return ((Number) query.getSingleResult()).longValue();
+        Object result = query.getSingleResult();
+
+        return (result != null) ? ((Number) result).longValue() : 0L;
     }
 
     /**
