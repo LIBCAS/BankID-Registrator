@@ -39,7 +39,7 @@ public class StringUtils
     }
 
     /**
-     * Trims all strings in an array and checks each is either null or empty
+     * Trims all strings in an array and checks if all are either null or empty
      * @param strArr
      * @return
      */

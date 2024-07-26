@@ -314,10 +314,11 @@ public class AlephService extends AlephServiceAbstract
 
     /**
      * Updates a (existing) patron in Aleph
-     * @param patron
+     * @param patron - new patron with updated data
+     * @param alephPatron - old patron with data from Aleph
      * @return Map<String, Object>
      */
-    public Map<String, Object> updatePatron(Patron patron)
+    public Map<String, Object> updatePatron(Patron patron, Patron alephPatron)
     {
         Map<String, Object> result = new HashMap<>();
 
@@ -334,7 +335,7 @@ public class AlephService extends AlephServiceAbstract
         }
 
         // Update the patron
-        Map<String, String> patronXmlUpdate = this.updatePatronXML(patron);
+        Map<String, String> patronXmlUpdate = this.updatePatronXML(patron, alephPatron);
         if (patronXmlUpdate.containsKey("error")) {
             result.put("error", patronXmlUpdate.get("error"));
             return result;
@@ -954,15 +955,16 @@ logger.info("AAA doHttpRequest method: {}", method);
 
             // z304 - sequence 02
             if (!StringUtils.isEmpty(patron.getContactAddress1(), patron.getContactAddress2(), patron.getContactZip())) {
-                // Do not set if the contact address (street, municipality, ZIP code) is empty
-                this.getLogger().info("Contact address is empty");
+                // Set the contact address if it is provided
                 transformer.setParameter("is-z304-seq02", Boolean.TRUE);
                 transformer.setParameter("z304-seq02-id", patronId);
                 transformer.setParameter("z304-seq02-address-0", patron.getContactAddress0());
                 transformer.setParameter("z304-seq02-address-1", patron.getContactAddress1());
                 transformer.setParameter("z304-seq02-address-2", patron.getContactAddress2());
                 transformer.setParameter("z304-seq02-zip", patron.getContactZip());
+                transformer.setParameter("z304-seq02-email-address", patron.getEmail());
                 transformer.setParameter("z304-seq02-date-from", today);
+                transformer.setParameter("z304-seq02-sms-number", patron.getSmsNumber());
             }
 
             // z305
@@ -1012,10 +1014,11 @@ logger.info("AAA doHttpRequest method: {}", method);
 
     /**
      * Generates an XML string for a new Aleph patron
-     * @param patron - the patron to be created
+     * @param patron - new patron with updated data
+     * @param alephPatron - old patron with data from Aleph
      * @return 
      */
-    public Map<String, String> updatePatronXML(Patron patron)
+    public Map<String, String> updatePatronXML(Patron patron, Patron alephPatron)
     {
         Map<String, String> result = new HashMap<>();
 
@@ -1060,14 +1063,25 @@ logger.info("AAA doHttpRequest method: {}", method);
 
             // z304 - sequence 02
             if (!StringUtils.isEmpty(patron.getContactAddress1(), patron.getContactAddress2(), patron.getContactZip())) {
-                // Do not set if the contact address (street, municipality, ZIP code) is empty
+                // Set the contact address if it is provided
                 transformer.setParameter("is-z304-seq02", Boolean.TRUE);
                 transformer.setParameter("z304-seq02-id", patronId);
                 transformer.setParameter("z304-seq02-address-0", patron.getContactAddress0());
                 transformer.setParameter("z304-seq02-address-1", patron.getContactAddress1());
                 transformer.setParameter("z304-seq02-address-2", patron.getContactAddress2());
                 transformer.setParameter("z304-seq02-zip", patron.getContactZip());
+                transformer.setParameter("z304-seq02-email-address", patron.getEmail());
                 transformer.setParameter("z304-seq02-date-from", today);
+                transformer.setParameter("z304-seq02-sms-number", patron.getSmsNumber());
+            } else {
+                if (!StringUtils.isEmpty(alephPatron.getContactAddress1(), alephPatron.getContactAddress2(), alephPatron.getContactZip())) {
+                    // Delete the contact address if it is not provided and it is present in Aleph
+                    transformer.setParameter("is-z304-seq02", Boolean.TRUE);
+                    transformer.setParameter("z304-seq02-record-action", "D");
+                } else {
+                    // Do not set the contact address if it is not provided and it is not present in Aleph
+                    transformer.setParameter("is-z304-seq02", Boolean.FALSE);
+                }
             }
 
             // z308 - RFID
@@ -1136,6 +1150,10 @@ logger.info("AAA doHttpRequest method: {}", method);
         String conLng = userInfo.getLocale(); logger.info("conLng: {}", conLng);
         patron.setConLng(conLng.equals("cs_CZ") ? PatronLanguage.CZE : PatronLanguage.ENG); logger.info("patron.getConLng() == {}", patron.getConLng());
 
+        // Patron address names
+        patron.setAddress0(patron.getName());
+        patron.setContactAddress0(patron.getName());
+
         // Patron address (permanent residence)
         Address address = userProfile.getAddresses().stream()
             .filter(a -> a.getType() == AddressType.PERMANENT_RESIDENCE)
@@ -1156,7 +1174,6 @@ logger.info("AAA doHttpRequest method: {}", method);
                 return result;
             }
 
-            patron.setAddress0(patron.getName());
             patron.setAddress1(Stream.of(!addressStreet.equals("") ? addressStreet : addressCityarea, addressNumber)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.joining(" ")));
@@ -1194,7 +1211,6 @@ logger.info("AAA doHttpRequest method: {}", method);
                 return result;
             }
 
-            patron.setContactAddress0(patron.getName());
             patron.setContactAddress1(Stream.of(!contactAddressStreet.equals("") ? contactAddressStreet : contactAddressCityarea, contactAddressNumber)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.joining(" ")));
@@ -1291,8 +1307,8 @@ logger.info("AAA doHttpRequest method: {}", method);
                     patron.setZip(getXmlElementValue(z304Nodes.item(i), "z304-zip"));
                     patron.setSmsNumber(getXmlElementValue(z304Nodes.item(i), "z304-sms-number"));
                     patron.setEmail(getXmlElementValue(z304Nodes.item(i), "z304-email-address"));
-                } else if ("02".equals(addressType)) {
                     patron.setContactAddress0(getXmlElementValue(z304Nodes.item(i), "z304-address-0"));
+                } else if ("02".equals(addressType)) {
                     patron.setContactAddress1(getXmlElementValue(z304Nodes.item(i), "z304-address-1"));
                     patron.setContactAddress2(getXmlElementValue(z304Nodes.item(i), "z304-address-2"));
                     patron.setContactZip(getXmlElementValue(z304Nodes.item(i), "z304-zip"));
@@ -1683,6 +1699,10 @@ logger.info("AAA doHttpRequest method: {}", method);
         String conLng = userInfo.getLocale(); logger.info("conLng: {}", conLng);
         patron.setConLng(conLng.equals("cs_CZ") ? PatronLanguage.CZE : PatronLanguage.ENG); logger.info("patron.getConLng() == {}", patron.getConLng());
 
+        // Patron address names
+        patron.setAddress0(patron.getName());
+        patron.setContactAddress0(patron.getName());
+
         // Patron address (permanent residence)
         Address address = userProfile.getAddresses().stream()
             .filter(a -> a.getType() == AddressType.PERMANENT_RESIDENCE)
@@ -1703,7 +1723,6 @@ logger.info("AAA doHttpRequest method: {}", method);
                 return result;
             }
 
-            patron.setAddress0(patron.getName());
             patron.setAddress1(Stream.of(!addressStreet.equals("") ? addressStreet : addressCityarea, addressNumber)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.joining(" ")));
@@ -1741,7 +1760,6 @@ logger.info("AAA doHttpRequest method: {}", method);
                 return result;
             }
 
-            patron.setContactAddress0(patron.getName());
             patron.setContactAddress1(Stream.of(!contactAddressStreet.equals("") ? contactAddressStreet : contactAddressCityarea, contactAddressNumber)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.joining(" ")));

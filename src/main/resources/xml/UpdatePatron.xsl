@@ -455,7 +455,7 @@
     <!-- Z304 - seq01 -->
     <xsl:param name="is-z304-seq01" select="'true'"/>
     <!-- Z304 - seq02 -->
-    <xsl:param name="is-z304-seq02" select="'true'"/>
+    <xsl:param name="is-z304-seq02" select="'false'"/>
     <!-- Z308 - RFID -->
     <xsl:param name="is-z308-key-type-03" select="'false'"/>
 

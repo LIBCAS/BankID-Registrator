@@ -94,7 +94,7 @@ public class PatronService extends PatronServiceAbstract
         latestPatron.setAddress1(bankIdPatron.getAddress1());
         latestPatron.setAddress2(bankIdPatron.getAddress2());
         latestPatron.setZip(bankIdPatron.getZip());
-        latestPatron.setContactAddress0(mergeField(bankIdPatron.getContactAddress0(), alephPatron.getContactAddress0()));
+        latestPatron.setContactAddress0(bankIdPatron.getAddress0());
         latestPatron.setContactAddress1(mergeField(bankIdPatron.getContactAddress1(), alephPatron.getContactAddress1()));
         latestPatron.setContactAddress2(mergeField(bankIdPatron.getContactAddress2(), alephPatron.getContactAddress2()));
         latestPatron.setContactZip(mergeField(bankIdPatron.getContactZip(), alephPatron.getContactZip()));
@@ -106,7 +106,7 @@ public class PatronService extends PatronServiceAbstract
         latestPatron.setIdCardDetail(mergeField(bankIdPatron.getIdCardDetail(), alephPatron.getIdCardDetail()));
         latestPatron.setVerification(alephPatron.getVerification());
         latestPatron.setBankIdSub(bankIdPatron.getBankIdSub());
-        latestPatron.setExportConsent(PatronBoolean.Y);
+        latestPatron.setExportConsent(PatronBoolean.N); // the user has to give consent again even if they gave it before
         latestPatron.setIsCasEmployee(alephPatron.getIsCasEmployee());
         latestPatron.setRfid(mergeField(bankIdPatron.getRfid(), alephPatron.getRfid()));
         latestPatron.setExpiryDate(alephPatron.getExpiryDate());

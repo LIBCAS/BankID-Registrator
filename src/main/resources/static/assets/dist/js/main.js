@@ -75,6 +75,7 @@ const showAlert = (message, type = "info", duration = 6000, wrapperElmId = "aler
     const alertElmId = "alert--" + Math.floor(100000 + Math.random() * 900000);
     let alertColor = "";
     let alertSvgIcon = "";
+    const alertInlineStyles = "max-width: 900px;";
 
     switch (type) {
         case "info":
@@ -103,7 +104,7 @@ const showAlert = (message, type = "info", duration = 6000, wrapperElmId = "aler
             break;
     }
 
-    const alertHtml = `<div id="${alertElmId}" class="flex items-center p-4 mb-4 text-${alertColor}-800 border border-${alertColor}-300 rounded-lg bg-${alertColor}-50 dark:bg-gray-800 dark:text-${alertColor}-400 dark:border-${alertElmId}-800" role="alert">
+    const alertHtml = `<div id="${alertElmId}" class="flex items-center p-4 mb-4 text-${alertColor}-800 border border-${alertColor}-300 rounded-lg bg-${alertColor}-50 dark:bg-gray-800 dark:text-${alertColor}-400 dark:border-${alertElmId}-800" style="${alertInlineStyles}" role="alert">
         ${alertSvgIcon}
         <span class="capitalize sr-only">${type}</span>
         <div class="ms-3 text-sm font-medium">

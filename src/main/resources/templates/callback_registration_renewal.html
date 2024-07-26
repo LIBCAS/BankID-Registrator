@@ -6,7 +6,7 @@
     </head>
 
     <body class="page-callback page-membership-renewal">
-        <main layout:fragment="content" class="mb-10 text-center container mx-auto">
+        <main layout:fragment="content" class="mb-10 text-center container mx-auto p-5">
             <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.membershipRenewal.title}">Membership renewal</h1>
             <div class="mb-12 max-w-4xl mx-auto">
                 <p class="font-bold" th:if="${membershipHasExpired}">
@@ -28,7 +28,7 @@
                     <div class="flex flex-wrap gap-4">
                         <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
                             <label for="firstname" class="mb-3 block text-sm font-bold text-gray-700">
-                                <span th:text="#{message.firstname}">First name</span>: *
+                                <span th:text="#{message.firstname}">First name</span>: <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
                             <input type="text" id="firstname" name="firstname" th:field="*{firstname}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" required readonly />
                         </div>
@@ -36,7 +36,7 @@
                     <div class="flex flex-wrap gap-4">
                         <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
                             <label for="lastname" class="mb-3 block text-sm font-bold text-gray-700">
-                                <span th:text="#{message.lastname}">Last name</span>: *
+                                <span th:text="#{message.lastname}">Last name</span>: <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
                             <input type="text" id="lastname" name="lastname" th:field="*{lastname}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" required readonly />
                         </div>
@@ -44,7 +44,7 @@
                     <div class="flex flex-wrap gap-4">
                         <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
                             <label for="birthday" class="mb-3 block text-sm font-bold text-gray-700">
-                                <span th:text="#{message.birthday}">Birthdate</span>: *
+                                <span th:text="#{message.birthday}">Birthdate</span>: <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
                             <input type="date" id="birthday" name="birthday" th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(bankIdPatron.birthDate)}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" required readonly />
                         </div>
@@ -53,7 +53,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
                         <label for="email" class="mb-3 block text-sm font-bold text-gray-700">
-                            <span th:text="#{message.email}">E-mail</span>: **
+                            <span th:text="#{message.email}">E-mail</span>: <span th:title="#{form.text.requiredCasEmployeeInformation}">**</span>
                         </label>
                         <input type="email" id="email" name="email" th:field="*{email}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                     </div>
@@ -105,7 +105,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label for="permanent_address_line1" class="mb-3 block text-left text-sm font-bold text-gray-700">
-                                <span th:text="#{message.addressName}">Address name</span>: *
+                                <span th:text="#{message.addressName}">Address name</span>: <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
                             <input type="text" name="permanent_address_line1"
                                 class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
@@ -113,7 +113,7 @@
                         </div>
                         <div>
                             <label for="permanent_address_line2" class="mb-3 block text-left text-sm font-bold text-gray-700">
-                                <span th:text="#{message.streetHouseNum}">Street and house number</span>: *
+                                <span th:text="#{message.streetHouseNum}">Street and house number</span>: <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
                             <input type="text" name="permanent_address_line2"
                                 class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
@@ -121,7 +121,7 @@
                         </div>
                         <div>
                             <label for="permanent_address_line3" class="mb-3 block text-left text-sm font-bold text-gray-700">
-                                <span th:text="#{message.municipality}">Municipality</span>: *
+                                <span th:text="#{message.municipality}">Municipality</span>: <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
                             <input type="text" name="permanent_address_line3"
                                 class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
@@ -129,7 +129,7 @@
                         </div>
                         <div>
                             <label for="permanent_zip" class="mb-3 block text-left text-sm font-bold text-gray-700">
-                                <span th:text="#{message.zipCode}">ZIP code</span>: *
+                                <span th:text="#{message.zipCode}">ZIP code</span>: <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
                             <input type="text" name="permanent_zip"
                                 class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
@@ -141,14 +141,72 @@
                     <legend class="mt-3 block font-bold text-gray-700">
                         <span th:text="#{message.contactAddress}">Contact address</span>:
                     </legend>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="text-left w-full justify-between lg:w-auto lg:flex-1">
+                            <label for="contact_address_line1" class="mb-3 block text-sm font-bold text-gray-700">
+                                <span th:text="#{message.addressName}">Address name</span>:
+                            </label>
+                            <input type="text" name="contact_address_line1" th:field="*{contactAddress0}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" readonly />
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="contact_address_line2" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.streetHouseNum}">Street and house number</span>:
+                            </label>
+                            <input type="text" name="contact_address_line2" th:field="*{contactAddress1}" class="js-autocomplete-address mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        </div>
+                        <button th:if="${patron.contactAddress1 == null && bankIdPatron.contactAddress1 != null and !#strings.isEmpty(bankIdPatron.contactAddress1)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                            <span th:text="#{message.useThisBankIDValue}">Use this BankID value</span>:<br>
+                            <i th:text="${bankIdPatron.contactAddress1}"></i>
+                        </button>
+                        <button th:if="${patron.contactAddress1 == null && alephPatron.contactAddress1 != null and !#strings.isEmpty(alephPatron.contactAddress1)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                            <span th:text="#{message.useThisKnavValue}">Use this KNAV value</span>:<br>
+                            <i th:text="${alephPatron.contactAddress1}"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="contact_address_line3" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.municipality}">Municipality</span>:
+                            </label>
+                            <input type="text" name="contact_address_line3" th:field="*{contactAddress2}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        </div>
+                        <button th:if="${patron.contactAddress2 == null && bankIdPatron.contactAddress2 != null and !#strings.isEmpty(bankIdPatron.contactAddress2)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                            <span th:text="#{message.useThisBankIDValue}">Use this BankID value</span>:<br>
+                            <i th:text="${bankIdPatron.contactAddress2}"></i>
+                        </button>
+                        <button th:if="${patron.contactAddress2 == null && alephPatron.contactAddress2 != null and !#strings.isEmpty(alephPatron.contactAddress2)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                            <span th:text="#{message.useThisKnavValue}">Use this KNAV value</span>:<br>
+                            <i th:text="${alephPatron.contactAddress2}"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label for="contact_zip" class="mb-3 block text-left text-sm font-bold text-gray-700">
+                                <span th:text="#{message.zipCode}">ZIP code</span>:
+                            </label>
+                            <input type="text" name="contact_zip" th:field="*{contactZip}" class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                        </div>
+                        <button th:if="${patron.contactZip == null && bankIdPatron.contactZip != null and !#strings.isEmpty(bankIdPatron.contactZip)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                            <span th:text="#{message.useThisBankIDValue}">Use this BankID value</span>:<br>
+                            <i th:text="${bankIdPatron.contactZip}"></i>
+                        </button>
+                        <button th:if="${patron.contactZip == null && alephPatron.contactZip != null and !#strings.isEmpty(alephPatron.contactZip)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                            <span th:text="#{message.useThisKnavValue}">Use this KNAV value</span>:<br>
+                            <i th:text="${alephPatron.contactZip}"></i>
+                        </button>
+                    </div>
+
+
+                    <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label for="contact_address_line1" class="mb-3 block text-left text-sm font-bold text-gray-700">
                                 <span th:text="#{message.addressName}">Address name</span>: 
                             </label>
                             <input type="text" name="contact_address_line1"
-                                class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                th:field="*{contactAddress0}" />
+                                class="block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
+                                th:field="*{contactAddress0}" readonly />
                         </div>
                         <div>
                             <label for="contact_address_line2" class="mb-3 block text-left text-sm font-bold text-gray-700">
@@ -157,7 +215,6 @@
                             <input type="text" name="contact_address_line2"
                                 class="js-autocomplete-address block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 th:field="*{contactAddress1}" />
-                            <div class="address-suggestions" style="position: absolute; z-index: 1000; background: white; border: 1px solid #ccc;"></div>
                         </div>
                         <div>
                             <label for="contact_address_line3" class="mb-3 block text-left text-sm font-bold text-gray-700">
@@ -175,11 +232,11 @@
                                 class="mt-1 block w-full border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                                 th:field="*{contactZip}" />
                         </div>
-                    </div>
+                    </div> -->
                 </fieldset>
                 <div>
                     <label for="language" class="mt-7 mb-3 block text-left text-sm font-bold text-gray-700">
-                        <span th:text="#{message.language}">Language</span>: *
+                        <span th:text="#{message.language}">Language</span>: <span th:title="#{form.text.requiredInformation}">*</span>
                     </label>
                     <select id="language" name="language" class="cursor-pointer mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{conLng}" required />
                         <option th:value="CZE">
@@ -198,14 +255,14 @@
                 </div>
                 <div id="files-control" class="flex flex-col items-center mt-4 pl-4">
                     <label for="media" class="mb-3 block text-sm font-medium text-gray-700">
-                        <span th:text="#{message.uploadIdFiles}">Upload your ID card, passport or other proof of identity (PDF, JPG, JPEG or PNG formats with a maximum size of 10 MB)</span> **
+                        <span th:text="#{message.uploadIdFiles}">Upload your ID card, passport or other proof of identity (PDF, JPG, JPEG or PNG formats with a maximum size of 10 MB)</span> <span th:title="#{form.text.requiredCasEmployeeInformation}">**</span>
                     </label>
                     <input id="files" type="file" class="filepond mb-0" name="media" multiple data-max-file-size="10MB" data-max-files="3" />
                 </div>
                 <div class="flex items-center mt-4">
                     <input id="consent" name="consent" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{exportConsent == 'Y'}" th:field="*{exportConsent}" th:value="Y" required />
                     <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">
-                        <span th:text="#{message.exportConsent}">I agree with the processing of personal data</span> *
+                        <span th:text="#{message.exportConsent}">I agree with the processing of personal data</span> <span th:title="#{form.text.requiredInformation}">*</span>
                     </label>
                 </div>
                 <div class="text-left">

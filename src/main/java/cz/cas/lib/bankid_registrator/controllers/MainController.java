@@ -241,11 +241,14 @@ public class MainController extends ControllerAbstract
             Patron alephPatron = (Patron) alephPatronCreation.get("patron");
             PatronDTO alephPatronDTO = this.patronService.getPatronDTO(alephPatron);
 
-            // Patron expiry date data
+            alephPatron = this.patronRepository.save(alephPatron);
+
+            // Patron expiry date data from alephPatron
             String alephPatronExpiryDate = alephPatron.getExpiryDate();
             boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
             boolean membershipExpiresToday = DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy");
-            boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
+            // boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
+            boolean expiryDateIn1MonthOrLess = true;
 
             // Merging BankId patron and Aleph patron into a Patron with the latest data (so-called "the latest patron")
             Patron latestPatron = PatronService.mergePatrons(bankIdPatron, alephPatron);
@@ -260,6 +263,7 @@ public class MainController extends ControllerAbstract
             }
 
             session.setAttribute("patron", latestPatron.getSysId());
+            session.setAttribute("alephPatron", alephPatron.getSysId());
 
             model.addAttribute("patronId", latestPatron.getSysId());
             model.addAttribute("patron", latestPatronDTO);
@@ -346,7 +350,7 @@ public class MainController extends ControllerAbstract
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 
-        if (patronIsCasEmployee) {
+        if (patronIsCasEmployee && mediaFiles != null && mediaFiles.length > 0) {
             for (MultipartFile file : mediaFiles) {
                 Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
                 if (uploadResult.containsKey("error")) {
@@ -382,7 +386,7 @@ public class MainController extends ControllerAbstract
 
     /**
      * Updating Aleph patron (membership renewal)
-     * @param editedPatron - user-edited patron data
+     * @param editedPatron - user-edited patron data based on the latest patron data
      * @param session
      * @param model
      * @param media
@@ -390,12 +394,15 @@ public class MainController extends ControllerAbstract
      */
     @PostMapping("/membership-renewal")
     public String membershipRenewalEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, Locale locale, @RequestParam("media") MultipartFile[] mediaFiles) {
+        Long alephPatronSysId = (Long) session.getAttribute("alephPatron");
         Long patronSysId = (Long) session.getAttribute("patron");
-        Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original Aleph patron data
+        Patron alephPatron = patronRepository.findById(alephPatronSysId).orElse(null);  // original Aleph patron
+        Patron patron = patronRepository.findById(patronSysId).orElse(null);    // Original Latest patron (i.e. patron created by merging BankId patron with Aleph patron)
         Identify userProfile = (Identify) session.getAttribute("userProfile");
         String code = (String) session.getAttribute("code");
         Identity identity = this.identityService.findById((Long) session.getAttribute("identity")).orElse(null);
 
+        session.removeAttribute("alephPatron");
         session.removeAttribute("patron");
         session.removeAttribute("userProfile");
         session.removeAttribute("code");
@@ -412,7 +419,7 @@ public class MainController extends ControllerAbstract
             getLogger().error("Error converting submitted patron to JSON", e);
         }
 
-        if (patronSysId == null || patron == null || userProfile == null || code == null || identity == null) {
+        if (alephPatronSysId == null || alephPatron == null || patronSysId == null || patron == null || userProfile == null || code == null || identity == null) {
             return "error_session_expired";
         }
 
@@ -423,6 +430,7 @@ public class MainController extends ControllerAbstract
         this.identityActivityService.logMembershipRenewalSubmission(identity);
 
         this.patronRepository.deleteById(patronSysId);
+        this.patronRepository.deleteById(alephPatronSysId);
 
         patron.update(editedPatron);
 
@@ -432,7 +440,7 @@ public class MainController extends ControllerAbstract
             getLogger().error("Error converting finalPatron to JSON", e);
         }
 
-        Map<String, Object> patronUpdate = this.alephService.updatePatron(patron);
+        Map<String, Object> patronUpdate = this.alephService.updatePatron(patron, alephPatron);
         if (patronUpdate.containsKey("error")) {
             getLogger().info("RESULT: {}", patronUpdate);
             getLogger().error("Error updating patron: {}", patronUpdate.get("error"));
@@ -449,7 +457,7 @@ public class MainController extends ControllerAbstract
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 
-        if (patronIsCasEmployee) {
+        if (patronIsCasEmployee && mediaFiles != null && mediaFiles.length > 0) {
             for (MultipartFile file : mediaFiles) {
                 Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
                 if (uploadResult.containsKey("error")) {
