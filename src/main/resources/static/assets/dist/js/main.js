@@ -579,7 +579,7 @@ if (document.querySelector(".page-membership-renewal")) {
     jsbtnUseInputValElms.forEach(button => {
         button.addEventListener("click", function(event) {
             event.preventDefault();
-            const parentElm = this.parentElm;
+            const parentElm = this.parentElement;
             const input = parentElm.querySelector("input");
             const value = this.querySelector("i").textContent;
             input.value = value;
