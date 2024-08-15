@@ -6,7 +6,12 @@
     </head>
 
     <body class="page-new-registration-success">
-        <main layout:fragment="content" class="mb-10 container mx-auto text-center">
+        <aside th:if="${!patronLdapSynced}" layout:fragment="progres-loader">
+            <div id="api-token" th:data-value="${apiToken}"></div>
+            <div id="patron-username" th:data-value="${alephBarcode}"></div>
+            <div th:replace="fragments/progress-loader :: progress-loader"></div>
+        </aside>
+        <main layout:fragment="content" id="main" class="mb-10 container mx-auto text-center" th:style="${!patronLdapSynced} ? 'display: none;' : ''">
             <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.newRegistration.title}">New registration</h1>
             <p th:text="#{page.newRegistrationSuccess.text}">KNAV identity registration was successful.</p>
             <p th:if="${patronHasEmail && !patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.emailSent}">A confirmation message with a link to pay the membership fee and your username has been sent to your email.</p>

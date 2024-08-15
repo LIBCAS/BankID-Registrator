@@ -5,12 +5,15 @@ import cz.cas.lib.bankid_registrator.exceptions.PatronNotProcessableException;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
+import cz.cas.lib.bankid_registrator.services.LdapService;
 import cz.cas.lib.bankid_registrator.services.MapyCzService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
+import cz.cas.lib.bankid_registrator.services.TokenService;
 import java.util.*;
 import javax.servlet.http.HttpSession;
 import javax.validation.constraints.NotBlank;
 import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,6 +33,8 @@ public class ApiController extends ApiControllerAbstract
     private final IdentityService identityService;
     private final IdentityActivityService identityActivityService;
     private final MapyCzService mapyCzService;
+    private final LdapService ldapService;
+    private final TokenService tokenService;
 
     public ApiController(
         MessageSource messageSource, 
@@ -38,7 +43,9 @@ public class ApiController extends ApiControllerAbstract
         AlephService alephService, 
         IdentityService identityService, 
         IdentityActivityService identityActivityService,
-        MapyCzService mapyCzService
+        MapyCzService mapyCzService,
+        LdapService ldapService,
+        TokenService tokenService
     ) {
         super(messageSource, apiConfig);
         this.patronService = patronService;
@@ -46,6 +53,8 @@ public class ApiController extends ApiControllerAbstract
         this.identityService = identityService;
         this.identityActivityService = identityActivityService;
         this.mapyCzService = mapyCzService;
+        this.ldapService = ldapService;
+        this.tokenService = tokenService;
     }
 
     /**
@@ -65,7 +74,7 @@ public class ApiController extends ApiControllerAbstract
 
         // Check the validity of the request by checking if the application is currently working with the given bankIdSub, i.e. if the associated patron is being processed
         if (!isContinuable) {
-            throw new PatronNotProcessableException();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -94,7 +103,7 @@ public class ApiController extends ApiControllerAbstract
 
         // Check the validity of the request by checking if the application is currently working with the given bankIdSub, i.e. if the associated patron is being processed
         if (!isContinuable) {
-            throw new PatronNotProcessableException();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
 
         Map<String, Object> result = new HashMap<>();
@@ -115,6 +124,42 @@ public class ApiController extends ApiControllerAbstract
     public Mono<String> suggestAddress(@PathVariable String query)
     {
         return this.mapyCzService.suggestAddress(query);
+    }
+
+/**
+     * Check if an account with the given email exists in the LDAP
+     * @param username Aleph patron barcode
+     * @param token
+     * @return
+     */
+    @GetMapping("/api/check-ldap-account/{username}")
+    public ResponseEntity<Map<String, Object>> checkLdapAccount(
+        @PathVariable String username,
+        @RequestParam("token") String token
+    ) {
+        if (!this.tokenService.isApiTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        Long patronSysIdLong = Long.parseLong(this.tokenService.extractClientIdFromApiToken(token));
+        String bid = this.patronService.getBankIdSubById(patronSysIdLong);
+        boolean isContinuable = this.patronService.isProcessing(bid);
+
+        // Check the validity of the request by checking if the application is currently working with the given bankIdSub, i.e. if the associated patron is being processed
+        if (!isContinuable) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        boolean accountExists = ldapService.accountExistsByUsername(username);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("result", accountExists);
+
+        if (accountExists) {
+            this.tokenService.invalidateToken(token);
+        }
+
+        return ResponseEntity.ok(result);
     }
 
     /**

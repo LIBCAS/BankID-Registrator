@@ -247,8 +247,8 @@ public class MainController extends ControllerAbstract
             String alephPatronExpiryDate = alephPatron.getExpiryDate();
             boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
             boolean membershipExpiresToday = DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy");
-            // boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
-            boolean expiryDateIn1MonthOrLess = true;
+            boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
+            // boolean expiryDateIn1MonthOrLess = true;
 
             // Merging BankId patron and Aleph patron into a Patron with the latest data (so-called "the latest patron")
             Patron latestPatron = PatronService.mergePatrons(bankIdPatron, alephPatron);
@@ -380,6 +380,8 @@ public class MainController extends ControllerAbstract
         model.addAttribute("xml", patronCreation.get("xml-patron"));
         model.addAttribute("alephBarcode", alephPatronBarcode);
         model.addAttribute("token", this.tokenService.createIdentityToken(identity));
+        model.addAttribute("apiToken", this.tokenService.createApiToken(identity.getId().toString()));
+        model.addAttribute("patronLdapSynced", false);
 
         return "new_registration_success";
     }

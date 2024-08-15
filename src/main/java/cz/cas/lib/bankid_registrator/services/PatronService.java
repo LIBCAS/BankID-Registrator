@@ -107,7 +107,7 @@ public class PatronService extends PatronServiceAbstract
         latestPatron.setVerification(alephPatron.getVerification());
         latestPatron.setBankIdSub(bankIdPatron.getBankIdSub());
         latestPatron.setExportConsent(PatronBoolean.N); // the user has to give consent again even if they gave it before
-        latestPatron.setIsCasEmployee(alephPatron.getIsCasEmployee());
+        latestPatron.setIsCasEmployee(false); // the user has to confirm their CAS employee status again
         latestPatron.setRfid(mergeField(bankIdPatron.getRfid(), alephPatron.getRfid()));
         latestPatron.setExpiryDate(alephPatron.getExpiryDate());
 

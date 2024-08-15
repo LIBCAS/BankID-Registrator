@@ -19,6 +19,24 @@
 
     <!-- Custom scripts -->
     <script type="module" src="/bankid-registrator/assets/dist/js/main.js"></script>
+
+    <!-- Translations script -->
+    <script th:inline="javascript">
+        var translations = {
+            "loader.newRegistration.validatingData": /*[[#{loader.newRegistration.validatingData}]]*/,
+            "loader.newRegistration.creatingIdentity": /*[[#{loader.newRegistration.creatingIdentity}]]*/,
+            "loader.newRegistration.savingData": /*[[#{loader.newRegistration.savingData}]]*/,
+            "loader.newRegistration.done": /*[[#{loader.newRegistration.done}]]*/,
+            "loader.submittingData": /*[[#{loader.submittingData}]]*/,
+            "alert.rfidAlreadyExists": /*[[#{alert.rfidAlreadyExists}]]*/,
+            "alert.rfidIsAvailable": /*[[#{alert.rfidIsAvailable}]]*/,
+            "alert.rfidCheckFailed": /*[[#{alert.rfidCheckFailed}]]*/,
+            "alert.emailAlreadyInUse": /*[[#{alert.emailAlreadyInUse}]]*/,
+            "alert.emailIsAvailable": /*[[#{alert.emailIsAvailable}]]*/,
+            "alert.emailCheckFailed": /*[[#{alert.emailCheckFailed}]]*/,
+            "alert.casEmployeesFormRequirements": /*[[#{alert.casEmployeesFormRequirements}]]*/,
+        };
+    </script>
 </div>
 
 </html>

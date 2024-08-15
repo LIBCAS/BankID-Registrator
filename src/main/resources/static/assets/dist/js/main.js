@@ -2,6 +2,105 @@ import { Modal } from "https://esm.sh/flowbite";  // In order to control the Flo
 const apiUrl = "/bankid-registrator/api";
 
 /**
+ * Progress loader
+ */
+class ProgressLoader {
+    constructor(options) {
+        this.checkFunctionData = options.checkFunctionData;
+        this.loaderElm = options.loaderElm;
+        this.mainElm = options.mainElm;
+        this.progressCircle = options.progressCircle;
+        this.progressNumber = options.progressNumber;
+        this.progressTextElm = options.progressTextElm;
+        this.progressStep = options.progressStep;
+        this.checkFunction = options.checkFunction;
+        this.interval = options.interval;
+        this.maxSteps = options.maxSteps;
+        this.counter = 0;
+        this.intervalId = null;
+        this.progressTexts = options.progressTexts || [];
+    }
+
+    updateProgressCircle(progress) {
+        const maxProgress = this.progressStep * this.maxSteps;
+      
+        if (progress >= maxProgress) {
+            progress = maxProgress;
+        } else {
+            progress = Math.min(progress, maxProgress);
+        }
+
+        this.progressCircle.style.setProperty("--progress", `${progress}%`);
+        this.progressNumber.textContent = `${Math.round(progress)}%`;
+      
+        if (this.progressTexts.length > 0) {
+            const textIndex = Math.min(
+                Math.floor(progress / (100 / this.progressTexts.length)),
+                this.progressTexts.length - 1
+            );
+            this.progressTextElm.innerHTML = this.progressTexts[textIndex < this.progressTexts.length - 1 ? textIndex : textIndex - 1];
+        }
+    }
+
+    async check() { console.log("check", this.counter + 1);
+        this.counter++;
+        this.updateProgressCircle(this.counter * this.progressStep);
+        const data = await this.checkFunction(this.checkFunctionData);
+
+        if (data.result === true || (data.error === true && this.counter === this.maxSteps - 1)) {
+            this.complete();
+        }
+
+        if (this.counter >= this.maxSteps) {
+            this.complete();
+        }
+    }
+
+    complete() { console.log("complete");
+        clearInterval(this.intervalId);
+        this.progressCircle.style.setProperty("--progress", "100%");
+        this.progressNumber.textContent = "100%";
+        if (this.progressTexts.length > 0) {
+          this.progressTextElm.innerHTML = this.progressTexts[this.progressTexts.length - 1];
+        }
+        setTimeout(() => {
+            this.loaderElm.classList.add("hidden");
+            this.mainElm.classList.remove("hidden");
+        }, 4000);
+    }
+
+    start() { console.log("start");
+        if (this.progressTexts.length > 0) {
+          this.progressTextElm.innerHTML = this.progressTexts[0];
+        }
+        this.intervalId = setInterval(() => this.check(), this.interval);
+    }
+}
+
+/**
+ * Page loader
+ */
+class PageLoader {
+    constructor(options) {
+        this.loaderElm = options.loaderElm;
+        this.loaderTextElm = options.loaderTextElm;
+        this.text = options.text || translations["loader.loading"];
+    }
+
+    init() {
+        this.loaderTextElm.innerHTML = this.text;
+    }
+
+    show() {
+        this.loaderElm.classList.remove("hidden");
+    }
+
+    hide() {
+        this.loaderElm.classList.add("hidden");
+    }
+}
+
+/**
  * Get the CSRF token and header from the form.
  * @returns {Object} csrfToken and csrfHeader
  */
@@ -67,6 +166,26 @@ const checkEmail = async (email, patronSysId, csrfToken, csrfHeader = null) => {
 
     const data = await response.json();
 
+    return data;
+}
+
+const checkLdapAccount = async (params) => {
+    const { username, apiToken } = params; console.log("checkLdapAccount", params);
+
+    const response = await fetch(`${apiUrl}/check-ldap-account/${username}?token=${apiToken}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+    });
+
+    if (!response.ok) {
+        return {
+            error: true
+        };
+    }
+
+    const data = await response.json();
     return data;
 }
 
@@ -187,6 +306,39 @@ const createModal = (options) => {
     return new Modal(document.getElementById(modalElmId), options);
 };
 
+// PAGE: NEW REGISTRATION SUCCESS
+if (document.querySelector(".page-new-registration-success, .page-welcome")) {
+    const mainElm = document.getElementById("main");
+
+    if (document.getElementById("progress-loader")) {
+        mainElm.classList.add("hidden");
+        mainElm.style.removeProperty("display");
+
+        const loader = new ProgressLoader({
+            checkFunctionData: {
+                username: document.getElementById("patron-username").getAttribute("data-value"),
+                apiToken: document.getElementById("api-token").getAttribute("data-value"),
+            },
+            loaderElm: document.getElementById("progress-loader"),
+            mainElm: mainElm,
+            progressTextElm: document.querySelector("#progress-loader .progress-loader__text"),
+            progressCircle: document.querySelector("#progress-loader .progress-loader__circle"),
+            progressNumber: document.querySelector("#progress-loader .progress-loader__circle-number"),
+            progressStep: 10,
+            checkFunction: checkLdapAccount,
+            interval: 6000,
+            maxSteps: 6,
+            progressTexts: [
+                translations["loader.newRegistration.validatingData"],
+                translations["loader.newRegistration.creatingIdentity"],
+                translations["loader.newRegistration.savingData"],
+                translations["loader.newRegistration.done"],
+            ],
+        });
+
+        loader.start();
+    }
+}
 
 // PAGES: NEW REGISTRATION, MEMBERSHIP RENEWAL
 if (document.querySelector(".page-new-registration, .page-membership-renewal")) {
@@ -195,6 +347,13 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
     const emailInputElm = document.querySelector('[name="email"]');
     const filesWrapper = document.getElementById("files-control");
     const { csrfToken, csrfHeader } = getCsrfTokenAndHeader();
+    const loaderAfterSubmit = new PageLoader({
+        loaderElm: document.getElementById("page-loader"),
+        loaderTextElm: document.querySelector(".page-loader__text"),
+        text: translations["loader.submittingData"],
+    });
+
+    loaderAfterSubmit.init();
 
     function handleCasEmployeeChange(ev) {
         const casEmployeeValue = ev ? ev.target.checked : document.getElementById("isCasEmployee").checked;
@@ -216,8 +375,8 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
 
     FilePond.setOptions({
         storeAsFile: true,
-        acceptedFileTypes: ['image/png', 'image/jpeg', 'application/pdf'],
-        maxFileSize: '20MB'
+        acceptedFileTypes: ["image/png", "image/jpeg", "application/pdf"],
+        maxFileSize: "20MB"
     });
 
     handleCasEmployeeChange();
@@ -239,14 +398,14 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
             .then(data => {
                 if (data.result === true) {
                     rfidElm.value = "";
-                    showAlert("The RFID already exists.", "danger");
+                    showAlert(translations["alert.rfidAlreadyExists"], "danger");
                 } else {
-                    showAlert("The RFID is available.", "success");
+                    showAlert(translations["alert.rfidIsAvailable"], "success");
                 }
             })
             .catch(error => {
                 rfidElm.value = "";
-                showAlert("An error occurred while checking the RFID.", "danger");
+                showAlert(translations["alert.rfidCheckFailed"], "danger");
             });
     });
 
@@ -267,14 +426,14 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
             .then(data => {
                 if (data.result === true) {
                     emailElm.value = "";
-                    showAlert("The email is used by somebody else.", "danger");
+                    showAlert(translations["alert.emailAlreadyInUse"], "danger");
                 } else {
-                    showAlert("The email is available.", "success");
+                    showAlert(translations["alert.emailIsAvailable"], "success");
                 }
             })
             .catch(error => {
                 emailElm.value = "";
-                showAlert("An error occurred while checking the email availability.", "danger");
+                showAlert(translations["alert.emailCheckFailed"], "danger");
             });
     });
 
@@ -287,16 +446,18 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
 
         if (casEmployeeChecked && validFiles.length === 0 && emailInputElm.value.trim().length === 0) {
             event.preventDefault();
-            showAlert("CAS employees must fill in a valid CAS e-mail address or upload an identity document (identity card / passport)", "danger");
+            showAlert(translations["alert.casEmployeesFormRequirements"], "danger");
+        } else {
+            loaderAfterSubmit.show();
         }
     });
 
-    const addressAutofillElms = document.querySelectorAll('.js-autocomplete-address');
+    const addressAutofillElms = document.querySelectorAll(".js-autocomplete-address");
     for (let i = 0; i < addressAutofillElms.length; i++) {
-        (function(inputElem) {
+        (function(inputElm) {
             const autoCompleteJS = new autoComplete({
-                selector: () => inputElem,
-                placeHolder: '',
+                selector: () => inputElm,
+                placeHolder: "",
                 searchEngine: (query, record) => `<mark>${record}</mark>`,
                 data: {
                     keys: ["value"],
@@ -361,7 +522,7 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
                 },
             });
 
-            inputElem.addEventListener("selection", event => {
+            inputElm.addEventListener("selection", event => {
                 const origData = event.detail.selection.value.data;
 
                 if (!origData.regionalStructure) {
@@ -371,41 +532,41 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
                 const regionalStructure = origData.regionalStructure;
                 let streetElm, cityElm, zipElm;
 
-                switch (inputElem.id) {
-                    case 'address1':
+                switch (inputElm.id) {
+                    case "address1":
                         streetElm = document.getElementById("address1");
                         cityElm = document.getElementById("address2");
                         zipElm = document.getElementById("zip");
                         break;
-                    case 'contactAddress1':
+                    case "contactAddress1":
                         streetElm = document.getElementById("contactAddress1");
                         cityElm = document.getElementById("contactAddress2");
                         zipElm = document.getElementById("contactZip");
                         break;
                 }
 
-                const addressItem = regionalStructure.filter(item => item.type === 'regional.address');
+                const addressItem = regionalStructure.filter(item => item.type === "regional.address");
                 const addressName = addressItem.length > 0 ? addressItem[0].name : null;
-                const streetItem = regionalStructure.filter(item => item.type === 'regional.street');
+                const streetItem = regionalStructure.filter(item => item.type === "regional.street");
                 const streetName = streetItem.length > 0 ? streetItem[0].name : null;
-                const municipalityItem = regionalStructure.filter(item => item.type === 'regional.municipality');
+                const municipalityItem = regionalStructure.filter(item => item.type === "regional.municipality");
                 const municipalityName = municipalityItem.length > 0 ? municipalityItem[0].name : null;
-                const municipalityPartItem = regionalStructure.filter(item => item.type === 'regional.municipality_part');
+                const municipalityPartItem = regionalStructure.filter(item => item.type === "regional.municipality_part");
                 const municipalityPartName = municipalityPartItem.length > 0 ? municipalityPartItem[0].name : null;
 
                 if (streetName) {
-                    streetElm.value = streetName + (addressName ? (' ' + addressName) : '');
+                    streetElm.value = streetName + (addressName ? (" " + addressName) : "");
                 } else if (municipalityPartName) {
-                    streetElm.value = municipalityPartName + (addressName ? (' ' + addressName) : '');
+                    streetElm.value = municipalityPartName + (addressName ? (" " + addressName) : "");
                 } else {
-                    streetElm.value = '';
+                    streetElm.value = "";
                 }
-                if (municipalityItem.length > 0 && municipalityItem[0].name === 'Praha' && municipalityPartItem.length >= 2) {
-                    cityElm.value = municipalityPartItem[1].name + ' - ' + municipalityPartItem[0].name;
+                if (municipalityItem.length > 0 && municipalityItem[0].name === "Praha" && municipalityPartItem.length >= 2) {
+                    cityElm.value = municipalityPartItem[1].name + " - " + municipalityPartItem[0].name;
                 } else {
-                    cityElm.value = municipalityName || '';
+                    cityElm.value = municipalityName || "";
                 }
-                zipElm.value = origData.zip || '';
+                zipElm.value = origData.zip || "";
             });
         })(addressAutofillElms[i]);
     }
@@ -413,14 +574,14 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
 
 // PAGE: MEMBERSHIP RENEWAL
 if (document.querySelector(".page-membership-renewal")) {
-    const jsbtnUseInputValElms = document.querySelectorAll('.jsbtn-useInputVal');
+    const jsbtnUseInputValElms = document.querySelectorAll(".jsbtn-useInputVal");
 
     jsbtnUseInputValElms.forEach(button => {
-        button.addEventListener('click', function(event) {
+        button.addEventListener("click", function(event) {
             event.preventDefault();
-            const parentElement = this.parentElement;
-            const input = parentElement.querySelector('input');
-            const value = this.querySelector('i').textContent;
+            const parentElm = this.parentElm;
+            const input = parentElm.querySelector("input");
+            const value = this.querySelector("i").textContent;
             input.value = value;
         });
     });

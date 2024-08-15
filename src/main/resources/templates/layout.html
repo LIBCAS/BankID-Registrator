@@ -6,6 +6,9 @@
 <body>
     <header th:replace="fragments/header :: header"></header>
 
+    <aside th:replace="fragments/page-loader :: page-loader"></aside>
+    <aside layout:fragment="progres-loader"></aside>
+
     <main layout:fragment="content"></main>
 
     <aside id="modal-wrapper"></aside>
