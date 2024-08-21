@@ -42,21 +42,21 @@ class ProgressLoader {
         }
     }
 
-    async check() { console.log("check", this.counter + 1);
+    async check() {
         this.counter++;
         this.updateProgressCircle(this.counter * this.progressStep);
         const data = await this.checkFunction(this.checkFunctionData);
 
-        if (data.result === true || (data.error === true && this.counter === this.maxSteps - 1)) {
-            this.complete();
-        }
-
-        if (this.counter >= this.maxSteps) {
+        // Complete the loader:
+        // - if the result is true
+        // - or before the last step if the error is true
+        // - or after the last step if it takes too long
+        if (data.result === true || (data.error === true && this.counter === this.maxSteps - 1) || this.counter >= this.maxSteps + 3) {
             this.complete();
         }
     }
 
-    complete() { console.log("complete");
+    complete() {
         clearInterval(this.intervalId);
         this.progressCircle.style.setProperty("--progress", "100%");
         this.progressNumber.textContent = "100%";
@@ -69,7 +69,7 @@ class ProgressLoader {
         }, 4000);
     }
 
-    start() { console.log("start");
+    start() {
         if (this.progressTexts.length > 0) {
           this.progressTextElm.innerHTML = this.progressTexts[0];
         }
@@ -170,7 +170,7 @@ const checkEmail = async (email, patronSysId, csrfToken, csrfHeader = null) => {
 }
 
 const checkLdapAccount = async (params) => {
-    const { username, apiToken } = params; console.log("checkLdapAccount", params);
+    const { username, apiToken } = params;
 
     const response = await fetch(`${apiUrl}/check-ldap-account/${username}?token=${apiToken}`, {
         method: "GET",
@@ -327,7 +327,7 @@ if (document.querySelector(".page-new-registration-success, .page-welcome")) {
             progressStep: 10,
             checkFunction: checkLdapAccount,
             interval: 6000,
-            maxSteps: 6,
+            maxSteps: 9,
             progressTexts: [
                 translations["loader.newRegistration.validatingData"],
                 translations["loader.newRegistration.creatingIdentity"],
@@ -441,7 +441,6 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
 
     document.querySelector("form").addEventListener("submit", (event) => {
         const casEmployeeChecked = document.getElementById("isCasEmployee").checked;
-        console.log(pond.getFiles());
         const validFiles = pond.getFiles();
 
         if (casEmployeeChecked && validFiles.length === 0 && emailInputElm.value.trim().length === 0) {
