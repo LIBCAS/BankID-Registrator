@@ -1703,6 +1703,12 @@ logger.info("AAA doHttpRequest method: {}", method);
         patron.setAddress0(patron.getName());
         patron.setContactAddress0(patron.getName());
 
+        // Check if the BankID address data is available
+        if (userProfile.getAddresses() == null) {
+            result.put("error", "v BankID účtu nemáte nastavenou adresu");
+            return result;
+        }
+
         // Patron address (permanent residence)
         Address address = userProfile.getAddresses().stream()
             .filter(a -> a.getType() == AddressType.PERMANENT_RESIDENCE)
