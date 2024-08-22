@@ -21,11 +21,14 @@ import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
 import cz.cas.lib.bankid_registrator.util.TimestampToDate;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -1590,9 +1593,11 @@ logger.info("AAA doHttpRequest method: {}", method);
         TransformerFactory transformerFactory = TransformerFactory.newInstance();
         try {
             Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+            String encodedPasswordOld = URLEncoder.encode(passwordOld, StandardCharsets.UTF_8.toString());
+            String encodedPasswordNew = URLEncoder.encode(passwordNew, StandardCharsets.UTF_8.toString());
 
-            transformer.setParameter("oldPassword", passwordOld);
-            transformer.setParameter("newPassword", passwordNew);            
+            transformer.setParameter("oldPassword", encodedPasswordOld);
+            transformer.setParameter("newPassword", encodedPasswordNew);            
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
@@ -1606,6 +1611,9 @@ logger.info("AAA doHttpRequest method: {}", method);
         } catch (TransformerException ex) {
             result.put("error", ex.getMessage());
             getLogger().error(MainService.class.getName(), ex);
+        } catch (UnsupportedEncodingException ex) {
+            result.put("error", "Encoding error: " + ex.getMessage());
+            getLogger().error("UnsupportedEncodingException in createPatronPswUpdateXml", ex);
         }
 
         return result;
