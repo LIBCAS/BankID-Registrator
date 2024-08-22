@@ -72,15 +72,14 @@
             @RequestParam(defaultValue = "0") int page, 
             @RequestParam(defaultValue = "id") String sortField, 
             @RequestParam(defaultValue = "asc") String sortDir, 
-            @RequestParam(required = false) String searchAlephId, 
-            @RequestParam(required = false) String searchAlephBarcode, 
+            @RequestParam(required = false) String searchAlephIdOrBarcode, 
             @RequestParam(required = false) Boolean filterCasEmployee, 
             @RequestParam(required = false) Boolean filterCheckedByAdmin
         ) {
             Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
             PageRequest pageable = PageRequest.of(page, DashboardController.PAGE_SIZE, sort);
-            this.logger.info("Searching for identities with Aleph ID: " + searchAlephId + ", Aleph barcode: " + searchAlephBarcode + ", CAS employee: " + filterCasEmployee + ", checked by admin: " + filterCheckedByAdmin);
-            Page<Identity> identityPage = this.identityService.findIdentities(pageable, searchAlephId, searchAlephBarcode, filterCasEmployee, filterCheckedByAdmin);
+            this.logger.info("Searching for identities with Aleph ID / barcode: " + searchAlephIdOrBarcode + ", CAS employee: " + filterCasEmployee + ", checked by admin: " + filterCheckedByAdmin);
+            Page<Identity> identityPage = this.identityService.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin);
 
             model.addAttribute("pageTitle", this.messageSource.getMessage("page.identitiesDashboard.title", null, locale));
 
@@ -90,8 +89,7 @@
             model.addAttribute("sortField", sortField);
             model.addAttribute("sortDir", sortDir);
             model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
-            model.addAttribute("searchAlephId", searchAlephId);
-            model.addAttribute("searchAlephBarcode", searchAlephBarcode);
+            model.addAttribute("searchAlephIdOrBarcode", searchAlephIdOrBarcode);
             model.addAttribute("filterCasEmployee", filterCasEmployee);
             model.addAttribute("filterCheckedByAdmin", filterCheckedByAdmin);
 

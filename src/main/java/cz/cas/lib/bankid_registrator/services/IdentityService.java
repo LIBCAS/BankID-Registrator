@@ -90,13 +90,12 @@ public class IdentityService extends ServiceAbstract
     /**
      * Find identities by search criteria
      * @param pageable
-     * @param searchAlephId
-     * @param searchAlephBarcode
+     * @param searchAlephIdOrBarcode
      * @param filterCasEmployee
      * @param filterCheckedByAdmin
      * @return
      */
-    public Page<Identity> findIdentities(Pageable pageable, String searchAlephId, String searchAlephBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin) {
-        return identityRepository.findIdentities(pageable, searchAlephId, searchAlephBarcode, filterCasEmployee, filterCheckedByAdmin);
+    public Page<Identity> findIdentities(Pageable pageable, String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin) {
+        return identityRepository.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin);
     }
 }

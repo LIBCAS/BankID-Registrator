@@ -10,8 +10,7 @@
 
             <div class="mb-4 flex items-center justify-center gap-4">
                 <form th:action="@{/dashboard}" method="GET">
-                    <input type="text" name="searchAlephId" th:placeholder="#{message.searchIdentityByPatronId}" th:value="${searchAlephId}" class="border p-2"/>
-                    <input type="text" name="searchAlephBarcode" th:placeholder="#{message.searchIdentityByPatronBarcode}" th:value="${searchAlephBarcode}" class="border p-2"/>
+                    <input type="text" name="searchAlephIdOrBarcode" th:placeholder="#{message.searchIdentityByPatronIdOrBarcode}" th:value="${searchAlephIdOrBarcode}" class="border p-2"/>
                     <select name="filterCasEmployee" class="border p-2">
                         <option value="" th:text="#{message.isIdentityCasEmployee}"></option>
                         <option th:selected="${filterCasEmployee == true}" th:value="true" th:text="#{message.yes}"></option>
@@ -39,6 +38,10 @@
                                     </svg>
                                 </a>
                             </th>
+                            <th th:text="#{message.patronId}" scope="col" class="px-6 py-3"></th>
+                            <th th:text="#{message.patronBarcode}" scope="col" class="px-6 py-3"></th>
+                            <th th:text="#{message.isIdentityCasEmployee}" scope="col" class="px-6 py-3"></th>
+                            <th th:text="#{message.isIdentityAdminChecked}" scope="col" class="px-6 py-3"></th>
                             <th scope="col" class="px-6 py-3">
                                 <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
                                     <span th:text="#{message.createdAt}"></span>
@@ -55,18 +58,12 @@
                                     </svg>
                                 </a>
                             </th>
-                            <th th:text="#{message.patronId}" scope="col" class="px-6 py-3"></th>
-                            <th th:text="#{message.patronBarcode}" scope="col" class="px-6 py-3"></th>
-                            <th th:text="#{message.isIdentityCasEmployee}" scope="col" class="px-6 py-3"></th>
-                            <th th:text="#{message.isIdentityAdminChecked}" scope="col" class="px-6 py-3"></th>
                             <th scope="col" class="px-6 py-3"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr th:each="identity : ${identityPage.content}" class="bg-white border-b">
                             <th scope="row" th:text="${identity.id}" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"></th>
-                            <td th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}" class="px-6 py-4"></td>
-                            <td th:text="${dateUtils.convertDateTimeFormat(identity.updatedAt)}" class="px-6 py-4"></td>
                             <td th:text="${identity.alephId}" class="px-6 py-4"></td>
                             <td th:text="${identity.alephBarcode}" class="px-6 py-4"></td>
                             <td class="px-6 py-4">
@@ -77,6 +74,8 @@
                                 <span th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.no}"></span>
                                 <span th:if="${identity.checkedByAdmin == true}" th:text="#{message.yes}"></span>
                             </td>
+                            <td th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}" class="px-6 py-4"></td>
+                            <td th:text="${dateUtils.convertDateTimeFormat(identity.updatedAt)}" class="px-6 py-4"></td>
                             <td class="px-6 py-4 text-right">
                                 <a th:href="@{/dashboard/identity/{id}(id=${identity.id})}" th:text="#{message.view}" class="font-medium text-blue-600 hover:underline"></a>
                             </td>
