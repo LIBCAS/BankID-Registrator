@@ -102,3 +102,18 @@ body > main {
         margin-top: 7em;
     }
 }
+
+@media print {
+ 
+    .no-print {
+        display: none !important;
+    }
+
+    .print-flex {
+        display: flex !important;
+    }
+
+    .print-block {
+        display: block !important;
+    }
+}  

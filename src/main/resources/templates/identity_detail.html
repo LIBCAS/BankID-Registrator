@@ -4,64 +4,17 @@
         <title th:replace="fragments/head :: head"></title>
     </head>
 
-    <body class="page-dashboard print:page">
-        <main layout:fragment="content" class="mb-10 container text-center mx-auto print:my-0">
-            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900 print:hidden" th:text="${pageTitle}"></h1>
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 print:grid-cols-1">
+    <body class="page-dashboard">
+        <main layout:fragment="content" class="mb-10 container text-center mx-auto">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900 print:hidden no-print" th:text="${pageTitle}"></h1>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 print:hidden no-print">
                 <div class="bg-white p-6">
-                    <div class="flex flex-col gap-5 mb-10 print:hidden">
-                        <h2 th:text="#{message.identity}" class="text-2xl font-bold">Identity</h2>
+                    <div class="flex flex-col gap-5 mb-10">
+                        <h2 th:text="#{message.identityData}" class="text-2xl font-bold">Identity data</h2>
                         <div class="flex justify-center">
                             <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
                                 <table class="text-sm text-left rtl:text-right text-gray-500">
                                     <tbody>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.id}">ID</th>
-                                            <td class="px-6 py-4" th:text="${identity.id}"></td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.patronId}">Patron ID</th>
-                                            <td class="px-6 py-4" th:text="${identity.alephId}"></td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.patronBarcode}">Patron barcode</th>
-                                            <td class="px-6 py-4" th:text="${identity.alephBarcode}"></td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.casEmployee}">CAS employee</th>
-                                            <td class="px-6 py-4" th:if="${identity.isCasEmployee == null || identity.isCasEmployee == false}" th:text="#{message.no}">No</td>
-                                            <td class="px-6 py-4" th:if="${identity.isCasEmployee == true}" th:text="#{message.yes}">Yes</td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.checked}">Checked</th>
-                                            <td class="px-6 py-4" th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.no}">No</td>
-                                            <td class="px-6 py-4" th:if="${identity.checkedByAdmin == true}" th:text="#{message.yes}">Yes</td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.createdAt}">Created at</th>
-                                            <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}"></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div th:if="${patron != null}" id="patron-detail" class="flex flex-col gap-5 mb-10 print:m-0">
-                        <h2 th:text="#{message.patron}" class="text-2xl font-bold print:hidden">Patron</h2>
-                        <div class="flex justify-center print:block">
-                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-                                <table class="text-sm text-left rtl:text-right text-gray-500">
-                                    <tbody>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.patronId}">Patron ID</th>
-                                            <td class="px-6 py-4" th:text="${patron.patronId}"></td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50">
-                                                <span th:text="#{message.patronBarcode}">Patron barcode</span> (<span th:text="#{message.username}">Username</span>)
-                                            </th>
-                                            <td class="px-6 py-4" th:text="${patron.barcode}"></td>
-                                        </tr>
                                         <tr class="border-b border-gray-200">
                                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.firstname}">First name</th>
                                             <td class="px-6 py-4" th:text="${patron.firstname}"></td>
@@ -71,12 +24,16 @@
                                             <td class="px-6 py-4" th:text="${patron.lastname}"></td>
                                         </tr>
                                         <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.fullName}">Full name</th>
-                                            <td class="px-6 py-4" th:text="${patron.name}"></td>
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.birthday}">Birth date</th>
+                                            <td class="px-6 py-4" th:text="${dateUtils.convertDateFormat(patron.birthDate, 'dd-mm-yyyy', 'dd/mm/yyyy')}"></td>
                                         </tr>
                                         <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.birthday}">Birth date</th>
-                                            <td class="px-6 py-4" th:text="${patron.birthDate}"></td>
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.permanentAddress}">Permanent address</th>
+                                            <td class="px-6 py-4">
+                                                <div th:text="${patron.address1}"></div>
+                                                <div th:text="${patron.address2}"></div>
+                                                <div th:text="${patron.zip}"></div>
+                                            </td>
                                         </tr>
                                         <tr class="border-b border-gray-200">
                                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.email}">E-mail</th>
@@ -87,13 +44,69 @@
                                             <td class="px-6 py-4" th:text="${patron.smsNumber}"></td>
                                         </tr>
                                         <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.language}">Language</th>
-                                            <td class="px-6 py-4" th:text="${patron.conLng}"></td>
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.contactAddress}">Contact address</th>
+                                            <td class="px-6 py-4">
+                                                <div th:text="${patron.contactAddress1}"></div>
+                                                <div th:text="${patron.contactAddress2}"></div>
+                                                <div th:text="${patron.contactZip}"></div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6">
+                    <div class="flex flex-col gap-5 mb-10">
+                        <h2 th:text="#{message.libraryData}" class="text-2xl font-bold">Library data</h2>
+                        <div class="flex justify-center">
+                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                                <table class="text-sm text-left rtl:text-right text-gray-500">
+                                    <tbody>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.id}">Patron ID</th>
+                                            <td class="px-6 py-4" th:text="${identity.alephId}"></td>
                                         </tr>
                                         <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.rfid}">RFID (Lítačka, ISIC, etc.)</th>
-                                            <td class="px-6 py-4" th:text="${patron.rfid}"></td>
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.patronBarcodeAbbr}">Patron barcode</th>
+                                            <td class="px-6 py-4" th:text="${identity.alephBarcode}"></td>
                                         </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.createdAt}">Created at</th>
+                                            <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}"></td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.checked}">Checked</th>
+                                            <td class="px-6 py-4" th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.no}">No</td>
+                                            <td class="px-6 py-4" th:if="${identity.checkedByAdmin == true}" th:text="#{message.yes}">Yes</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.casEmployee}">CAS employee</th>
+                                            <td class="px-6 py-4" th:if="${identity.isCasEmployee == null || identity.isCasEmployee == false}" th:text="#{message.no}">No</td>
+                                            <td class="px-6 py-4" th:if="${identity.isCasEmployee == true}" th:text="#{message.yes}">Yes</td>
+                                        </tr>
+                                        <tr th:if="${patron != null && identity.isCasEmployee == true}" class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.email}">E-mail</th>
+                                            <td class="px-6 py-4" th:text="${patron.email}"></td>
+                                        </tr>
+                                        <tr th:if="${patron != null && identity.isCasEmployee == true}" class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50 text-center" th:text="#{message.attachments}" colspan="2">Attachments</th>
+                                        </tr>
+                                    </tbody>
+                                    <tbody th:if="${patron != null && identity.isCasEmployee == true}" th:each="media : ${medias}">
+                                        <tr class="border-b border-gray-200">
+                                            <th th:text="${media.name}" class="italic px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50 text-center" colspan="2"></th>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <td class="px-6 py-4" colspan="2">
+                                                <a th:href="@{'/files/' + ${media.name}}" target="_blank">
+                                                    <img th:src="@{'/files/' + ${media.name}}" th:alt="${media.name}" class="max-w-xs h-auto my-0 mx-auto"/>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                    <tbody>
                                         <tr class="border-b border-gray-200">
                                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.membership}">Membership</th>
                                             <td class="px-6 py-4" th:if="${membershipHasExpired}">
@@ -107,34 +120,12 @@
                                             </td>
                                         </tr>
                                         <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.permanentAddress}" colspan="2">Permanent address</th>
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.rfid}">RFID (Lítačka, ISIC, etc.)</th>
+                                            <td class="px-6 py-4" th:text="${patron.rfid}"></td>
                                         </tr>
                                         <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.streetHouseNum}">Street and house number</th>
-                                            <td class="px-6 py-4" th:text="${patron.address1}"></td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.municipality}">Municipality</th>
-                                            <td class="px-6 py-4" th:text="${patron.address2}"></td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.zipCode}">ZIP code</th>
-                                            <td class="px-6 py-4" th:text="${patron.zip}"></td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.contactAddress}" colspan="2">Contact address</th>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.streetHouseNum}">Street and house number</th>
-                                            <td class="px-6 py-4" th:text="${patron.contactAddress1}"></td>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.municipality}">Municipality</th>
-                                            <td class="px-6 py-4" th:text="${patron.contactAddress2}"></td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.zipCode}">ZIP code</th>
-                                            <td class="px-6 py-4" th:text="${patron.contactZip}"></td>
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.language}">Language</th>
+                                            <td class="px-6 py-4" th:text="${patron.conLng}"></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -142,7 +133,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white p-6 print:hidden">
+                <div class="bg-white p-6 hidden">
                     <div class="flex flex-col gap-5 mb-10">
                         <h2 th:text="#{message.activity}" class="text-2xl font-bold">Activity</h2>
                         <div class="flex justify-center">
@@ -158,36 +149,159 @@
                             </div>
                         </div>
                     </div>
-                    <div th:if="${patron != null && identity.isCasEmployee == true}" class="flex flex-col gap-5 mb-10">
-                        <h2 th:text="#{message.attachments}" class="text-2xl font-bold">Attachments</h2>
-                        <div class="flex justify-center">
-                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-                                <table class="text-sm text-left rtl:text-right text-gray-500">
-                                    <tbody th:each="media : ${medias}">
-                                        <tr class="border-b border-gray-200">
-                                            <th th:text="${media.name}" class="px-6 py-4 font-medium text-center text-gray-900 whitespace-nowrap bg-gray-50"></th>
-                                        </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <td class="px-6 py-4">
-                                                <a th:href="@{'/files/' + ${media.name}}" target="_blank">
-                                                    <img th:src="@{'/files/' + ${media.name}}" th:alt="${media.name}" class="max-w-xs h-auto"/>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
-            <div th:if="${patron != null}" class="flex justify-center gap-5 mb-10 print:hidden">
+            <div th:if="${patron != null}" class="flex justify-center gap-5 mb-10 print:hidden no-print">
+                <a th:href="@{/dashboard}" th:text="#{message.goBack}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">Go back</a>
                 <button th:text="#{message.print}" id="js-printPage" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">Print</button>
                 <a th:href="@{/dashboard/identity/{id}/toggle-checked(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">
                     <span th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.markAsAdminChecked}">Mark as checked</span>
                     <span th:if="${identity.checkedByAdmin == true}" th:text="#{message.markAsAdminUnchecked}">Mark as unchecked</span>
                 </a>
             </div>
+            <aside th:if="${patron != null}" class="hidden print-flex" style="font-size:14px;">
+                <div style="flex: 49%; margin-right:1%;">
+                    <div id="print-data" class="my-1 mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                        <h2 id="modal-title" class="mb-3 text-xl font-semibold">
+                            Registrace přes BankID č. <span th:text="${identity.id}"></span>
+                            <p style="font-size: 10px;line-height: 16px;font-weight: 300;">Knihovna AV ČR (KNAV) / Národní 3, Praha 1 / www.knav.cz</p>
+                        </h2>
+                        <h2 class="mb-1 text-sm font-semibold uppercase">
+                            ZÁKLADNÍ IDENTIFIKAČNÍ ÚDAJE
+                            <p class="text-xs font-light mb-0">Právní základ: plnění smlouvy</p>
+                        </h2>
+                        <table class="w-full table-auto bg-white text-sm">
+                            <tr>
+                                <td class="border">
+                                    Příjmení
+                                </td>
+                                <td class="border text-black" contenteditable="true">
+                                    <p class="uppercase font-bold" th:text="${patron.lastname}"></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border">
+                                    Jméno
+                                </td>
+                                <td class="border text-black" contenteditable="true">
+                                    <p class="uppercase font-bold" th:text="${patron.firstname}">}</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border">
+                                    Datum narození
+                                </td>
+                                <td class="border text-black " contenteditable="true">
+                                    <span th:text="${dateUtils.convertDateFormat(patron.birthDate, 'dd-mm-yyyy', 'dd/mm/yyyy')}"></span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border">
+                                    Uživatelské jméno
+                                </td>
+                                <td class="border text-black" contenteditable="true">
+                                    <p class="uppercase font-bold" th:text="${identity.alephBarcode}"></p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border">
+                                    Typ registrace
+                                </td>
+                                <td class="border text-black" contenteditable="true">
+                                    <span th:if="${patron != null && identity.isCasEmployee == true}">03 - Zaměstnanec ústavu</span>
+                                    <span th:if="${patron != null && identity.isCasEmployee == false}">16 - Běžný uživatel</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border">
+                                    Adresa v ČR
+                                </td>
+                                <td class="border text-black" contenteditable="true">
+                                    <span th:if="${patron.address1}" th:text="${patron.address1} + ', '"></span>
+                                    <span th:text="${patron.zip}"></span> <span th:text="${patron.address2}"></span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border">
+                                    E-mail
+                                </td>
+                                <td class="border text-black" contenteditable="true">
+                                    <span th:text="${patron.email}"></span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border">
+                                    Telefon
+                                </td>
+                                <td class="border text-black" contenteditable="true">
+                                    <span th:text="${patron.smsNumber}"></span>
+                                </td>
+                            </tr>
+                        </table>
+                        <h2 class="mt-2 mb-1 text-xs font-semibold uppercase">
+                            PROHLÁŠENÍ UŽIVATELE
+                        </h2>
+                        <table class="w-full table-auto bg-white">
+                            <tr>
+                            <td class="border text-xs font-semibold" colspan="2">Prohlašuji že:</td>
+                            </tr>
+                            <tr>
+                                <td class="border text-xs">
+                                    Souhlasím s poskytnutím dočasné digitální kopie svého platného občanského průkazu nebo platného povolení k pobytu vydaného Ministerstvem vnitra ČR s uvedením místa pobytu na území ČR KNAV.
+                                </td>
+                                <td class="border uppercase font-bold text-xs">Ano</td>
+                            </tr>
+                            <tr>
+                                <td class="border text-xs font-semibold" colspan="2">Dále prohlašuji, že jsem:</td>
+                            </tr>
+                            <tr>
+                                <td class="border text-xs">
+                                    se seznámil/a s Knihovním řádem zveřejněným na https://knav.cz/o-knihovne/knihovni-rad/, zavazuji se jej dodržovat a seznámit se s každou jeho novou verzí zveřejněnou na webových stránkách KNAV,      
+                                </td>
+                                <td class="border uppercase font-semibold text-xs">Ano</td>
+                            </tr>
+                            <tr>
+                                <td class="border text-xs">
+                                    zkontroloval/a správnost a úplnost mých osobních údajů uvedených v tomto registračním formuláři,
+                                </td>
+                                <td class="border uppercase font-semibold text-xs">Ano</td>
+                            </tr>
+                            <tr>
+                                <td class="border text-xs">
+                                    se seznámil/a se způsobem zpracování mých osobních údajů KNAV v rozsahu a v souladu s účelem uvedeným v Knihovním řádu.
+                                </td>
+                                <td class="border uppercase font-semibold text-xs">Ano</td>
+                            </tr>
+                        </table>
+                        <h2 class="mt-2 mb-1 text-xs font-semibold uppercase">
+                            INFORMACE O REGISTRACI
+                        </h2>
+                        <div class="flex">
+                            <table class="w-6/12 mr-1 table-auto bg-white text-xs">
+                                <tr>
+                                    <td class="border">
+                                        Přijata
+                                    </td>
+                                    <td class="border">
+                                        <span th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}"></span>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table class="w-6/12 ml-1 table-auto bg-white text-xs">
+                                <tr>
+                                    <td class="border">
+                                        Vyplněno
+                                    </td>
+                                    <td class="border">
+                                        <span th:text="${patron.conLng}"></span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div style="flex: 50%"></div>
+            </aside>
         </main>
     </body>
 
