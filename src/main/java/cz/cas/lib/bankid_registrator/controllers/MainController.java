@@ -21,6 +21,8 @@ import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
+import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
+
 import java.net.URI;
 import java.util.Locale;
 import java.util.Map;
@@ -28,6 +30,8 @@ import java.util.Optional;
 import java.time.LocalDateTime;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
+import javax.validation.Valid;
+
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -37,6 +41,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
 import org.springframework.util.Assert;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -49,6 +55,7 @@ public class MainController extends ControllerAbstract
     private final ServletContext servletContext;
     private final PatronRepository patronRepository;
     private final PatronService patronService;
+    private final PatronDTOValidator patronDTOValidator;
     private final MediaService mediaService;
     private final IdentityService identityService;
     private final IdentityActivityService identityActivityService;
@@ -64,6 +71,7 @@ public class MainController extends ControllerAbstract
         ServletContext servletContext,
         PatronRepository patronRepository,
         PatronService patronService,
+        PatronDTOValidator patronDTOValidator,
         MediaService mediaService,
         IdentityService identityService,
         IdentityActivityService identityActivityService,
@@ -77,6 +85,7 @@ public class MainController extends ControllerAbstract
         this.alephService = alephService;
         this.servletContext = servletContext;
         this.patronRepository = patronRepository;
+        this.patronDTOValidator = patronDTOValidator;
         this.patronService = patronService;
         this.mediaService = mediaService;
         this.identityService = identityService;
@@ -152,15 +161,9 @@ public class MainController extends ControllerAbstract
     @RequestMapping(value="/callback", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
     public String CallbackEntry(@RequestParam("code") String code, Model model, Locale locale, HttpSession session)
     {
-        // if (session.isNew()) {
-        //     model.addAttribute("error", this.messageSource.getMessage("error.session.expired", null, locale));
-        //     session.invalidate();
-        //     return "error";
-        // }
-
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
 
-        Assert.notNull(code, "\"code\" is required");
+        Assert.notNull(code, this.messageSource.getMessage("error.session.expired", null, locale));
 
         if (!accessTokenContainer.getCodeTokenMap().containsKey(code)) {
             accessTokenContainer.setAccessToken(code, mainService.getTokenExchange(code).getAccessToken());
@@ -222,6 +225,9 @@ public class MainController extends ControllerAbstract
 
             session.setAttribute("patron", bankIdPatron.getSysId());
 
+            session.setAttribute("bankIdPatron", bankIdPatron.getSysId());
+            session.setAttribute("bankIdPatronDTO", bankIdPatronDTO);
+
             model.addAttribute("patronId", bankIdPatron.getSysId());
             model.addAttribute("patron", bankIdPatronDTO);
 
@@ -247,8 +253,8 @@ public class MainController extends ControllerAbstract
             String alephPatronExpiryDate = alephPatron.getExpiryDate();
             boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
             boolean membershipExpiresToday = DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy");
-            boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
-            // boolean expiryDateIn1MonthOrLess = true;
+            // boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
+            boolean expiryDateIn1MonthOrLess = true;
 
             // Merging BankId patron and Aleph patron into a Patron with the latest data (so-called "the latest patron")
             Patron latestPatron = PatronService.mergePatrons(bankIdPatron, alephPatron);
@@ -264,6 +270,15 @@ public class MainController extends ControllerAbstract
 
             session.setAttribute("patron", latestPatron.getSysId());
             session.setAttribute("alephPatron", alephPatron.getSysId());
+
+            session.setAttribute("latestPatron", latestPatron.getSysId());
+            session.setAttribute("latestPatronDTO", latestPatronDTO);
+            session.setAttribute("bankIdPatronDTO", bankIdPatronDTO);
+            session.setAttribute("alephPatronDTO", alephPatronDTO);
+            session.setAttribute("membershipExpiryDate", alephPatronExpiryDate);
+            session.setAttribute("membershipHasExpired", membershipHasExpired);
+            session.setAttribute("membershipExpiresToday", membershipExpiresToday);
+            session.setAttribute("expiryDateIn1MonthOrLess", expiryDateIn1MonthOrLess);
 
             model.addAttribute("patronId", latestPatron.getSysId());
             model.addAttribute("patron", latestPatronDTO);
@@ -281,13 +296,42 @@ public class MainController extends ControllerAbstract
     /**
      * Creating new Aleph patron (new registration)
      * @param editedPatron - user-edited patron data
+     * @param bindingResult - validation result
      * @param session
      * @param model
      * @param media
      * @return String
      */
     @PostMapping("/new-registration")
-    public String newRegistrationEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, Locale locale, @RequestParam("media") MultipartFile[] mediaFiles) {
+    public String newRegistrationEntry(
+        @Valid @ModelAttribute PatronDTO editedPatron, 
+        BindingResult bindingResult, 
+        HttpSession session, 
+        Model model, 
+        Locale locale, 
+        @RequestParam("media") MultipartFile[] mediaFiles
+    ) {
+        PatronDTO beforeEditedPatron = (PatronDTO) session.getAttribute("bankIdPatronDTO");
+        if (beforeEditedPatron == null) {
+            return "error_session_expired";
+        }
+
+        this.patronDTOValidator.validate(editedPatron, bindingResult, null, mediaFiles);
+
+        if (bindingResult.hasErrors()) {
+            editedPatron.restoreDefaults(beforeEditedPatron);
+
+            model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
+            model.addAttribute("code", session.getAttribute("code"));
+
+            model.addAttribute("patronId", session.getAttribute("bankIdPatron"));
+            model.addAttribute("patron", editedPatron);
+
+            model.addAttribute("org.springframework.validation.BindingResult.patron", bindingResult);
+
+            return "callback_registration_new";
+        }
+
         Long patronSysId = (Long) session.getAttribute("patron");
         Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
@@ -298,6 +342,8 @@ public class MainController extends ControllerAbstract
         session.removeAttribute("userProfile");
         session.removeAttribute("code");
         session.removeAttribute("identity");
+        session.removeAttribute("bankIdPatron");
+        session.removeAttribute("bankIdPatronDTO");
 
         try {
             getLogger().info("new-registration - originalPatron: {}", patron.toJson());
@@ -389,16 +435,53 @@ public class MainController extends ControllerAbstract
     /**
      * Updating Aleph patron (membership renewal)
      * @param editedPatron - user-edited patron data based on the latest patron data
+     * @param bindingResult - validation result
      * @param session
      * @param model
      * @param media
      * @return
      */
     @PostMapping("/membership-renewal")
-    public String membershipRenewalEntry(@ModelAttribute PatronDTO editedPatron, HttpSession session, Model model, Locale locale, @RequestParam("media") MultipartFile[] mediaFiles) {
+    public String membershipRenewalEntry(
+        @Valid @ModelAttribute PatronDTO editedPatron, 
+        BindingResult bindingResult, 
+        HttpSession session, 
+        Model model, 
+        Locale locale, 
+        @RequestParam("media") MultipartFile[] mediaFiles
+    ) {
         Long alephPatronSysId = (Long) session.getAttribute("alephPatron");
-        Long patronSysId = (Long) session.getAttribute("patron");
+
+        if (alephPatronSysId == null) {
+            return "error_session_expired";
+        }
+
         Patron alephPatron = patronRepository.findById(alephPatronSysId).orElse(null);  // original Aleph patron
+
+        this.patronDTOValidator.validate(editedPatron, bindingResult, alephPatron.getId(), mediaFiles);
+
+        if (bindingResult.hasErrors()) {
+            PatronDTO beforeEditedPatron = (PatronDTO) session.getAttribute("latestPatronDTO");
+            editedPatron.restoreDefaults(beforeEditedPatron);
+
+            model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
+            model.addAttribute("code", session.getAttribute("code"));
+
+            model.addAttribute("patronId", session.getAttribute("latestPatron"));
+            model.addAttribute("patron", editedPatron);
+            model.addAttribute("bankIdPatron", session.getAttribute("bankIdPatronDTO"));
+            model.addAttribute("alephPatron", session.getAttribute("alephPatronDTO"));
+            model.addAttribute("membershipExpiryDate", session.getAttribute("membershipExpiryDate"));
+            model.addAttribute("membershipHasExpired", session.getAttribute("membershipHasExpired"));
+            model.addAttribute("membershipExpiresToday", session.getAttribute("membershipExpiresToday"));
+            model.addAttribute("expiryDateIn1MonthOrLess", session.getAttribute("expiryDateIn1MonthOrLess"));
+
+            model.addAttribute("org.springframework.validation.BindingResult.patron", bindingResult);
+
+            return "callback_registration_renewal";
+        }
+
+        Long patronSysId = (Long) session.getAttribute("patron");
         Patron patron = patronRepository.findById(patronSysId).orElse(null);    // Original Latest patron (i.e. patron created by merging BankId patron with Aleph patron)
         Identify userProfile = (Identify) session.getAttribute("userProfile");
         String code = (String) session.getAttribute("code");
@@ -409,6 +492,14 @@ public class MainController extends ControllerAbstract
         session.removeAttribute("userProfile");
         session.removeAttribute("code");
         session.removeAttribute("identity");
+        session.removeAttribute("latestPatron");
+        session.removeAttribute("latestPatronDTO");
+        session.removeAttribute("bankIdPatronDTO");
+        session.removeAttribute("alephPatronDTO");
+        session.removeAttribute("membershipExpiryDate");
+        session.removeAttribute("membershipHasExpired");
+        session.removeAttribute("membershipExpiresToday");
+        session.removeAttribute("expiryDateIn1MonthOrLess");
 
         try {
             getLogger().info("membership-renewal - originalPatron: {}", patron.toJson());

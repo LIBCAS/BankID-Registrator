@@ -11,62 +11,61 @@
         <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.newRegistration.title}">New registration</h1>
         <form action="#" th:action="@{/new-registration}" th:object="${patron}" method="post"
             enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto">
+            <div th:if="${#fields.hasErrors('*')}" th:text="#{form.error.invalidData}" class="text-red-600 dark:text-red-500 font-medium pb-3">
+                Odeslaný formulář obsahuje chyby. Prosím, zkontrolujte si vyplněné údaje.
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" required />
                 <input type="hidden" name="patronId" th:value="${patronId}" />
                 <div>
                     <label for="firstname" class="block text-sm font-medium text-gray-700">Jméno <span th:title="#{form.text.requiredInformation}">*</span></label>
-                    <input type="text" id="firstname" name="firstname"
-                        class="mt-1 block w-full p-2 border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
-                        th:field="*{firstname}" required readonly />
+                    <input type="text" id="firstname" name="firstname" class="mt-1 block w-full p-2 border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{firstname}" required readonly />
+                    <div th:if="${#fields.hasErrors('firstname')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{firstname}" class="ml-1"></span></div>
                 </div>
                 <div>
                     <label for="lastname" class="block text-sm font-medium text-gray-700">Příjmení <span th:title="#{form.text.requiredInformation}">*</span></label>
-                    <input type="text" id="lastname" name="lastname"
-                        class="mt-1 block w-full p-2 border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
-                        th:field="*{lastname}" required readonly />
+                    <input type="text" id="lastname" name="lastname" class="mt-1 block w-full p-2 border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{lastname}" required readonly />
+                    <div th:if="${#fields.hasErrors('lastname')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{lastname}" class="ml-1"></span></div>
                 </div>
                 <div>
                     <label for="birthday" class="block text-sm font-medium text-gray-700">Datum narození <span th:title="#{form.text.requiredInformation}">*</span></label>
-                    <input type="date" id="birthday" name="birthday"
-                        class="mt-1 block w-full p-2 border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
-                        th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}"
-                        required readonly />
+                    <input type="date" id="birthday" name="birthday" class="mt-1 block w-full p-2 border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}" required readonly />
                 </div>
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700">E-mail <span th:title="#{form.text.requiredCasEmployeeInformation}">**</span></label>
-                    <input type="email" id="email" name="email"
-                        class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        th:field="*{email}" />
+                    <input type="email" id="email" name="email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{email}" />
+                    <div th:if="${#fields.hasErrors('email')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{email}" class="ml-1"></span></div>
                 </div>
                 <div>
                     <label for="phone" class="block text-sm font-medium text-gray-700">Mobil</label>
-                    <input type="tel" id="phone" name="phone"
-                        class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        th:field="*{smsNumber}" />
+                    <input type="tel" id="phone" name="phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{smsNumber}" />
+                    <div th:if="${#fields.hasErrors('smsNumber')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{smsNumber}" class="ml-1"></span></div>
                 </div>
                 <div>
                     <label for="rfid" class="block text-sm font-medium text-gray-700">RFID (Lítačka, ISIC apod.)</label>
-                    <input type="text" id="rfid" name="rfid"
-                        class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        th:field="*{rfid}" />
+                    <input type="text" id="rfid" name="rfid" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{rfid}" />
+                    <div th:if="${#fields.hasErrors('rfid')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{rfid}" class="ml-1"></span></div>
                 </div>
                 <div class="md:col-span-2">
                     <fieldset class="space-y-2">
                         <legend class="block text-sm font-medium text-gray-700">Adresa trvalého pobytu <span th:title="#{form.text.requiredInformation}">*</span></legend>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input type="text" name="permanent_address_line1" placeholder="Název"
-                                class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
-                                th:field="*{address0}" required readonly />
-                            <input type="text" name="permanent_address_line2" placeholder="Ulice a číslo domu"
-                                class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
-                                th:field="*{address1}" required readonly />
-                            <input type="text" name="permanent_address_line3" placeholder="Obec"
-                                class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
-                                th:field="*{address2}" required readonly />
-                            <input type="text" name="permanent_zip" placeholder="PSČ"
-                                class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
-                                th:field="*{zip}" required readonly />
+                            <div>
+                                <input type="text" name="permanent_address_line1" placeholder="Název" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address0}" required readonly />
+                                <div th:if="${#fields.hasErrors('address0')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{address0}" class="ml-1"></span></div>
+                            </div>
+                            <div>
+                                <input type="text" name="permanent_address_line2" placeholder="Ulice a číslo domu" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address1}" required readonly />
+                                <div th:if="${#fields.hasErrors('address1')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{address1}" class="ml-1"></span></div>
+                            </div>
+                            <div>
+                                <input type="text" name="permanent_address_line3" placeholder="Obec" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address2}" required readonly />
+                                <div th:if="${#fields.hasErrors('address2')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{address2}" class="ml-1"></span></div>
+                            </div>
+                            <div>
+                                <input type="text" name="permanent_zip" placeholder="PSČ" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{zip}" required readonly />
+                                <div th:if="${#fields.hasErrors('zip')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{zip}" class="ml-1"></span></div>
+                            </div>
                         </div>
                     </fieldset>
                 </div>
@@ -76,50 +75,52 @@
                             Kontaktní adresa (vyplňte pokud se liší od adresy trvalého pobytu)
                         </legend>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input type="text" name="contact_address_line1" placeholder="Název"
-                                class="block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed"
-                                th:field="*{contactAddress0}" readonly />
-                            <input type="text" name="contact_address_line2" placeholder="Ulice a číslo domu"
-                                class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                th:field="*{contactAddress1}" />
-                            <input type="text" name="contact_address_line3" placeholder="Obec"
-                                class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                th:field="*{contactAddress2}" />
-                            <input type="text" name="contact_zip" placeholder="PSČ"
-                                class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                th:field="*{contactZip}" />
+                            <div>
+                                <input type="text" name="contact_address_line1" placeholder="Název" class="block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{contactAddress0}" readonly />
+                                <div th:if="${#fields.hasErrors('contactAddress0')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{contactAddress0}" class="ml-1"></span></div>
+                            </div>
+                            <div>
+                                <input type="text" name="contact_address_line2" placeholder="Ulice a číslo domu" class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}" />
+                                <div th:if="${#fields.hasErrors('contactAddress1')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{contactAddress1}" class="ml-1"></span></div>
+                            </div>
+                            <div>
+                                <input type="text" name="contact_address_line3" placeholder="Obec" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}" />
+                                <div th:if="${#fields.hasErrors('contactAddress2')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{contactAddress2}" class="ml-1"></span></div>
+                            </div>
+                            <div>
+                                <input type="text" name="contact_zip" placeholder="PSČ" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}" />
+                                <div th:if="${#fields.hasErrors('contactZip')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{contactZip}" class="ml-1"></span></div>
+                            </div>
                         </div>
                     </fieldset>
                 </div>
                 <div class="md:col-span-2">
                     <label for="language" class="block text-sm font-medium text-gray-700">Jazyk komunikace <span th:title="#{form.text.requiredInformation}">*</span></label>
-                    <select id="language" name="language" class="cursor-pointer mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        th:field="*{conLng}" required />
-                    <option th:value="CZE">čeština</option>
-                    <option th:value="ENG">angličtina</option>
+                    <select id="language" name="language" class="cursor-pointer mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{conLng}" required />
+                        <option th:value="CZE">čeština</option>
+                        <option th:value="ENG">angličtina</option>
                     </select>
+                    <div th:if="${#fields.hasErrors('conLng')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{conLng}" class="ml-1"></span></div>
                 </div>
             </div>
             <div class="flex items-center mt-4">
-                <input id="isCasEmployee" name="isCasEmployee" type="checkbox"
-                    class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                    th:checked="*{isCasEmployee == true}" th:field="*{isCasEmployee}" />
+                <input id="isCasEmployee" name="isCasEmployee" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{isCasEmployee == true}" th:field="*{isCasEmployee}" />
                 <label for="isCasEmployee" class="ml-2 mb-0 text-sm font-medium text-gray-700">Jsem zaměstnancem AV
                     ČR</label>
+                <div th:if="${#fields.hasErrors('isCasEmployee')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{isCasEmployee}" class="ml-1"></span></div>
             </div>
             <div id="files-control" class="flex flex-col items-center mt-4 pl-4">
-                <label for="media" class="block text-sm font-medium text-gray-700">Nahrajte občanský průkaz, pas nebo
-                    jiný doklad totožnosti <span th:title="#{form.text.requiredCasEmployeeInformation}">**</span></label>
-                <input id="files" type="file" class="filepond mb-0" name="media" multiple data-max-file-size="10MB"
-                    data-max-files="3" />
+                <label for="media" class="block text-sm font-medium text-gray-700 mb-2">Nahrajte občanský průkaz, pas nebo jiný doklad totožnosti <span th:title="#{form.text.requiredCasEmployeeInformation}">**</span></label>
+                <input id="files" type="file" class="filepond mb-0" name="media" multiple data-max-file-size="10MB" data-max-files="3" />
+                <div th:if="${#fields.hasGlobalErrors()}" th:each="err : ${#fields.globalErrors()}" class="flex items-baseline my-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span th:text="${err}" class="ml-1"></span>
+                </div>
             </div>
             <div class="flex items-center mt-4">
-                <input id="consent" name="consent" type="checkbox"
-                    class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                    th:checked="*{exportConsent == 'Y'}" th:field="*{exportConsent}" th:value="Y" required />
-                <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">Souhlasím se zpracováním
-                    osobních
-                    údajů <span th:title="#{form.text.requiredInformation}">*</span></label>
+                <input id="consent" name="consent" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{exportConsent == 'Y'}" th:field="*{exportConsent}" th:value="Y" required />
+                <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">Souhlasím se zpracováním osobních údajů <span th:title="#{form.text.requiredInformation}">*</span></label>
+                <div th:if="${#fields.hasErrors('exportConsent')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{exportConsent}" class="ml-1"></span></div>
             </div>
             <div class="text-left">
                 <p class="text-gray-500">
@@ -129,8 +130,7 @@
                     <b>**</b>&nbsp;<span th:text="#{form.text.requiredCasEmployeeInformation}">CAS employees must fill in a valid CAS e-mail address or upload an identity document (identity card / passport)</span>
                 </p>
             </div>
-            <button type="submit"
-                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">
+            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">
                 Nová registrace
             </button>
         </form>
