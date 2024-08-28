@@ -368,6 +368,7 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
     FilePond.registerPlugin(
         FilePondPluginFileValidateSize,
         FilePondPluginImageExifOrientation,
+        FilePondPluginFileValidateType,
         FilePondPluginImagePreview
     );
 
@@ -375,6 +376,9 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
 
     FilePond.setOptions({
         storeAsFile: true,
+        allowFileTypeValidation: true,
+        allowFileSizeValidation: true,
+        allowImagePreview: true,
         acceptedFileTypes: ["image/png", "image/jpeg", "application/pdf"],
         maxFileSize: "20MB",
         labelIdle: window.translations["filepond.labelIdle"],
@@ -446,13 +450,35 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
 
     document.querySelector("form").addEventListener("submit", (event) => {
         const casEmployeeChecked = document.getElementById("isCasEmployee").checked;
-        const validFiles = pond.getFiles();
+        const validFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.IDLE);
+        const nowLoadingFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.INIT || file.status === FilePond.FileStatus.LOADING);
+        const invalidFiles = pond.getFiles().filter(file => file.status !== FilePond.FileStatus.IDLE && file.status !== FilePond.FileStatus.INIT && file.status !== FilePond.FileStatus.LOADING);
 
+        if (nowLoadingFiles.length > 0) {
+            event.preventDefault();
+            showAlert(window.translations["alert.attachedFilesStillLoading"], "danger");
+            return;
+        }
+
+        if (invalidFiles.length > 0) {
+            event.preventDefault();
+            showAlert(window.translations["alert.attachedFilesInvalid"], "danger");
+            return;
+        }
+    
         if (casEmployeeChecked && validFiles.length === 0 && emailInputElm.value.trim().length === 0) {
             event.preventDefault();
             showAlert(window.translations["alert.casEmployeesFormRequirements"], "danger");
         } else {
-            loaderAfterSubmit.show();
+            const totalSize = validFiles.reduce((sum, file) => sum + file.fileSize, 0);
+            const maxTotalSize = 60 * 1024 * 1024; // 60 MB in bytes
+    
+            if (totalSize > maxTotalSize) {
+                event.preventDefault();
+                showAlert(window.translations["alert.totalFileSizeExceeded"], "danger");
+            } else {
+                loaderAfterSubmit.show();
+            }
         }
     });
 
