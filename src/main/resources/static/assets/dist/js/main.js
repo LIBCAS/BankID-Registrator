@@ -84,7 +84,7 @@ class PageLoader {
     constructor(options) {
         this.loaderElm = options.loaderElm;
         this.loaderTextElm = options.loaderTextElm;
-        this.text = options.text || translations["loader.loading"];
+        this.text = options.text || window.translations["loader.loading"];
     }
 
     init() {
@@ -329,10 +329,10 @@ if (document.querySelector(".page-new-registration-success, .page-welcome")) {
             interval: 6000,
             maxSteps: 9,
             progressTexts: [
-                translations["loader.newRegistration.validatingData"],
-                translations["loader.newRegistration.creatingIdentity"],
-                translations["loader.newRegistration.savingData"],
-                translations["loader.newRegistration.done"],
+                window.translations["loader.newRegistration.validatingData"],
+                window.translations["loader.newRegistration.creatingIdentity"],
+                window.translations["loader.newRegistration.savingData"],
+                window.translations["loader.newRegistration.done"],
             ],
         });
 
@@ -350,7 +350,7 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
     const loaderAfterSubmit = new PageLoader({
         loaderElm: document.getElementById("page-loader"),
         loaderTextElm: document.querySelector(".page-loader__text"),
-        text: translations["loader.submittingData"],
+        text: window.translations["loader.submittingData"],
     });
 
     loaderAfterSubmit.init();
@@ -376,7 +376,12 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
     FilePond.setOptions({
         storeAsFile: true,
         acceptedFileTypes: ["image/png", "image/jpeg", "application/pdf"],
-        maxFileSize: "20MB"
+        maxFileSize: "20MB",
+        labelIdle: window.translations["filepond.labelIdle"],
+        labelMaxFileSizeExceeded: window.translations["filepond.maxFileSizeExceeded"],
+        labelMaxFileSize: window.translations["filepond.maxFileSize"],
+        labelFileTypeNotAllowed: window.translations["filepond.invalidFileType"],
+        fileValidateTypeLabelExpectedTypes: window.translations["filepond.allowedFileTypes"],
     });
 
     handleCasEmployeeChange();
@@ -398,14 +403,14 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
             .then(data => {
                 if (data.result === true) {
                     rfidElm.value = "";
-                    showAlert(translations["alert.rfidAlreadyExists"], "danger");
+                    showAlert(window.translations["alert.rfidAlreadyExists"], "danger");
                 } else {
-                    showAlert(translations["alert.rfidIsAvailable"], "success");
+                    showAlert(window.translations["alert.rfidIsAvailable"], "success");
                 }
             })
             .catch(error => {
                 rfidElm.value = "";
-                showAlert(translations["alert.rfidCheckFailed"], "danger");
+                showAlert(window.translations["alert.rfidCheckFailed"], "danger");
             });
     });
 
@@ -426,14 +431,14 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
             .then(data => {
                 if (data.result === true) {
                     emailElm.value = "";
-                    showAlert(translations["alert.emailAlreadyInUse"], "danger");
+                    showAlert(window.translations["alert.emailAlreadyInUse"], "danger");
                 } else {
-                    showAlert(translations["alert.emailIsAvailable"], "success");
+                    showAlert(window.translations["alert.emailIsAvailable"], "success");
                 }
             })
             .catch(error => {
                 emailElm.value = "";
-                showAlert(translations["alert.emailCheckFailed"], "danger");
+                showAlert(window.translations["alert.emailCheckFailed"], "danger");
             });
     });
 
@@ -445,7 +450,7 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
 
         if (casEmployeeChecked && validFiles.length === 0 && emailInputElm.value.trim().length === 0) {
             event.preventDefault();
-            showAlert(translations["alert.casEmployeesFormRequirements"], "danger");
+            showAlert(window.translations["alert.casEmployeesFormRequirements"], "danger");
         } else {
             loaderAfterSubmit.show();
         }

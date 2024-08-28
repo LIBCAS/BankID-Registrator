@@ -20,7 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class PatronDTOValidator implements Validator
 {
     private static final int MAX_FILES = 3; // Maximum number of files that can be uploaded
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes - maximum file size
+    private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // Maximum file size in bytes
     private static final List<String> ALLOWED_FILE_CONTENT_TYPES = Arrays.asList("image/jpeg", "image/png", "application/pdf");
 
     @Autowired
