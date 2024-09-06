@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
+import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
@@ -428,6 +429,7 @@ public class MainController extends ControllerAbstract
         model.addAttribute("token", this.tokenService.createIdentityToken(identity));
         model.addAttribute("apiToken", this.tokenService.createApiToken(identity.getId().toString()));
         model.addAttribute("patronLdapSynced", false);
+        model.addAttribute("passwordDTO", new PatronPasswordDTO());
 
         return "new_registration_success";
     }

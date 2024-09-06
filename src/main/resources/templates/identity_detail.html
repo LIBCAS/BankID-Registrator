@@ -8,7 +8,7 @@
         <main layout:fragment="content" class="mb-10 container text-center mx-auto print:mx-2 print:my-2">
             <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900 print:hidden no-print" th:text="${pageTitle}"></h1>
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 print:hidden no-print">
-                <div class="bg-white p-6">
+                <div th:if="${patron != null}" class="bg-white p-6">
                     <div class="flex flex-col gap-5 mb-10">
                         <h2 th:text="#{message.identityData}" class="text-2xl font-bold">Identity data</h2>
                         <div class="flex justify-center">
@@ -57,7 +57,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white p-6">
+                <div th:if="${patron != null}" class="bg-white p-6">
                     <div class="flex flex-col gap-5 mb-10">
                         <h2 th:text="#{message.libraryData}" class="text-2xl font-bold">Library data</h2>
                         <div class="flex justify-center">
@@ -133,7 +133,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white p-6 hidden">
+                <div class="bg-white p-6" th:classappend="${patron != null} ? 'hidden' : ''">
                     <div class="flex flex-col gap-5 mb-10">
                         <h2 th:text="#{message.activity}" class="text-2xl font-bold">Activity</h2>
                         <div class="flex justify-center">
@@ -223,6 +223,17 @@
                             </tr>
                             <tr>
                                 <td class="border">
+                                    Kontaktní adresa
+                                </td>
+                                <td class="border text-black" contenteditable="true">
+                                    <span th:if="${patron.contactAddress1}">
+                                        <span th:if="${patron.contactAddress1}" th:text="${patron.contactAddress1} + ', '"></span>
+                                        <span th:text="${patron.contactZip}"></span> <span th:text="${patron.contactAddress2}"></span>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="border">
                                     E-mail
                                 </td>
                                 <td class="border text-black" contenteditable="true">
@@ -242,17 +253,17 @@
                             PROHLÁŠENÍ UŽIVATELE
                         </h2>
                         <table class="w-full table-auto bg-white">
-                            <tr>
-                            <td class="border text-xs font-semibold" colspan="2">Prohlašuji že:</td>
+                            <!-- <tr>
+                                <td class="border text-xs font-semibold" colspan="2">Prohlašuji že:</td>
                             </tr>
                             <tr>
                                 <td class="border text-xs">
                                     Souhlasím s poskytnutím dočasné digitální kopie svého platného občanského průkazu nebo platného povolení k pobytu vydaného Ministerstvem vnitra ČR s uvedením místa pobytu na území ČR KNAV.
                                 </td>
                                 <td class="border uppercase font-bold text-xs">Ano</td>
-                            </tr>
+                            </tr> -->
                             <tr>
-                                <td class="border text-xs font-semibold" colspan="2">Dále prohlašuji, že jsem:</td>
+                                <td class="border text-xs font-semibold" colspan="2">Prohlašuji, že jsem:</td>
                             </tr>
                             <tr>
                                 <td class="border text-xs">

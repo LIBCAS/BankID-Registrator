@@ -1,5 +1,6 @@
 package cz.cas.lib.bankid_registrator.exceptions;
 
+import cz.cas.lib.bankid_registrator.util.StringUtils;
 import java.util.Locale;
 import javax.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,7 +51,7 @@ public class GlobalExceptionHandler extends ExceptionHandlerAbstract
 
         HttpStatus status = e.getStatus();
         String statusCode = String.valueOf(status.value());
-        if (status.is4xxClientError() || status.is5xxServerError()) {
+        if ((status.is4xxClientError() || status.is5xxServerError()) && StringUtils.isEmpty(e.getErrorMessage())) {
             mav.addObject("errorCode", this.messageSource.getMessage("error." + statusCode + ".code", null, statusCode, locale));
             mav.addObject("error", this.messageSource.getMessage("error." + statusCode + ".text", null, e.getErrorMessage(), locale));
         } else {

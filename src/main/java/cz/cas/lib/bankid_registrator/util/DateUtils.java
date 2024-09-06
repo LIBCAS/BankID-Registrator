@@ -5,9 +5,13 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DateUtils
 {
+    private static final Logger logger = LoggerFactory.getLogger(DateUtils.class);
+
     /**
      * Adds a specific number of days to a given date.
      * 
