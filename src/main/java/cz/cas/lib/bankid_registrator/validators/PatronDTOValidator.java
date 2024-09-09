@@ -44,7 +44,7 @@ public class PatronDTOValidator implements Validator
      */
     public void validate(Object target, Errors errors, @Nullable String patronId, @Nullable MultipartFile[] mediaFiles) {
         PatronDTO patron = (PatronDTO) target;
-        
+
         // Validate RFID
         if (patron.getRfid() != null && !patron.getRfid().isEmpty()) {
             if (alephService.isRfidInUse(patron.getRfid(), patronId)) {
@@ -69,16 +69,24 @@ public class PatronDTOValidator implements Validator
             errors.rejectValue("conLng", "form.error.field.invalid", "Invalid language");
         }
 
-        if (patron.isCasEmployee) {
-            if (
-                (patron.getEmail() == null || patron.getEmail().isEmpty()) 
-                && (mediaFiles == null || mediaFiles.length == 0)
-            ) {
-                String defaultErrorMsg = "CAS employees must fill in a valid CAS e-mail address or attach a copy of their service card/confirmation of employment";
+        // CAS Employee validation: either email or media files must be provided
+        if (patron.getIsCasEmployee()) {
+            int mediaFilesCount = 0;
+            if (mediaFiles != null) {
+                mediaFilesCount = (int) Arrays.stream(mediaFiles).filter(file -> file != null && !file.isEmpty()).count();
+            }
+
+            boolean hasEmail = patron.getEmail() != null && !patron.getEmail().isEmpty();
+            boolean hasMediaFiles = mediaFiles != null && mediaFilesCount > 0;
+
+            if (hasMediaFiles) {
+                validateMediaFiles(mediaFiles, errors);
+            }
+
+            if (!hasEmail && !hasMediaFiles) {
+                String defaultErrorMsg = "CAS employees must provide either a valid email address or upload media files.";
                 errors.rejectValue("email", "form.error.email.requiredOfCasEmployees", defaultErrorMsg);
                 errors.reject("form.error.media.requiredOfCasEmployees", defaultErrorMsg);
-            } else if (mediaFiles != null) {
-                this.validateMediaFiles(mediaFiles, errors);
             }
         }
     }

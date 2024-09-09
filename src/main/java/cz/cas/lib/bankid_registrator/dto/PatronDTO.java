@@ -50,9 +50,9 @@ public class PatronDTO
     @Size(max = 15, message = "{form.error.field.sizeExceeded}")
     public String contactZip;         // z304-zip
 
-    @Pattern(regexp = "^[+]?[0-9]{1,3}?[-.\\s]?[(]?[0-9]{1,4}?[)]?[-.\\s]?[0-9]{1,4}[-.\\s]?[0-9]{1,9}$", message = "{form.error.field.invalid}")
+    @Pattern(regexp = "^$|^[+]?[0-9]{1,3}?[-.\\s]?[(]?[0-9]{1,4}?[)]?[-.\\s]?[0-9]{1,4}[-.\\s]?[0-9]{1,9}$", message = "{form.error.field.invalid}")
     @Size(max = 20, message = "{form.error.field.sizeExceeded}")
-    public String smsNumber;         // z304-sms-number
+    public String smsNumber; // z304-sms-number
 
     public String barcode;         // z308-key-data
 
