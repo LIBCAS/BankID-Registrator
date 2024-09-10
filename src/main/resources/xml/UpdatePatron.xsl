@@ -387,7 +387,69 @@
     </xsl:template>
     <!-- <<< Z304 - sequence 02 <<< -->
 
-    <!-- <<< Z308 - RFID <<< -->
+    <!-- <<< Z308 - RFID - D <<< -->
+    <xsl:param name="is-z308-key-type-03-d-record-action" select="'true'"/>
+    <xsl:param name="z308-key-type-03-d-record-action" select="'D'"/>
+    <xsl:param name="is-z308-key-type-03-d-key-type" select="'true'"/>
+    <xsl:param name="z308-key-type-03-d-key-type" select="'03'"/>
+    <xsl:param name="is-z308-key-type-03-d-key-data" select="'true'"/>
+    <xsl:param name="z308-key-type-03-d-key-data" select="''"/>
+    <xsl:param name="is-z308-key-type-03-d-user-library" select="'true'"/>
+    <xsl:param name="z308-key-type-03-d-user-library" select="'KNA50'"/>
+    <xsl:param name="is-z308-key-type-03-d-verification-type" select="'true'"/>
+    <xsl:param name="z308-key-type-03-d-verification-type" select="'00'"/>
+    <xsl:param name="is-z308-key-type-03-d-id" select="'true'"/>
+    <xsl:param name="z308-key-type-03-d-id" select="''"/>
+    <xsl:param name="is-z308-key-type-03-d-status" select="'true'"/>
+    <xsl:param name="z308-key-type-03-d-status" select="'AC'"/>
+    <xsl:param name="is-z308-key-type-03-d-encryption" select="'true'"/>
+    <xsl:param name="z308-key-type-03-d-encryption" select="'N'"/>
+
+    <xsl:template name="z308-key-type-03-d">
+        <xsl:if test="starts-with($is-z308-key-type-03-d-record-action, 'true')">
+            <xsl:element name="record-action">
+                <xsl:copy-of select="$z308-key-type-03-d-record-action"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-03-d-key-type, 'true')">
+            <xsl:element name="z308-key-type">
+                <xsl:copy-of select="$z308-key-type-03-d-key-type"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-03-d-key-data, 'true')">
+            <xsl:element name="z308-key-data">
+                <xsl:copy-of select="$z308-key-type-03-d-key-data"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-03-d-user-library, 'true')">
+            <xsl:element name="z308-user-library">
+                <xsl:copy-of select="$z308-key-type-03-d-user-library"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-03-d-verification-type, 'true')">
+            <xsl:element name="z308-verification-type">
+                <xsl:copy-of select="$z308-key-type-03-d-verification-type"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-03-d-id, 'true')">
+            <xsl:element name="z308-id">
+                <xsl:copy-of select="$z308-key-type-03-d-id"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-03-d-status, 'true')">
+            <xsl:element name="z308-status">
+                <xsl:copy-of select="$z308-key-type-03-d-status"/>
+            </xsl:element>
+        </xsl:if>
+        <xsl:if test="starts-with($is-z308-key-type-03-d-encryption, 'true')">
+            <xsl:element name="z308-encryption">
+                <xsl:copy-of select="$z308-key-type-03-d-encryption"/>
+            </xsl:element>
+        </xsl:if>
+    </xsl:template>
+    <!-- <<< Z308 - RFID - D <<< -->
+
+    <!-- <<< Z308 - RFID - A <<< -->
     <xsl:param name="is-z308-key-type-03-record-action" select="'true'"/>
     <xsl:param name="z308-key-type-03-record-action" select="'A'"/>
     <xsl:param name="is-z308-key-type-03-key-type" select="'true'"/>
@@ -447,7 +509,7 @@
             </xsl:element>
         </xsl:if>
     </xsl:template>
-    <!-- <<< Z308 - RFID <<< -->
+    <!-- <<< Z308 - RFID - A <<< -->
 
     <!-- >>> p-file-20 >>> -->
     <!-- Z303  -->
@@ -456,7 +518,9 @@
     <xsl:param name="is-z304-seq01" select="'true'"/>
     <!-- Z304 - seq02 -->
     <xsl:param name="is-z304-seq02" select="'false'"/>
-    <!-- Z308 - RFID -->
+    <!-- Z308 - RFID - D -->
+    <xsl:param name="is-z308-key-type-03-d" select="'false'"/>
+    <!-- Z308 - RFID - A -->
     <xsl:param name="is-z308-key-type-03" select="'false'"/>
 
     <xsl:template name="p-file-20">
@@ -474,6 +538,11 @@
             <xsl:if test="starts-with($is-z304-seq02, 'true')">
                 <xsl:element name="z304">
                     <xsl:call-template name="z304-seq02"/>
+                </xsl:element>
+            </xsl:if>
+            <xsl:if test="starts-with($is-z308-key-type-03-d, 'true')">
+                <xsl:element name="z308">
+                    <xsl:call-template name="z308-key-type-03-d"/>
                 </xsl:element>
             </xsl:if>
             <xsl:if test="starts-with($is-z308-key-type-03, 'true')">

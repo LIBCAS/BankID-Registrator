@@ -1,7 +1,6 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.ApiConfig;
-import cz.cas.lib.bankid_registrator.exceptions.PatronNotProcessableException;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
@@ -126,7 +125,7 @@ public class ApiController extends ApiControllerAbstract
         return this.mapyCzService.suggestAddress(query);
     }
 
-/**
+    /**
      * Check if an account with the given email exists in the LDAP
      * @param username Aleph patron barcode
      * @param token

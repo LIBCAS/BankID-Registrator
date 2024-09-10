@@ -254,7 +254,7 @@ public class AlephService extends AlephServiceAbstract
         if (!patronIsCasEmployee) {
             String actionDescription = "Registrace";
 
-            Map<String, Object> newItem = this.newItem(patron);
+            Map<String, Object> newItem = this.newItem(patron, PatronStatus.STATUS_16.getRegistrationItemStatusId());
             if (newItem.containsKey("error")) {
                 result.put("error", newItem.get("error"));
                 return result;
@@ -375,7 +375,7 @@ public class AlephService extends AlephServiceAbstract
         if (!patronIsCasEmployee) {
             String actionDescription = "Obnovení registrace";
 
-            Map<String, Object> newItem = this.newItem(patron);
+            Map<String, Object> newItem = this.newItem(patron, PatronStatus.STATUS_16.getRenewalItemStatusId());
             if (newItem.containsKey("error")) {
                 result.put("error", newItem.get("error"));
                 return result;
@@ -1006,6 +1006,7 @@ logger.info("AAA doHttpRequest method: {}", method);
             } else {
                 xmlString = stringWriter.getBuffer().toString();
             }
+            getLogger().info("createPatronXML: {}", xmlString);
             result.put("xml", xmlString);
         } catch (TransformerException ex) {
             result.put("error", ex.getMessage());
@@ -1088,6 +1089,13 @@ logger.info("AAA doHttpRequest method: {}", method);
             }
 
             // z308 - RFID
+            // If the new RFID is provided and the old RFID was also provided, delete the old RFID ...
+            if (patron.getRfid().equals("") == Boolean.FALSE && alephPatron.getRfid().equals("") == Boolean.FALSE) {
+                transformer.setParameter("is-z308-key-type-03-d", Boolean.TRUE);
+                transformer.setParameter("z308-key-type-03-d-key-data", alephPatron.getRfid());
+                transformer.setParameter("z308-key-type-03-d-id", patronId);
+            }
+            // ... and create the new RFID
             if (patron.getRfid().equals("") == Boolean.FALSE) {
                 transformer.setParameter("is-z308-key-type-03", Boolean.TRUE);
                 transformer.setParameter("z308-key-type-03-key-data", patron.getRfid());
@@ -1102,6 +1110,7 @@ logger.info("AAA doHttpRequest method: {}", method);
             } else {
                 xmlString = stringWriter.getBuffer().toString();
             }
+            getLogger().info("updatePatronXML: {}", xmlString);
             result.put("xml", xmlString);
         } catch (TransformerException ex) {
             result.put("error", ex.getMessage());
@@ -1389,9 +1398,10 @@ logger.info("AAA doHttpRequest method: {}", method);
     /**
      * Initializes an item based on the patron's data
      * @param patron
+     * @param itemStatus
      * @return Map<String, Object>
      */
-    public Map<String, Object> newItem(Patron patron) {
+    public Map<String, Object> newItem(Patron patron, String itemStatus) {
         Assert.notNull(patron, "\"patron\" is required");
 
         Map<String, Object> result = new HashMap<>();
@@ -1401,7 +1411,6 @@ logger.info("AAA doHttpRequest method: {}", method);
         String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
         String itemDocNumber = this.alephServiceConfig.getSysno();
         String itemBarcode = this.alephServiceConfig.getItemBarcodePrefix() + itemDocNumber + today;
-        String itemStatus = PatronStatus.STATUS_16.getRegistrationItemStatusId();
 
         item.setDocNumber(itemDocNumber);
         item.setBarcode(itemBarcode);
