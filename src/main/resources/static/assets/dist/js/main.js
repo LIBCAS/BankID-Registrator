@@ -101,6 +101,19 @@ class PageLoader {
 }
 
 /**
+ * Toggle the visibility of a password input field
+ * @param string fieldId - The ID of the password field
+ * @param Object toggler - The toggler element
+ * @returns void
+ */
+function togglePasswordVisibility(fieldId, toggler) {
+    const passwordField = document.getElementById(fieldId);
+    const isPassword = passwordField.type === 'password';
+    passwordField.type = isPassword ? 'text' : 'password';
+    toggler.innerHTML = isPassword ? '<i class="fa fa-eye-slash" aria-hidden="true"></i>' : '<i class="fa fa-eye" aria-hidden="true"></i>';
+}
+
+/**
  * Get the CSRF token and header from the form.
  * @returns {Object} csrfToken and csrfHeader
  */
@@ -619,19 +632,40 @@ if (document.querySelector(".page-membership-renewal")) {
 
 // FORM: SET/RESET IDENTITY PASSWORD
 if (document.getElementById("form-identity-password")) {
-    const formElm = document.getElementById("form-identity-password");
-    const passwordElm = document.getElementById("newPassword");
-    const passwordConfirmElm = document.getElementById("repeatNewPassword");
 
-    formElm.addEventListener("submit", (ev) => {
-        const password = passwordElm.value;
-        const passwordConfirm = passwordConfirmElm.value;
+    // Password regex validation
+    const isValidPassword = (password) => {
+        const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d\W]{6,13}$/;
+        return regex.test(password);
+    };
 
-        if (password !== passwordConfirm) {
-            alert("The passwords do not match.");
-            ev.preventDefault();
+    // Password validation
+    const pswFormElm = document.getElementById('form-identity-password');
+    pswFormElm.addEventListener('submit', function(event) {
+        const password = document.getElementById('newPassword').value;
+        const repeatPassword = document.getElementById('repeatNewPassword').value;
+        
+        if (!isValidPassword(password)) {
+            event.preventDefault();
+            alert(window.translations["form.patronPassword.error.invalid"]);
+            return;
+        }
+        
+        if (password !== repeatPassword) {
+            event.preventDefault();
+            alert(window.translations["form.patronPassword.error.notMatching"]);
+            return;
         }
     });
+
+    // Add event listeners to password toggler buttons
+    document.querySelectorAll('.password-toggler').forEach(button => {
+        button.addEventListener('click', function() {
+            const fieldId = this.getAttribute('data-field-id');
+            togglePasswordVisibility(fieldId, this);
+        });
+    });
+
 }
 
 // COMMON
