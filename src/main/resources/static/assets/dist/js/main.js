@@ -66,7 +66,7 @@ class ProgressLoader {
         setTimeout(() => {
             this.loaderElm.classList.add("hidden");
             this.mainElm.classList.remove("hidden");
-        }, 4000);
+        }, 2000);
     }
 
     start() {
@@ -337,10 +337,10 @@ if (document.querySelector(".page-new-registration-success, .page-welcome")) {
             progressTextElm: document.querySelector("#progress-loader .progress-loader__text"),
             progressCircle: document.querySelector("#progress-loader .progress-loader__circle"),
             progressNumber: document.querySelector("#progress-loader .progress-loader__circle-number"),
-            progressStep: 10,
+            progressStep: 12,
             checkFunction: checkLdapAccount,
-            interval: 6000,
-            maxSteps: 9,
+            interval: 5000,
+            maxSteps: 11,
             progressTexts: [
                 window.translations["loader.newRegistration.validatingData"],
                 window.translations["loader.newRegistration.creatingIdentity"],
