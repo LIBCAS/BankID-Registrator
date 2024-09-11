@@ -64,7 +64,15 @@ public class PatronDTO
 
     public PatronBoolean exportConsent = PatronBoolean.N;         // z303-export-consent
 
-    @NotNull(message = "{form.error.field.required}")
+    @AssertTrue(message = "{form.error.field.required}")
+    public boolean declaration1 = false;    // Declaration of library rules acceptance
+
+    @AssertTrue(message = "{form.error.field.required}")
+    public boolean declaration2 = false;    // Declaration of truthfulness of data
+
+    @AssertTrue(message = "{form.error.field.required}")
+    public boolean declaration3 = false;    // Declaration of data processing consent
+
     public boolean isCasEmployee = false;         // is CAS employee
 
     @Size(max = 20, message = "{form.error.field.sizeExceeded}")
@@ -80,6 +88,25 @@ public class PatronDTO
         this.isCasEmployee = isCasEmployee;
     }
 
+    public void setDeclaration1(boolean declaration1) {
+        this.declaration1 = declaration1;
+        updateExportConsent();
+    }
+
+    public void setDeclaration2(boolean declaration2) {
+        this.declaration2 = declaration2;
+        updateExportConsent();
+    }
+
+    public void setDeclaration3(boolean declaration3) {
+        this.declaration3 = declaration3;
+        updateExportConsent();
+    }
+
+    private void updateExportConsent() {
+        this.exportConsent = (this.declaration1 && this.declaration2 && this.declaration3) ? PatronBoolean.Y : PatronBoolean.N;
+    }
+
     public void restoreDefaults(PatronDTO defaultPatron) {
         this.setFirstname(defaultPatron.getFirstname());
         this.setLastname(defaultPatron.getLastname());
@@ -90,7 +117,6 @@ public class PatronDTO
         this.setAddress2(defaultPatron.getAddress2());
         this.setZip(defaultPatron.getZip());
         this.setContactAddress0(defaultPatron.getContactAddress0());
-        this.setExportConsent(defaultPatron.getExportConsent());
     }
 
     public String toJson() throws JsonProcessingException {
