@@ -114,7 +114,7 @@ public class Patron {
     public boolean isCasEmployee = false;         // is CAS employee
 
     @Column
-    public String rfid;
+    public String rfid = "";         // RFID
 
     @Column(name="expiry_date", nullable = true)
     public String expiryDate;      // z305-expiry-date, format dd/mm/yyyy

@@ -697,7 +697,7 @@
     <!-- Z308 - barcode -->
     <xsl:param name="is-z308-key-type-01" select="'true'"/>
     <!-- Z308 - BankID sub -->
-    <xsl:param name="is-z308-key-type-07" select="'true'"/>
+    <xsl:param name="is-z308-key-type-07" select="'false'"/>
     <!-- Z308 - RFID -->
     <xsl:param name="is-z308-key-type-03" select="'false'"/>
 

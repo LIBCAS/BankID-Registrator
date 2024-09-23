@@ -159,12 +159,19 @@ public class MainController extends ControllerAbstract
      * @param session
      * @return 
      */
-    @RequestMapping(value="/callback", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String CallbackEntry(@RequestParam("code") String code, Model model, Locale locale, HttpSession session)
-    {
-        model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
+    @RequestMapping(value = "/callback", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String CallbackEntry(
+        @RequestParam(value = "code", required = false) String code, 
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        if (code == null) {
+            model.addAttribute("error", this.messageSource.getMessage("error.session.expired", null, locale));
+            return "error";
+        }
 
-        Assert.notNull(code, this.messageSource.getMessage("error.session.expired", null, locale));
+        model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
 
         if (!accessTokenContainer.getCodeTokenMap().containsKey(code)) {
             accessTokenContainer.setAccessToken(code, mainService.getTokenExchange(code).getAccessToken());
@@ -203,7 +210,7 @@ public class MainController extends ControllerAbstract
         this.identityActivityService.logBankIdVerificationSuccess(identity);
 
         // Mapping BankID user data to a Patron entity (so-called "BankId patron")
-        Map<String, Object> bankIdPatronCreation = this.alephService.newPatronTest(userInfo, userProfile);
+        Map<String, Object> bankIdPatronCreation = this.alephService.newPatron(userInfo, userProfile);
 
         if (bankIdPatronCreation.containsKey("error")) {
             model.addAttribute("error", "Registrace byla zamítnuta: " + (String) bankIdPatronCreation.get("error"));
@@ -234,14 +241,25 @@ public class MainController extends ControllerAbstract
 
             return "callback_registration_new";
         } else {
+            String patronAlephId = bankIdPatron.getPatronId();
+
+            if (patronAlephId == null) {
+                getLogger().error("Patron exists in Aleph but has no Aleph ID");
+                model.addAttribute("error", "Registrace byla zamítnuta: Chyba identifikace.");
+                return "error";
+            } else {
+                identity.setAlephId(patronAlephId);
+                this.identityService.save(identity);
+            }
+
             this.identityActivityService.logMembershipRenewalInitiation(identity);
 
             // Mapping Aleph patron data to a Patron entity (so-called "Aleph patron")
-            Map<String, Object> alephPatronCreation = this.alephService.getAlephPatron(identity.getAlephId(), true);
+            Map<String, Object> alephPatronCreation = this.alephService.getAlephPatron(patronAlephId, true);
 
             if (alephPatronCreation.containsKey("error")) {
                 getLogger().error("Error getting patron from Aleph: {}", alephPatronCreation.get("error"));
-                model.addAttribute("error", "Registrace byla zamítnuta: " + (String) alephPatronCreation.get("error"));
+                model.addAttribute("error", "Registrace byla zamítnuta: Chyba identifikace.");
                 return "error";
             }
 
@@ -254,8 +272,8 @@ public class MainController extends ControllerAbstract
             String alephPatronExpiryDate = alephPatron.getExpiryDate();
             boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
             boolean membershipExpiresToday = DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy");
-            boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
-            // boolean expiryDateIn1MonthOrLess = true;
+            // boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
+            boolean expiryDateIn1MonthOrLess = true;
 
             // Merging BankId patron and Aleph patron into a Patron with the latest data (so-called "the latest patron")
             Patron latestPatron = PatronService.mergePatrons(bankIdPatron, alephPatron);
@@ -464,6 +482,11 @@ public class MainController extends ControllerAbstract
 
         if (bindingResult.hasErrors()) {
             PatronDTO beforeEditedPatron = (PatronDTO) session.getAttribute("latestPatronDTO");
+
+            if (beforeEditedPatron == null) {
+                return "error_session_expired";
+            }
+
             editedPatron.restoreDefaults(beforeEditedPatron);
 
             model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));

@@ -49,7 +49,8 @@ public class MainServiceTest extends MainService
                 userInfo.getUpdated_at(),
                 this.generateSubTest(accessToken),
                 userInfo.getTxn(),
-                userInfo.getVerified_claims()
+                userInfo.getVerified_claims(),
+                ""
             );
         }
         return userInfo;

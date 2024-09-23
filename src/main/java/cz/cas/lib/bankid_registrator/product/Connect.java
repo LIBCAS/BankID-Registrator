@@ -30,6 +30,7 @@ public class Connect extends ConnectClaims implements IProduct {
     private final String sub;
     private final String txn;
     private final ConnectVerifiedClaims verified_claims;
+    private final String error_description;
 
     /**
      * 
@@ -51,6 +52,7 @@ public class Connect extends ConnectClaims implements IProduct {
      * @param sub
      * @param txn 
      * @param verified_claims 
+     * @param error_description
      */
     @JsonCreator
     public Connect(
@@ -71,7 +73,8 @@ public class Connect extends ConnectClaims implements IProduct {
             @JsonProperty("updated_at") long updated_at,
             @JsonProperty("sub") String sub,
             @JsonProperty("txn") String txn,
-            @JsonProperty("verified_claims") ConnectVerifiedClaims verified_claims) {
+            @JsonProperty("verified_claims") ConnectVerifiedClaims verified_claims,
+            @JsonProperty("error_description") String error_description) {
         super(
             name,
             given_name,
@@ -92,6 +95,7 @@ public class Connect extends ConnectClaims implements IProduct {
         this.sub = sub;
         this.txn = txn;
         this.verified_claims = verified_claims;
+        this.error_description = error_description;
     }
 
     @Override
@@ -102,4 +106,5 @@ public class Connect extends ConnectClaims implements IProduct {
 
     public ConnectVerifiedClaims getVerified_claims() { return this.verified_claims; }
 
+    public String getError_description() { return this.error_description; }
 }

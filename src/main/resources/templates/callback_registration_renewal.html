@@ -218,16 +218,45 @@
                     </label>
                 </div>
                 <div id="files-control" class="flex flex-col items-center mt-4 pl-4">
-                    <label for="media" class="mb-3 block text-sm font-medium text-gray-700">
-                        <span th:text="#{message.uploadIdFiles}">Upload your ID card, passport or other proof of identity (PDF, JPG, JPEG or PNG formats with a maximum size of 20 MB)</span> <span th:title="#{form.text.requiredCasEmployeeInformation}">**</span>
+                    <label for="media" class="block font-medium text-gray-700">
+                        <span th:text="#{message.uploadIdFiles}">Upload your ID card, passport or other proof of identity</span>&nbsp;
+                        <span th:title="#{form.text.requiredCasEmployeeInformation}">**</span>
+                        <div class="text-sm" th:text="#{message.uploadIdFilesFormat}">PDF, JPG, JPEG or PNG formats with a maximum size of 20 MB</div>
                     </label>
                     <input id="files" type="file" class="filepond mb-0" name="media" multiple data-max-file-size="20MB" data-max-files="3" />
                 </div>
-                <div class="flex items-center mt-4">
-                    <input id="consent" name="consent" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{exportConsent == 'Y'}" th:field="*{exportConsent}" th:value="Y" required />
-                    <label for="consent" class="ml-2 mb-0 text-sm font-medium text-gray-700">
-                        <span th:text="#{message.exportConsent}">I agree with the processing of personal data</span> <span th:title="#{form.text.requiredInformation}">*</span>
-                    </label>
+                <div class="flex flex-col mt-4 gap-2 text-left">
+                    <div th:utext="#{form.newRegistration.declaration0}"></div>
+                    <div class="flex gap-3">
+                        <input id="declaration1" name="declaration1" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration1 == true}" th:field="*{declaration1}" th:value="Y" required />
+                        <div>
+                            <label for="declaration1" class="mb-0 font-medium">
+                                <span th:utext="#{form.newRegistration.declaration1}"></span>    
+                                <span th:title="#{form.text.requiredInformation}">*</span>
+                            </label>
+                            <div th:if="${#fields.hasErrors('declaration1')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{declaration1}" class="ml-1"></span></div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <input id="declaration2" name="declaration2" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration2 == true}" th:field="*{declaration2}" th:value="Y" required />
+                        <div>
+                            <label for="declaration2" class="mb-0 font-medium">
+                                <span th:utext="#{form.newRegistration.declaration2}"></span>    
+                                <span th:title="#{form.text.requiredInformation}">*</span>
+                            </label>
+                            <div th:if="${#fields.hasErrors('declaration2')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{declaration2}" class="ml-1"></span></div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <input id="declaration3" name="declaration3" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration3 == true}" th:field="*{declaration3}" th:value="Y" required />
+                        <div>
+                            <label for="declaration3" class="mb-0 font-medium">
+                                <span th:utext="#{form.newRegistration.declaration3}"></span>    
+                                <span th:title="#{form.text.requiredInformation}">*</span>
+                            </label>
+                            <div th:if="${#fields.hasErrors('declaration3')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{declaration3}" class="ml-1"></span></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="text-left">
                     <p class="text-gray-500">

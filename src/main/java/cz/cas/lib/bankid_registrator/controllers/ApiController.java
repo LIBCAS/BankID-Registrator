@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
@@ -25,6 +26,7 @@ import reactor.core.publisher.Mono;
  * API controller with endpoints for front-end
  */
 @RestController
+@RequestMapping("/api")
 public class ApiController extends ApiControllerAbstract
 {
     private final PatronService patronService;
@@ -62,7 +64,7 @@ public class ApiController extends ApiControllerAbstract
      * @param patronSysId - Patron system ID
      * @return ResponseEntity<Map<String, Object>>
      */
-    @PostMapping("/api/check-rfid")
+    @PostMapping("/check-rfid")
     public ResponseEntity<Map<String, Object>> checkRfid(
         @RequestParam @NotBlank String rfid, 
         @RequestParam @NotBlank String patronSysId
@@ -91,7 +93,7 @@ public class ApiController extends ApiControllerAbstract
      * @param patronSysId - Patron system ID
      * @return ResponseEntity<Map<String, Object>>
      */
-    @PostMapping("/api/check-email")
+    @PostMapping("/check-email")
     public ResponseEntity<Map<String, Object>> checkEmail(
         @RequestParam @NotBlank String email, 
         @RequestParam @NotBlank String patronSysId
@@ -119,7 +121,7 @@ public class ApiController extends ApiControllerAbstract
      * @param query
      * @return
      */
-    @GetMapping("/api/suggest-address/{query}")
+    @GetMapping("/suggest-address/{query}")
     public Mono<String> suggestAddress(@PathVariable String query)
     {
         return this.mapyCzService.suggestAddress(query);
@@ -131,7 +133,7 @@ public class ApiController extends ApiControllerAbstract
      * @param token
      * @return
      */
-    @GetMapping("/api/check-ldap-account/{username}")
+    @GetMapping("/check-ldap-account/{username}")
     public ResponseEntity<Map<String, Object>> checkLdapAccount(
         @PathVariable String username,
         @RequestParam("token") String token
@@ -167,7 +169,7 @@ public class ApiController extends ApiControllerAbstract
      * @param session
      * @return
      */
-    @GetMapping("/api/reset-identities")
+    @GetMapping("/reset-identities")
     public ResponseEntity<Map<String, Object>> resetIdentities(HttpSession session)
     {
         Map<String, Object> result = new HashMap<>();

@@ -994,9 +994,9 @@ logger.info("AAA doHttpRequest method: {}", method);
             }
 
             // z308 - BankID
-            transformer.setParameter("z308-key-type-07-key-data", patron.getBankIdSub());
-            transformer.setParameter("z308-key-type-07-verification", patronPassword);
-            transformer.setParameter("z308-key-type-07-id", patronId);
+            // transformer.setParameter("z308-key-type-07-key-data", patron.getBankIdSub());
+            // transformer.setParameter("z308-key-type-07-verification", patronPassword);
+            // transformer.setParameter("z308-key-type-07-id", patronId);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
@@ -1258,8 +1258,14 @@ logger.info("AAA doHttpRequest method: {}", method);
         patron.setBankIdSub(userInfo.getSub());
 
         // New registration or registration renewal
-        boolean isNewAlephPatron = this.isNewAlephPatron(patron);
-        patron.isNew = isNewAlephPatron;
+        Optional<String> existingAlephPatronIdOpt = this.getAlephPatronIdByNameAndBirth(patron);
+        if (existingAlephPatronIdOpt.isPresent()) {
+            String existingAlephPatronId = existingAlephPatronIdOpt.get();
+            patron.setPatronId(existingAlephPatronId);
+            patron.isNew = false;
+        } else {
+            patron.isNew = true;
+        }
 
         result.put("patron", patron);
 
@@ -1818,7 +1824,7 @@ logger.info("AAA doHttpRequest method: {}", method);
         patron.setBankIdSub(userInfo.getSub());
 
         // New registration or registration renewal
-        boolean isNewAlephPatron = this.isNewAlephPatron(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
+        boolean isNewAlephPatron = this.isNewAlephPatronTest(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
         patron.isNew = isNewAlephPatron;
         patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A); logger.info("patron.getAction(): {}", patron.getAction());
 
@@ -1881,13 +1887,32 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
+     * Retrieves the Aleph patron's ID based on name and birth date.
+     * @param patron Patron's data
+     * @return An Optional containing the Aleph patron's ID if found, or empty if not.
+     */
+    public Optional<String> getAlephPatronIdByNameAndBirth(Patron patron) {
+        return oracleRepository.getPatronIdByNameAndBirth(patron.getName(), patron.getBirthDate());
+    }
+
+    /**
+     * Checks if a patron exists in Aleph based on the name and birth date.
+     * @param patron Patron's data
+     * @return true if patron exists in Aleph, false otherwise
+     */
+    public boolean isNewAlephPatron(Patron patron) {
+        boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
+        return isNewInOracle;
+    }
+
+    /**
      * Checks if the patron was already verified via Bank ID 
      * and if the patron who is currently being verified has the same birthdate as the one in the Aleph
      * @param Patron Patron's data
      * @param birthDate Patron's birthdate
      * @return true if patron exists in Aleph, false otherwise
      */
-    public boolean isNewAlephPatron(Patron patron) {
+    public boolean isNewAlephPatronTest(Patron patron) {
         // Checking if a patron already exists in the Aleph Oracle DB (based on the name and birthdate) or if the patron was already verified via Bank ID:
         // boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
         // boolean isVerifiedAndAlephLinked = identityService.findAlephLinkedByBankId(patron.getBankIdSub()).isPresent();

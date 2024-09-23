@@ -3,8 +3,10 @@
  */
 package cz.cas.lib.bankid_registrator.dao.oracle;
 
+import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import org.springframework.stereotype.Repository;
@@ -16,6 +18,34 @@ public class OracleRepository
 {
     @PersistenceContext(unitName = "oracleEntityManager")
     private EntityManager entityManager;
+
+    /**
+     * Search for an Aleph patron based on the given name and birth date.
+     * @param name The patron's name.
+     * @param birthDate The patron's birth date.
+     * @return An Optional containing the Aleph patron's ID if found, or empty if not.
+     */
+    public Optional<String> getPatronIdByNameAndBirth(String name, String birthDate) {
+        String sql = "SELECT A.Z303_REC_KEY AS patron_id " +
+                    "FROM KNA50.Z303 A, KNA50.Z305 B, KNA50.Z308 C " +
+                    "WHERE A.Z303_REC_KEY = SUBSTR(B.Z305_REC_KEY, 1, 12) " +
+                    "AND A.Z303_REC_KEY = C.Z308_ID " +
+                    "AND A.Z303_BIRTH_DATE = :birthDate " +
+                    "AND A.Z303_NAME = :name " +
+                    "AND (C.Z308_REC_KEY LIKE '00KNAV%' OR C.Z308_REC_KEY LIKE '00KNBD%') " +
+                    "AND ROWNUM <= 1";
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("name", name);
+        query.setParameter("birthDate", birthDate);
+
+        try {
+            String patronId = (String) query.getSingleResult();
+            return Optional.of(patronId);
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
 
      /**
      * Gets the number of matches with the given name and birth date.
