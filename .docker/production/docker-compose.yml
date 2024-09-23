@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: .docker/production/Dockerfile
+    env_file: .env
+    environment:
+      LOG_PATH: /app/logs
+      STORAGE_PATH: /app/storage
+      DATASOURCE_JDBC_URL: jdbc:mariadb://${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DATABASE}
+      DATASOURCE_USERNAME: ${MYSQL_USERNAME}
+      DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      ORACLE_DATASOURCE_JDBC_URL: jdbc:oracle:thin:@//${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_SERVICE_NAME}
+      ORACLE_DATASOURCE_USERNAME: ${ORACLE_USERNAME}
+      ORACLE_DATASOURCE_PASSWORD: ${ORACLE_PASSWORD}
+      BANKID_CLIENT_ID: ${BANKID_CLIENT_ID}
+      BANKID_CLIENT_SECRET: ${BANKID_CLIENT_SECRET}
+      BANKID_REDIRECT_URI: ${BANKID_REDIRECT_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      ALEPH_SERVICE_HOST: ${ALEPH_SERVICE_HOST}
+      ALEPH_SERVICE_PORT: ${ALEPH_SERVICE_PORT}
+      ALEPH_SERVICE_REST_API_URI: ${ALEPH_SERVICE_REST_API_URI}
+      ALEPH_SERVICE_WWWUSER: ${ALEPH_SERVICE_WWWUSER}
+      ALEPH_SERVICE_WWWPASSWD: ${ALEPH_SERVICE_WWWPASSWD}
+      LDAP_SERVICE_URL: ${LDAP_SERVICE_URL}
+      LDAP_SERVICE_BASE_DN: ${LDAP_SERVICE_BASE_DN}
+      LDAP_SERVICE_USER_DN: ${LDAP_SERVICE_USER_DN}
+      LDAP_SERVICE_PASSWORD: ${LDAP_SERVICE_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS}
+      API_MAPYCZ_KEY: ${API_MAPYCZ_KEY}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      TZ: Europe/Prague
+    volumes:
+      - ${APP_WEBROOT}/logs:/app/logs
+      - ${APP_WEBROOT}/storage:/app/storage
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+    working_dir: /app
+    ports:
+      - ${APP_PORT_HOST}:${APP_PORT}
+    networks:
+      - bankid-network
+
+networks:
+  bankid-network:
+    driver: bridge
