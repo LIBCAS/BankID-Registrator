@@ -278,6 +278,7 @@ public class AlephService extends AlephServiceAbstract
             // Place a hold request
             Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong, actionDescription);
             if (holdRequestPlacement.containsKey("error")) {
+                this.deleteItem(itemId, itemSequence, itemBarcode); // Delete the created item
                 result.put("error", holdRequestPlacement.get("error"));
                 return result;
             }
@@ -285,6 +286,7 @@ public class AlephService extends AlephServiceAbstract
             // Cancel the hold request
             Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
             if (holdRequestCancellation.containsKey("error")) {
+                this.deleteItem(itemId, itemSequence, itemBarcode); // Delete the created item
                 result.put("error", holdRequestCancellation.get("error"));
                 return result;
             }
@@ -399,6 +401,7 @@ public class AlephService extends AlephServiceAbstract
             // Place a hold request
             Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong, actionDescription);
             if (holdRequestPlacement.containsKey("error")) {
+                this.deleteItem(itemId, itemSequence, itemBarcode); // Delete the created item
                 result.put("error", holdRequestPlacement.get("error"));
                 return result;
             }
@@ -406,6 +409,7 @@ public class AlephService extends AlephServiceAbstract
             // Cancel the hold request
             Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
             if (holdRequestCancellation.containsKey("error")) {
+                this.deleteItem(itemId, itemSequence, itemBarcode); // Delete the created item
                 result.put("error", holdRequestCancellation.get("error"));
                 return result;
             }
