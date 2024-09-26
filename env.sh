@@ -20,7 +20,10 @@ fi
 case $ACTION in
     up)
         echo "Starting the containers for the $ENVIRONMENT environment..."
-        if [[ "$ENVIRONMENT" == "testing" || "$ENVIRONMENT" == "production" ]]; then
+        if [[ "$ENVIRONMENT" == "production" ]]; then
+            docker compose -f $DOCKER_COMPOSE_FILE build --no-cache
+            docker compose -f $DOCKER_COMPOSE_FILE up -d --force-recreate
+        elif [[ "$ENVIRONMENT" == "testing" ]]; then
             docker compose -f $DOCKER_COMPOSE_FILE up -d --build
         else
             docker compose -f $DOCKER_COMPOSE_FILE up --build
