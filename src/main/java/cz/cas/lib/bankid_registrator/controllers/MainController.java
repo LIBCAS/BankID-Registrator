@@ -12,6 +12,7 @@ import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
+import cz.cas.lib.bankid_registrator.services.AlephServiceIface;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
@@ -25,6 +26,7 @@ import cz.cas.lib.bankid_registrator.util.StringUtils;
 import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -41,9 +43,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.http.MediaType;
 import org.springframework.ui.Model;
-import org.springframework.util.Assert;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,6 +53,7 @@ public class MainController extends ControllerAbstract
     private final MainConfiguration mainConfig;
     private final MainService mainService;
     private final AlephService alephService;
+    private final AlephServiceIface envAlephService;
     private final ServletContext servletContext;
     private final PatronRepository patronRepository;
     private final PatronService patronService;
@@ -69,6 +70,7 @@ public class MainController extends ControllerAbstract
         MainConfiguration mainConfig,
         MainService mainService,
         AlephService alephService,
+        AlephServiceIface envAlephService,
         ServletContext servletContext,
         PatronRepository patronRepository,
         PatronService patronService,
@@ -84,6 +86,7 @@ public class MainController extends ControllerAbstract
         this.mainConfig = mainConfig;
         this.mainService = mainService;
         this.alephService = alephService;
+        this.envAlephService = envAlephService;
         this.servletContext = servletContext;
         this.patronRepository = patronRepository;
         this.patronDTOValidator = patronDTOValidator;
@@ -210,7 +213,7 @@ public class MainController extends ControllerAbstract
         this.identityActivityService.logBankIdVerificationSuccess(identity);
 
         // Mapping BankID user data to a Patron entity (so-called "BankId patron")
-        Map<String, Object> bankIdPatronCreation = this.alephService.newPatron(userInfo, userProfile);
+        Map<String, Object> bankIdPatronCreation = this.envAlephService.newPatron(userInfo, userProfile);
 
         if (bankIdPatronCreation.containsKey("error")) {
             model.addAttribute("error", "Registrace byla zamítnuta: " + (String) bankIdPatronCreation.get("error"));
@@ -415,11 +418,20 @@ public class MainController extends ControllerAbstract
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 
-        if (patronIsCasEmployee && mediaFiles != null && mediaFiles.length > 0) {
-            for (MultipartFile file : mediaFiles) {
-                Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
-                if (uploadResult.containsKey("error")) {
-                    getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
+        if (patronIsCasEmployee) {
+            int mediaFilesCount = 0;
+            if (mediaFiles != null) {
+                mediaFilesCount = (int) Arrays.stream(mediaFiles).filter(file -> file != null && !file.isEmpty()).count();
+
+                boolean hasMediaFiles = mediaFiles != null && mediaFilesCount > 0;
+
+                if (hasMediaFiles) {
+                    for (MultipartFile file : mediaFiles) {
+                        Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
+                        if (uploadResult.containsKey("error")) {
+                            getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
+                        }
+                    }
                 }
             }
         }
@@ -575,11 +587,20 @@ public class MainController extends ControllerAbstract
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
 
-        if (patronIsCasEmployee && mediaFiles != null && mediaFiles.length > 0) {
-            for (MultipartFile file : mediaFiles) {
-                Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
-                if (uploadResult.containsKey("error")) {
-                    getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
+        if (patronIsCasEmployee) {
+            int mediaFilesCount = 0;
+            if (mediaFiles != null) {
+                mediaFilesCount = (int) Arrays.stream(mediaFiles).filter(file -> file != null && !file.isEmpty()).count();
+
+                boolean hasMediaFiles = mediaFiles != null && mediaFilesCount > 0;
+
+                if (hasMediaFiles) {
+                    for (MultipartFile file : mediaFiles) {
+                        Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
+                        if (uploadResult.containsKey("error")) {
+                            getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
+                        }
+                    }
                 }
             }
         }

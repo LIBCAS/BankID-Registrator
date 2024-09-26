@@ -3,10 +3,6 @@ package cz.cas.lib.bankid_registrator.services;
 import cz.cas.lib.bankid_registrator.configurations.AlephServiceConfig;
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.oracle.OracleRepository;
-import cz.cas.lib.bankid_registrator.entities.entity.Address;
-import cz.cas.lib.bankid_registrator.entities.entity.AddressType;
-import cz.cas.lib.bankid_registrator.entities.entity.IDCard;
-import cz.cas.lib.bankid_registrator.entities.entity.IDCardType;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronAction;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBorXOp;
@@ -14,10 +10,7 @@ import cz.cas.lib.bankid_registrator.entities.patron.PatronHold;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronItem;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
-import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
-import cz.cas.lib.bankid_registrator.product.Connect;
-import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
 import cz.cas.lib.bankid_registrator.util.TimestampToDate;
@@ -36,9 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -54,7 +44,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -69,14 +58,13 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-@Service
 public class AlephService extends AlephServiceAbstract
 {
-    private final MainConfiguration mainConfig;
-    private final AlephServiceConfig alephServiceConfig;
-    private final IdentityService identityService;
-    private final OracleRepository oracleRepository;
-    private final String[] borXOpsNoSuccessMsg; // A list of Aleph API ops whose response does not contain a success message
+    protected final MainConfiguration mainConfig;
+    protected final AlephServiceConfig alephServiceConfig;
+    protected final IdentityService identityService;
+    protected final OracleRepository oracleRepository;
+    protected String[] borXOpsNoSuccessMsg; // A list of Aleph API ops whose response does not contain a success message
 
     public AlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository)
     {
@@ -1121,158 +1109,6 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
-     * Initializes patron's data based on the Connect and Identify objects
-     * @param userInfo
-     * @param userProfile
-     * @return  Map<String, Object>
-     */
-    public Map<String, Object> newPatron(Connect userInfo, Identify userProfile)
-    {
-        Assert.notNull(userInfo, "\"userInfo\" is required");
-        Assert.notNull(userProfile, "\"userProfile\" is required");
-
-        Map<String, Object> result = new HashMap<>();
-
-        Patron patron = new Patron();
-
-        String fname = userInfo.getGiven_name();      // Joanne
-        String mname = Optional.ofNullable(userInfo.getMiddle_name()).orElse("");     // Kathleen
-        String lname = userInfo.getFamily_name();     // Rowling
-
-        patron.setFirstname(fname);
-        patron.setLastname(Stream.of(lname, mname)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Rowling Kathleen
-        patron.setName(Stream.of(lname, mname, fname)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Rowling Kathleen Joanne
-
-        patron.setEmail(Optional.ofNullable(userInfo.getEmail()).orElse(""));
-
-        String birthdate = userInfo.getBirthdate();   // 2003-07-25
-        if (birthdate == null) {
-            result.put("error", "chybí datum narození");
-            return result;
-        }
-        patron.setBirthDate(birthdate.replace("-", ""));  // 2003-07-25 => 20030725
-
-        String smsNumber = userProfile.getPhone_number();
-        patron.setSmsNumber(Optional.ofNullable(smsNumber).orElse(""));
-
-        String conLng = userInfo.getLocale(); logger.info("conLng: {}", conLng);
-        patron.setConLng(conLng.equals("cs_CZ") ? PatronLanguage.CZE : PatronLanguage.ENG); logger.info("patron.getConLng() == {}", patron.getConLng());
-
-        // Patron address names
-        patron.setAddress0(patron.getName());
-        patron.setContactAddress0(patron.getName());
-
-        // Patron address (permanent residence)
-        Address address = userProfile.getAddresses().stream()
-            .filter(a -> a.getType() == AddressType.PERMANENT_RESIDENCE)
-            .findFirst()
-            .orElse(null);
-        if (address != null) {
-            String addressStreet = Optional.ofNullable(address.getStreet()).orElse("");
-            String addressNumber = Optional.ofNullable(address.getEvidencenumber()).orElse("");
-            String addressCity = address.getCity();
-            if (addressCity == null) {
-                result.put("error", "chybí město");
-                return result;
-            }
-            String addressCityarea = Optional.ofNullable(address.getCityarea()).orElse("");
-            String addressZip = address.getZipcode();
-            if (addressZip == null) {
-                result.put("error", "chybí PSČ");
-                return result;
-            }
-
-            patron.setAddress1(Stream.of(!addressStreet.equals("") ? addressStreet : addressCityarea, addressNumber)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining(" ")));
-            
-            if (!addressCityarea.equals("") && addressCityarea.equals(addressCity)) {
-                patron.setAddress2(addressCity);
-            } else if (!addressCityarea.equals("") && !addressCityarea.equals(addressCity)) {
-                patron.setAddress2(addressCity + " - " + addressCityarea);
-            } else {
-                patron.setAddress2(addressCity);
-            }
-            patron.setZip(addressZip);
-        } else {
-            result.put("error", "chybí adresa trvalého bydliště");
-            return result;
-        }
-
-        // Patron contact address
-        Address contactAddress = userProfile.getAddresses().stream()
-            .filter(a -> a.getType() == AddressType.SECONDARY_RESIDENCE)
-            .findFirst()
-            .orElse(null);
-        if (contactAddress != null) {
-            String contactAddressStreet = Optional.ofNullable(contactAddress.getStreet()).orElse("");
-            String contactAddressNumber = Optional.ofNullable(contactAddress.getEvidencenumber()).orElse("");
-            String contactAddressCity = contactAddress.getCity();
-            if (contactAddressCity == null) {
-                result.put("error", "chybí město kontaktní adresy");
-                return result;
-            }
-            String contactAddressCityarea = Optional.ofNullable(contactAddress.getCityarea()).orElse("");
-            String contactAddressZip = contactAddress.getZipcode();
-            if (contactAddressZip == null) {
-                result.put("error", "chybí PSČ kontaktní adresy");
-                return result;
-            }
-
-            patron.setContactAddress1(Stream.of(!contactAddressStreet.equals("") ? contactAddressStreet : contactAddressCityarea, contactAddressNumber)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining(" ")));
-            
-            if (!contactAddressCityarea.equals("") && contactAddressCityarea.equals(contactAddressCity)) {
-                patron.setContactAddress2(contactAddressCity);
-            } else if (!contactAddressCityarea.equals("") && !contactAddressCityarea.equals(contactAddressCity)) {
-                patron.setContactAddress2(contactAddressCity + " - " + contactAddressCityarea);
-            } else {
-                patron.setContactAddress2(contactAddressCity);
-            }
-            patron.setContactZip(contactAddressZip);
-        }
-
-        // Patron ID card
-        IDCard idCard = userProfile.getIdcards().stream()
-            .filter(i -> i.getType() == IDCardType.ID)
-            .findFirst()
-            .orElse(null);
-        if (idCard != null) {
-            String idCardName = idCard.getType().toString().concat(" ").concat(idCard.getCountry());
-            patron.setIdCardName(idCardName);
-            patron.setIdCardNumber(idCard.getNumber());
-            patron.setIdCardDetail("Občanský průkaz");
-        } else {
-            result.put("error", "chybí občanský průkaz");
-            return result;
-        }
-
-        patron.setVerification(generatePatronPassword());
-
-        // BankID
-        patron.setBankIdSub(userInfo.getSub());
-
-        // New registration or registration renewal
-        Optional<String> existingAlephPatronIdOpt = this.getAlephPatronIdByNameAndBirth(patron);
-        if (existingAlephPatronIdOpt.isPresent()) {
-            String existingAlephPatronId = existingAlephPatronIdOpt.get();
-            patron.setPatronId(existingAlephPatronId);
-            patron.isNew = false;
-        } else {
-            patron.isNew = true;
-        }
-
-        result.put("patron", patron);
-
-        return result;
-    }
-
-    /**
      * Initializes patron's data based on the Aleph patron data
      * @param alephPatronXml - existing patron data in the Aleph system
      * @return  Map<String, Object>
@@ -1683,157 +1519,6 @@ logger.info("AAA doHttpRequest method: {}", method);
     }
 
     /**
-     * Initializes patron's testing data based on the Connect and Identify objects
-     * @param userInfo
-     * @param userProfile
-     * @return  Map<String, Object>
-     */
-    public Map<String, Object> newPatronTest(Connect userInfo, Identify userProfile) {
-        Assert.notNull(userInfo, "\"userInfo\" is required");
-        Assert.notNull(userProfile, "\"userProfile\" is required");
-
-        Map<String, Object> result = new HashMap<>();
-
-        Patron patron = new Patron();
-
-        String fname = userInfo.getGiven_name();      // Joanne
-        String mname = this.generateTestingMname();   // Kathleen
-        String lname = userInfo.getFamily_name();     // Rowling
-        patron.setFirstname(fname);
-        patron.setLastname(Stream.of(lname, mname)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Rowling Kathleen
-        patron.setName(Stream.of(lname, mname, fname)
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Rowling Kathleen Joanne
-
-        patron.setEmail(Optional.ofNullable(this.generateTestingEmail()).orElse(""));
-
-        String birthdate = userInfo.getBirthdate();   // 2003-07-25
-        if (birthdate == null) {
-            result.put("error", "chybí datum narození");
-            return result;
-        }
-        patron.setBirthDate(birthdate.replace("-", ""));  // 2003-07-25 => 20030725
-
-        String smsNumber = this.generateTestingPhone(); logger.info("smsNumber: {}", smsNumber);
-        patron.setSmsNumber(Optional.ofNullable(smsNumber).orElse(""));
-
-        String conLng = userInfo.getLocale(); logger.info("conLng: {}", conLng);
-        patron.setConLng(conLng.equals("cs_CZ") ? PatronLanguage.CZE : PatronLanguage.ENG); logger.info("patron.getConLng() == {}", patron.getConLng());
-
-        // Patron address names
-        patron.setAddress0(patron.getName());
-        patron.setContactAddress0(patron.getName());
-
-        // Check if the BankID address data is available
-        if (userProfile.getAddresses() == null) {
-            result.put("error", "v BankID účtu nemáte nastavenou adresu");
-            return result;
-        }
-
-        // Patron address (permanent residence)
-        Address address = userProfile.getAddresses().stream()
-            .filter(a -> a.getType() == AddressType.PERMANENT_RESIDENCE)
-            .findFirst()
-            .orElse(null);
-        if (address != null) {
-            String addressStreet = Optional.ofNullable(address.getStreet()).orElse("");
-            String addressNumber = Optional.ofNullable(address.getEvidencenumber()).orElse("");
-            String addressCity = address.getCity();
-            if (addressCity == null) {
-                result.put("error", "chybí město");
-                return result;
-            }
-            String addressCityarea = Optional.ofNullable(address.getCityarea()).orElse("");
-            String addressZip = address.getZipcode();
-            if (addressZip == null) {
-                result.put("error", "chybí PSČ");
-                return result;
-            }
-
-            patron.setAddress1(Stream.of(!addressStreet.equals("") ? addressStreet : addressCityarea, addressNumber)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining(" ")));
-            
-            if (!addressCityarea.equals("") && addressCityarea.equals(addressCity)) {
-                patron.setAddress2(addressCity);
-            } else if (!addressCityarea.equals("") && !addressCityarea.equals(addressCity)) {
-                patron.setAddress2(addressCity + " - " + addressCityarea);
-            } else {
-                patron.setAddress2(addressCity);
-            }
-            patron.setZip(addressZip);
-        } else {
-            result.put("error", "chybí adresa trvalého bydliště");
-            return result;
-        }
-
-        // Patron contact address
-        Address contactAddress = userProfile.getAddresses().stream()
-            .filter(a -> a.getType() == AddressType.SECONDARY_RESIDENCE)
-            .findFirst()
-            .orElse(null);
-        if (contactAddress != null) {
-            String contactAddressStreet = Optional.ofNullable(contactAddress.getStreet()).orElse("");
-            String contactAddressNumber = Optional.ofNullable(contactAddress.getEvidencenumber()).orElse("");
-            String contactAddressCity = contactAddress.getCity();
-            if (contactAddressCity == null) {
-                result.put("error", "chybí město kontaktní adresy");
-                return result;
-            }
-            String contactAddressCityarea = Optional.ofNullable(contactAddress.getCityarea()).orElse("");
-            String contactAddressZip = contactAddress.getZipcode();
-            if (contactAddressZip == null) {
-                result.put("error", "chybí PSČ kontaktní adresy");
-                return result;
-            }
-
-            patron.setContactAddress1(Stream.of(!contactAddressStreet.equals("") ? contactAddressStreet : contactAddressCityarea, contactAddressNumber)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.joining(" ")));
-            
-            if (!contactAddressCityarea.equals("") && contactAddressCityarea.equals(contactAddressCity)) {
-                patron.setContactAddress2(contactAddressCity);
-            } else if (!contactAddressCityarea.equals("") && !contactAddressCityarea.equals(contactAddressCity)) {
-                patron.setContactAddress2(contactAddressCity + " - " + contactAddressCityarea);
-            } else {
-                patron.setContactAddress2(contactAddressCity);
-            }
-            patron.setContactZip(contactAddressZip);
-        }
-
-        // Patron ID card
-        IDCard idCard = userProfile.getIdcards().stream()
-            .filter(i -> i.getType() == IDCardType.ID)
-            .findFirst()
-            .orElse(null);
-        if (idCard != null) {
-            String idCardName = idCard.getType().toString().concat(" ").concat(idCard.getCountry());
-            patron.setIdCardName(idCardName);
-            patron.setIdCardNumber(idCard.getNumber());
-            patron.setIdCardDetail("Občanský průkaz");
-        } else {
-            result.put("error", "chybí občanský průkaz");
-            return result;
-        }
-
-        patron.setVerification(generatePatronPassword());
-
-        // BankID
-        patron.setBankIdSub(userInfo.getSub());
-
-        // New registration or registration renewal
-        boolean isNewAlephPatron = this.isNewAlephPatronTest(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
-        patron.isNew = isNewAlephPatron;
-        patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A); logger.info("patron.getAction(): {}", patron.getAction());
-
-        result.put("patron", patron);
-
-        return result;
-    }
-
-    /**
      * Get the maximum Aleph patron ID created so far via the Bank ID
      * @return Long
      */
@@ -1875,7 +1560,7 @@ logger.info("AAA doHttpRequest method: {}", method);
     /**
      * Generates patron's password, 8 characters long
      */
-    private String generatePatronPassword() {
+    protected String generatePatronPassword() {
         int passwordLength = 8;
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ123456789";
         StringBuilder result = new StringBuilder();
@@ -1903,87 +1588,5 @@ logger.info("AAA doHttpRequest method: {}", method);
     public boolean isNewAlephPatron(Patron patron) {
         boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
         return isNewInOracle;
-    }
-
-    /**
-     * Checks if the patron was already verified via Bank ID 
-     * and if the patron who is currently being verified has the same birthdate as the one in the Aleph
-     * @param Patron Patron's data
-     * @param birthDate Patron's birthdate
-     * @return true if patron exists in Aleph, false otherwise
-     */
-    public boolean isNewAlephPatronTest(Patron patron) {
-        // Checking if a patron already exists in the Aleph Oracle DB (based on the name and birthdate) or if the patron was already verified via Bank ID:
-        // boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
-        // boolean isVerifiedAndAlephLinked = identityService.findAlephLinkedByBankId(patron.getBankIdSub()).isPresent();
-        // return isNewInOracle || !isVerifiedAndAlephLinked;
-
-        String patronBankIdSub = patron.getBankIdSub();
-        Optional<Identity> identitySearch = identityService.findByBankId(patronBankIdSub);
-
-        if (identitySearch.isPresent()) {
-            Identity identity = identitySearch.get();
-            String alephPatronId = identity.getAlephId();
-
-            if (alephPatronId == null) {
-                return true;
-            }
-
-            Map<String, Object> alephPatronSearch = this.getAlephPatron(alephPatronId, true);
-
-            if (alephPatronSearch.containsKey("error")) {
-                return true;
-            }
-
-            Patron alephPatron = (Patron) alephPatronSearch.get("patron");
-
-            String patronBirthdate = DateUtils.convertDateFormat(patron.getBirthDate(), "yyyyMMdd", "dd-MM-yyyy");
-getLogger().info(alephPatron.getBirthDate() + " > " + patronBirthdate + " > " + alephPatron.getBankIdSub() + " > " + patronBankIdSub + " > " + alephPatron.getName() + " > " + patron.getName());
-            return !(
-                (alephPatron.getBirthDate().equals(patronBirthdate) && alephPatron.getBankIdSub().equals(patronBankIdSub)) || 
-                (alephPatron.getBirthDate().equals(patronBirthdate) && alephPatron.getName().equals(patron.getName()))
-            );
-        }
-
-        return true;
-    }
-
-    private String generateTestingMname() {
-        StringBuilder name = new StringBuilder("Test");
-        Random random = new Random();
-        int lengthOfRandomString = 5;
-
-        for (int i = 0; i < lengthOfRandomString; i++) {
-            char randomChar = (char) ('a' + random.nextInt(26));
-            name.append(randomChar);
-        }
-
-        return name.toString();
-    }
-
-    private String generateTestingBirthday() {
-        Random random = new Random();
-        int minDay = (int) LocalDate.of(1950, 1, 1).toEpochDay();
-        int maxDay = (int) LocalDate.of(2010, 12, 31).toEpochDay();
-        long randomDay = minDay + random.nextInt(maxDay - minDay);
-        return LocalDate.ofEpochDay(randomDay).toString();
-    }
-
-    private String generateTestingEmail() {
-        Random random = new Random();
-        int randomNum = 100000 + random.nextInt(900000);
-        return "test" + randomNum + "@testing.com";
-    }
-
-    private String generateTestingPhone() {
-        Random random = new Random();
-        int randomNum = 100000000 + random.nextInt(900000000);
-        return "+420" + randomNum;
-    }
-
-    private String generateTestingBankIdSub() {
-        Random random = new Random();
-        int randomNum = 10000 + random.nextInt(90000);
-        return LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + randomNum;
     }
 }

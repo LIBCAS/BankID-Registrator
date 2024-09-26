@@ -6,7 +6,6 @@ import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.token.TokenBlacklisted;
 import cz.cas.lib.bankid_registrator.model.user.User;
 import cz.cas.lib.bankid_registrator.util.JwtUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

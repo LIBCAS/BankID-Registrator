@@ -40,7 +40,7 @@ public class OracleRepository
         query.setParameter("birthDate", birthDate);
 
         try {
-            String patronId = (String) query.getSingleResult();
+            String patronId = ((String) query.getSingleResult()).trim();
             return Optional.of(patronId);
         } catch (NoResultException e) {
             return Optional.empty();
