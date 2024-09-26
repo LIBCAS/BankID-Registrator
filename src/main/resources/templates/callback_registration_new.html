@@ -8,8 +8,7 @@
 
 <body class="page-callback page-new-registration">
     <main layout:fragment="content" class="mb-10 container mx-auto p-5">
-        <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.newRegistration.title}">New registration</h1>
-        <h2 class="mb-6 text-2xl font-extrabold max-w-4xl mx-auto text-gray-900" th:text="#{page.newRegistration.formTitle}">Registration form</h2>
+        <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.newRegistration.formTitle}">Registration form</h1>
         <form action="#" th:action="@{/new-registration}" th:object="${patron}" method="post"
             enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto">
             <div th:if="${#fields.hasErrors('*')}" th:text="#{form.error.invalidData}" class="text-red-600 dark:text-red-500 font-medium pb-3">
@@ -199,7 +198,7 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div>
-                        <label for="rfid" class="block text-sm font-medium" th:text="#{message.rfid}"></label>
+                        <label for="rfid" class="block text-sm font-medium" th:text="#{message.rfidWithExamples}"></label>
                         <input type="text" id="rfid" name="rfid" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{rfid}" />
                         <div th:if="${#fields.hasErrors('rfid')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                             <i class="fa-solid fa-triangle-exclamation"></i>
