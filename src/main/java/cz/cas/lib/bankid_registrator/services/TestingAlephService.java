@@ -28,7 +28,7 @@ import cz.cas.lib.bankid_registrator.product.Identify;
 
 @Service
 @Profile("testing")
-public class TestingAlephService extends AlephService
+public class TestingAlephService extends AlephService implements AlephServiceIface
 {
     public TestingAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository)
     {
