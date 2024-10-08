@@ -33,7 +33,7 @@
         <appender-ref ref="RollingFile"/>
     </root>
 
-    <logger name="cz.cas.lib" level="trace" aditivity="false">
+    <logger name="cz.cas.lib" level="trace" additivity="false">
         <appender-ref ref="Console"/>
         <appender-ref ref="RollingFile"/>
     </logger>
