@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -30,9 +31,9 @@ import cz.cas.lib.bankid_registrator.product.Identify;
 @Profile("local")
 public class LocalAlephService extends AlephService implements AlephServiceIface
 {
-    public LocalAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository)
+    public LocalAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository, ResourceLoader resourceLoader)
     {
-        super(mainConfig, alephServiceConfig, identityService, oracleRepository);
+        super(mainConfig, alephServiceConfig, identityService, oracleRepository, resourceLoader);
 
         this.borXOpsNoSuccessMsg = new String[] {
             PatronBorXOp.BOR_INFO.getValue(),
@@ -58,13 +59,14 @@ public class LocalAlephService extends AlephService implements AlephServiceIface
         Patron patron = new Patron();
 
         String fname = userInfo.getGiven_name();      // Joanne
-        String mname = this.generateTestingMname();   // Kathleen
+        // String mname = this.generateTestingMname();   // Kathleen
+        String mname = "Testjqmrp";   // Kathleen
         String lname = userInfo.getFamily_name();     // Rowling
-        patron.setFirstname(fname);
-        patron.setLastname(Stream.of(lname, mname)
+        patron.setLastname(lname);
+        patron.setFirstname(Stream.of(mname, fname)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Rowling Kathleen
-        patron.setName(Stream.of(lname, mname, fname)
+            .collect(Collectors.joining(" ")));       // Joanne Kathleen
+        patron.setName(Stream.of(lname, fname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Rowling Kathleen Joanne
 
@@ -212,10 +214,24 @@ public class LocalAlephService extends AlephService implements AlephServiceIface
         // BankID
         patron.setBankIdSub(userInfo.getSub());
 
+        // // New registration or registration renewal
+        // boolean isNewAlephPatron = this.isNewAlephPatron(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
+        // patron.isNew = isNewAlephPatron;
+        // patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A); logger.info("patron.getAction(): {}", patron.getAction());
+
+        // result.put("patron", patron);
+
+        // return result;
+
         // New registration or registration renewal
-        boolean isNewAlephPatron = this.isNewAlephPatron(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
-        patron.isNew = isNewAlephPatron;
-        patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A); logger.info("patron.getAction(): {}", patron.getAction());
+        Optional<String> existingAlephPatronIdOpt = this.getAlephPatronIdByNameAndBirth(patron);
+        if (existingAlephPatronIdOpt.isPresent()) {
+            String existingAlephPatronId = existingAlephPatronIdOpt.get();
+            patron.setPatronId(existingAlephPatronId);
+            patron.isNew = false;
+        } else {
+            patron.isNew = true;
+        }
 
         result.put("patron", patron);
 

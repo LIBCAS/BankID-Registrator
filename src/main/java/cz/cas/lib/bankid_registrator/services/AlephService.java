@@ -39,6 +39,8 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -65,8 +67,9 @@ public class AlephService extends AlephServiceAbstract
     protected final IdentityService identityService;
     protected final OracleRepository oracleRepository;
     protected String[] borXOpsNoSuccessMsg; // A list of Aleph API ops whose response does not contain a success message
+    protected final ResourceLoader resourceLoader;
 
-    public AlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository)
+    public AlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository, ResourceLoader resourceLoader)
     {
         this.mainConfig = mainConfig;
         this.alephServiceConfig = alephServiceConfig;
@@ -76,6 +79,7 @@ public class AlephService extends AlephServiceAbstract
             PatronBorXOp.BOR_INFO.getValue(),
             PatronBorXOp.BOR_AUTH.getValue()
         };
+        this.resourceLoader = resourceLoader;
     }
 
     /**
@@ -228,7 +232,7 @@ public class AlephService extends AlephServiceAbstract
             }
 
             String libraryXml = libraryXmlCreation.get("xml");
-            result.put("xml-library", libraryXml);
+            result.put("xml-library-" + library, libraryXml);
 
             Map<String, Object> libraryCreation = this.updateBorX(libraryXml);
 
@@ -351,7 +355,7 @@ public class AlephService extends AlephServiceAbstract
             }
 
             String libraryXml = libraryXmlCreation.get("xml");
-            result.put("xml-library", libraryXml);
+            result.put("xml-library-" + library, libraryXml);
 
             Map<String, Object> libraryCreation = this.updateBorX(libraryXml);
 
@@ -424,9 +428,8 @@ public class AlephService extends AlephServiceAbstract
 
         // Update patron's status (patron membership status + membership expiry date)
         List<String> libraries = new ArrayList<>(Arrays.asList(this.alephServiceConfig.getLibraries()));
-        libraries.add(this.alephServiceConfig.getHomeLibrary());
         String updatePatronStatusXml = this.updatePatronStatusXml(patron, libraries);
-
+        result.put("xml-update-patron-status", updatePatronStatusXml);
         Map<String, Object> updatePatronStatus = this.updateBorX(updatePatronStatusXml);
 
         if (updatePatronStatus.containsKey("error")) {
@@ -604,11 +607,12 @@ public class AlephService extends AlephServiceAbstract
 
         String xmlString = "<?xml version=\"1.0\"?>";
 
-        Source stylesheetSource = new StreamSource();
-        stylesheetSource.setSystemId("classpath:/xml/CreateHold.xsl");
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
         try {
-            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+            Resource resource = this.resourceLoader.getResource("classpath:xml/CreateHold.xsl");
+            
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+
+            Transformer transformer = transformerFactory.newTransformer(new StreamSource(resource.getInputStream()));
 
             transformer.setParameter("pickup-location", hold.getPickUpLocation());
             transformer.setParameter("last-interest-date", hold.getLastInterestDate());
@@ -616,7 +620,7 @@ public class AlephService extends AlephServiceAbstract
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
-            transformer.transform(stylesheetSource, streamResult);
+            transformer.transform(new StreamSource(resource.getInputStream()), streamResult);
             if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
                 xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
             } else {
@@ -624,6 +628,9 @@ public class AlephService extends AlephServiceAbstract
             }
             result.put("xml", xmlString);
         } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        } catch (IOException ex) {
             result.put("error", ex.getMessage());
             getLogger().error(MainService.class.getName(), ex);
         }
@@ -913,11 +920,12 @@ logger.info("AAA doHttpRequest method: {}", method);
         String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
         String xmlString = "<?xml version=\"1.0\"?>";
 
-        Source stylesheetSource = new StreamSource();
-        stylesheetSource.setSystemId("classpath:/xml/CreatePatron.xsl");
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
         try {
-            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+            Resource resource = this.resourceLoader.getResource("classpath:xml/CreatePatron.xsl");
+            
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+
+            Transformer transformer = transformerFactory.newTransformer(new StreamSource(resource.getInputStream()));
             String patronId = patron.getId();
             String patronName = patron.getName();
             String patronPassword = patron.getVerification();
@@ -992,7 +1000,7 @@ logger.info("AAA doHttpRequest method: {}", method);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
-            transformer.transform(stylesheetSource, streamResult);
+            transformer.transform(new StreamSource(resource.getInputStream()), streamResult);
             if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
                 xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
             } else {
@@ -1001,6 +1009,9 @@ logger.info("AAA doHttpRequest method: {}", method);
             getLogger().info("createPatronXML: {}", xmlString);
             result.put("xml", xmlString);
         } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        } catch (IOException ex) {
             result.put("error", ex.getMessage());
             getLogger().error(MainService.class.getName(), ex);
         }
@@ -1023,11 +1034,11 @@ logger.info("AAA doHttpRequest method: {}", method);
         String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
         String xmlString = "<?xml version=\"1.0\"?>";
 
-        Source stylesheetSource = new StreamSource();
-        stylesheetSource.setSystemId("classpath:/xml/UpdatePatron.xsl");
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
         try {
-            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+            Resource resource = this.resourceLoader.getResource("classpath:xml/UpdatePatron.xsl");
+            
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer(new StreamSource(resource.getInputStream()));
             String patronId = patron.getId();
             String patronName = patron.getName();
 
@@ -1096,7 +1107,7 @@ logger.info("AAA doHttpRequest method: {}", method);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
-            transformer.transform(stylesheetSource, streamResult);
+            transformer.transform(new StreamSource(resource.getInputStream()), streamResult);
             if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
                 xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
             } else {
@@ -1105,6 +1116,9 @@ logger.info("AAA doHttpRequest method: {}", method);
             getLogger().info("updatePatronXML: {}", xmlString);
             result.put("xml", xmlString);
         } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        } catch (IOException ex) {
             result.put("error", ex.getMessage());
             getLogger().error(MainService.class.getName(), ex);
         }
@@ -1322,11 +1336,11 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         String xmlString = "<?xml version=\"1.0\"?>";
 
-        Source stylesheetSource = new StreamSource();
-        stylesheetSource.setSystemId("classpath:/xml/CreateItem.xsl");
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
         try {
-            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+            Resource resource = this.resourceLoader.getResource("classpath:xml/CreateItem.xsl");
+            
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer(new StreamSource(resource.getInputStream()));
 
             // z30
             transformer.setParameter("z30-doc-number", item.getDocNumber());
@@ -1336,7 +1350,7 @@ logger.info("AAA doHttpRequest method: {}", method);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
-            transformer.transform(stylesheetSource, streamResult);
+            transformer.transform(new StreamSource(resource.getInputStream()), streamResult);
             if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
                 xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
             } else {
@@ -1344,6 +1358,9 @@ logger.info("AAA doHttpRequest method: {}", method);
             }
             result.put("xml", xmlString);
         } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        } catch (IOException ex) {
             result.put("error", ex.getMessage());
             getLogger().error(MainService.class.getName(), ex);
         }
@@ -1366,11 +1383,11 @@ logger.info("AAA doHttpRequest method: {}", method);
         String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
         String xmlString = "<?xml version=\"1.0\"?>";
 
-        Source stylesheetSource = new StreamSource();
-        stylesheetSource.setSystemId("classpath:/xml/CreateLibrary.xsl");
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
         try {
-            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+            Resource resource = this.resourceLoader.getResource("classpath:xml/CreateLibrary.xsl");
+            
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer(new StreamSource(resource.getInputStream()));
             String patronId = patron.getId();
 
             // z303
@@ -1386,7 +1403,7 @@ logger.info("AAA doHttpRequest method: {}", method);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
-            transformer.transform(stylesheetSource, streamResult);
+            transformer.transform(new StreamSource(resource.getInputStream()), streamResult);
             if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
                 xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
             } else {
@@ -1394,6 +1411,9 @@ logger.info("AAA doHttpRequest method: {}", method);
             }
             result.put("xml", xmlString);
         } catch (TransformerException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
+        } catch (IOException ex) {
             result.put("error", ex.getMessage());
             getLogger().error(MainService.class.getName(), ex);
         }
@@ -1443,11 +1463,11 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         String xmlString = "<?xml version=\"1.0\"?>";
 
-        Source stylesheetSource = new StreamSource();
-        stylesheetSource.setSystemId("classpath:/xml/AlephPatronPswUpdate.xsl");
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
         try {
-            Transformer transformer = transformerFactory.newTransformer(stylesheetSource);
+            Resource resource = this.resourceLoader.getResource("classpath:xml/AlephPatronPswUpdate.xsl");
+            
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer(new StreamSource(resource.getInputStream()));
             String encodedPasswordOld = URLEncoder.encode(passwordOld, StandardCharsets.UTF_8.toString());
             String encodedPasswordNew = URLEncoder.encode(passwordNew, StandardCharsets.UTF_8.toString());
 
@@ -1456,7 +1476,7 @@ logger.info("AAA doHttpRequest method: {}", method);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
-            transformer.transform(stylesheetSource, streamResult);
+            transformer.transform(new StreamSource(resource.getInputStream()), streamResult);
             if (this.mainConfig.getRewrite_aleph_batch_xml_header()) {
                 xmlString = stringWriter.getBuffer().toString().replaceFirst("\\<\\?(xml){1}\\s{1,}.*\\?\\>", xmlString);
             } else {
@@ -1469,6 +1489,9 @@ logger.info("AAA doHttpRequest method: {}", method);
         } catch (UnsupportedEncodingException ex) {
             result.put("error", "Encoding error: " + ex.getMessage());
             getLogger().error("UnsupportedEncodingException in createPatronPswUpdateXml", ex);
+        } catch (IOException ex) {
+            result.put("error", ex.getMessage());
+            getLogger().error(MainService.class.getName(), ex);
         }
 
         return result;

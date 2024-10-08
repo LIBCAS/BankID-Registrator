@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -28,9 +29,9 @@ import cz.cas.lib.bankid_registrator.product.Identify;
 @Profile("production")
 public class ProductionAlephService extends AlephService implements AlephServiceIface
 {
-    public ProductionAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository)
+    public ProductionAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository, ResourceLoader resourceLoader)
     {
-        super(mainConfig, alephServiceConfig, identityService, oracleRepository);
+        super(mainConfig, alephServiceConfig, identityService, oracleRepository, resourceLoader);
 
         this.borXOpsNoSuccessMsg = new String[] {
             PatronBorXOp.BOR_INFO.getValue(),
@@ -59,11 +60,11 @@ public class ProductionAlephService extends AlephService implements AlephService
         String mname = Optional.ofNullable(userInfo.getMiddle_name()).orElse("");     // Kathleen
         String lname = userInfo.getFamily_name();     // Rowling
 
-        patron.setFirstname(fname);
-        patron.setLastname(Stream.of(lname, mname)
+        patron.setLastname(lname);
+        patron.setFirstname(Stream.of(mname, fname)
             .filter(s -> !s.isEmpty())
-            .collect(Collectors.joining(" ")));       // Rowling Kathleen
-        patron.setName(Stream.of(lname, mname, fname)
+            .collect(Collectors.joining(" ")));       // Joanne Kathleen
+        patron.setName(Stream.of(lname, fname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Rowling Kathleen Joanne
 
