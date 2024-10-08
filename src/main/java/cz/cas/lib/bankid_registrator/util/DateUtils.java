@@ -191,4 +191,14 @@ public class DateUtils
             return false;
         }
     }
+
+    /**
+     * Gets the current date and time in the specified format.
+     * 
+     * @param format The format for the date and time string.
+     * @return The current date and time as a String.
+     */
+    public static String getDateTime(String format) {
+        return new SimpleDateFormat(format).format(new Date());
+    }
 }

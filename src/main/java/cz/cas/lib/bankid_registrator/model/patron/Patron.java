@@ -119,6 +119,40 @@ public class Patron {
     @Column(name="expiry_date", nullable = true)
     public String expiryDate;      // z305-expiry-date, format dd/mm/yyyy
 
+    public Patron(Patron patron) {
+        this.id = patron.id;
+        this.isNew = patron.isNew;
+        this.homeLibrary = patron.homeLibrary;
+        this.patronId = patron.patronId;
+        this.firstname = patron.firstname;
+        this.lastname = patron.lastname;
+        this.name = patron.name;
+        this.email = patron.email;
+        this.birthDate = patron.birthDate;
+        this.conLng = patron.conLng;
+        this.address0 = patron.address0;
+        this.address1 = patron.address1;
+        this.address2 = patron.address2;
+        this.zip = patron.zip;
+        this.contactAddress0 = patron.contactAddress0;
+        this.contactAddress1 = patron.contactAddress1;
+        this.contactAddress2 = patron.contactAddress2;
+        this.contactZip = patron.contactZip;
+        this.smsNumber = patron.smsNumber;
+        this.status = patron.status;
+        this.barcode = patron.barcode;
+        this.idCardName = patron.idCardName;
+        this.idCardNumber = patron.idCardNumber;
+        this.idCardDetail = patron.idCardDetail;
+        this.verification = patron.verification;
+        this.bankIdSub = patron.bankIdSub;
+        this.action = patron.action;
+        this.exportConsent = patron.exportConsent;
+        this.isCasEmployee = patron.isCasEmployee;
+        this.rfid = patron.rfid;
+        this.expiryDate = patron.expiryDate;
+    }
+
     public Long getSysId() {
         return id;
     }
