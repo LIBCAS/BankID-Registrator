@@ -1,9 +1,0 @@
-prijimame tyto prukazy totoznosti + podminka CZ u adresy trvaleho bydliste:
-ID, P, IR, IX, IE
----
-z303-name: Prijmeni vzdy na prvnim miste. (s middle_name ve tvaru, priklad: Sachova Jirina Marie -> prijmeni, krestni jmeno, prostredni jmeno)
----
-adresy: spojit nazev ulice + popisne cislo + (pokud existuje) cislo ulice, napr. 1/11C (testovaci ucet Sachova)
----
-limited_legal_capacity = true => zariznout
----
