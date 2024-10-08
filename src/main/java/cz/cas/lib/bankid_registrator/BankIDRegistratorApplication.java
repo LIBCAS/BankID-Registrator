@@ -27,11 +27,15 @@ import org.springframework.context.annotation.PropertySources;
 
 @SpringBootApplication(
     scanBasePackages={"cz.cas.lib"},
-    exclude={SecurityAutoConfiguration.class, DataSourceAutoConfiguration.class}
+    exclude={
+        SecurityAutoConfiguration.class, 
+        DataSourceAutoConfiguration.class, 
+        org.springframework.boot.autoconfigure.data.ldap.LdapRepositoriesAutoConfiguration.class
+    }
 )
 @PropertySources({
     @PropertySource(value="classpath:config.properties", ignoreResourceNotFound=false),
-    @PropertySource(value="file://${HOME}/.bankid-registrator/application.properties", ignoreResourceNotFound=true)
+    // @PropertySource(value="file://${HOME}/.bankid-registrator/application.properties", ignoreResourceNotFound=true)
 })
 public class BankIDRegistratorApplication extends SpringBootServletInitializer {
 
