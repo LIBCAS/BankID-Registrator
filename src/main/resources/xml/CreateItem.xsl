@@ -70,7 +70,7 @@
     <xsl:param name="z30-supp-index-o" select="''"/>
     <xsl:param name="z30-85x-type" select="''"/>
     <xsl:param name="z30-depository-id" select="''"/>
-    <xsl:param name="z30-inking-number" select="'000000000'"/>
+    <xsl:param name="z30-linking-number" select="'000000000'"/>
     <xsl:param name="z30-gap-indicator" select="''"/>
     <xsl:param name="z30-maintenance-count" select="'000'"/>
     <xsl:param name="z30-process-status-date" select="''"/>
@@ -268,9 +268,9 @@
         <z30-depository-id>
             <xsl:value-of select="$z30-depository-id"/>
         </z30-depository-id>
-        <z30-inking-number>
-            <xsl:value-of select="$z30-inking-number"/>
-        </z30-inking-number>
+        <z30-linking-number>
+            <xsl:value-of select="$z30-linking-number"/>
+        </z30-linking-number>
         <z30-gap-indicator>
             <xsl:value-of select="$z30-gap-indicator"/>
         </z30-gap-indicator>
