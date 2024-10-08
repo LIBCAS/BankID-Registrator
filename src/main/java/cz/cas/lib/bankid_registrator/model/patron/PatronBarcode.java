@@ -55,7 +55,6 @@ public class PatronBarcode extends PatronAbstract implements Serializable {
 
     public PatronBarcode() {
         super();
-        init();
     }
 
     /**
