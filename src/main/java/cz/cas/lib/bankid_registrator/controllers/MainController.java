@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.time.LocalDateTime;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -210,7 +211,7 @@ public class MainController extends ControllerAbstract
         }
 
         if (bankIdPatron.isNew()) {
-            identity = new Identity();
+            identity = new Identity(UUID.randomUUID().toString());
             identity.setCheckedByAdmin(false);
             this.identityService.save(identity);
 
@@ -241,12 +242,18 @@ public class MainController extends ControllerAbstract
 
                 if (identityByAlephId.isPresent()) {
                     identity = identityByAlephId.get();
+
+                    if (identity.getBankId() == null) {
+                        identity.setBankId(UUID.randomUUID().toString());
+                        this.identityService.save(identity);
+                        getLogger().debug("Identity found for Aleph ID: {} but has no BankIdSub. Assigned a new BankIdSub.", patronAlephId);
+                    }
                 } else {
-                    getLogger().debug("Identity not found for Aleph ID: {}", patronAlephId);
-                    identity = new Identity();
+                    identity = new Identity(UUID.randomUUID().toString());
                     identity.setAlephId(patronAlephId);
                     identity.setCheckedByAdmin(false);
                     this.identityService.save(identity);
+                    getLogger().debug("Identity not found for Aleph ID: {}. Created a new identity.", patronAlephId);
                 }
             }
 
