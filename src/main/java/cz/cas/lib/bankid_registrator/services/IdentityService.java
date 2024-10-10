@@ -28,6 +28,10 @@ public class IdentityService extends ServiceAbstract
         this.identityRepository.save(identity);
     }
 
+    public void delete(Identity identity) {
+        this.identityRepository.delete(identity);
+    }
+
     public Optional<Identity> findById(Long id) {
         return this.identityRepository.findById(id);
     }

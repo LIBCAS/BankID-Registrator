@@ -190,27 +190,7 @@ public class MainController extends ControllerAbstract
         Identify userProfile = mainService.getProfile(accessTokenContainer.getAccessToken(code));
         session.setAttribute("userProfile", userProfile);
 
-        if (userProfile.getLimited_legal_capacity()) {
-            // TODO limited_legal_capacity => go out
-            model.addAttribute("error", "Registrace byla zamítnuta: Osoba s omezenou způsobilostí k právním úkonům.");
-            return "error";
-        }
-
-        String bankId = userInfo.getSub();
         Identity identity;
-
-        Optional<Identity> identitySearch = this.identityService.findByBankId(bankId);
-        if (!identitySearch.isPresent()) {
-            identity = new Identity(bankId);
-            identity.setCheckedByAdmin(false);
-            this.identityService.save(identity);
-        } else {
-            identity = identitySearch.get();
-        }
-
-        session.setAttribute("identity", identity.getId());
-
-        this.identityActivityService.logBankIdVerificationSuccess(identity);
 
         // Mapping BankID user data to a Patron entity (so-called "BankId patron")
         Map<String, Object> bankIdPatronCreation = this.envAlephService.newPatron(userInfo, userProfile);
@@ -230,6 +210,12 @@ public class MainController extends ControllerAbstract
         }
 
         if (bankIdPatron.isNew()) {
+            identity = new Identity();
+            identity.setCheckedByAdmin(false);
+            this.identityService.save(identity);
+
+            session.setAttribute("identity", identity.getId());
+            this.identityActivityService.logBankIdVerificationSuccess(identity);
             this.identityActivityService.logNewRegistrationInitiation(identity);
 
             bankIdPatron = this.patronRepository.save(bankIdPatron);
@@ -251,10 +237,21 @@ public class MainController extends ControllerAbstract
                 model.addAttribute("error", "Registrace byla zamítnuta: Chyba identifikace.");
                 return "error";
             } else {
-                identity.setAlephId(patronAlephId);
-                this.identityService.save(identity);
+                Optional<Identity> identityByAlephId = this.identityService.findByAlephId(patronAlephId);
+
+                if (identityByAlephId.isPresent()) {
+                    identity = identityByAlephId.get();
+                } else {
+                    getLogger().debug("Identity not found for Aleph ID: {}", patronAlephId);
+                    identity = new Identity();
+                    identity.setAlephId(patronAlephId);
+                    identity.setCheckedByAdmin(false);
+                    this.identityService.save(identity);
+                }
             }
 
+            session.setAttribute("identity", identity.getId());
+            this.identityActivityService.logBankIdVerificationSuccess(identity);
             this.identityActivityService.logMembershipRenewalInitiation(identity);
 
             // Mapping Aleph patron data to a Patron entity (so-called "Aleph patron")

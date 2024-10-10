@@ -25,7 +25,7 @@ class AlephServiceTest
     @Autowired
     private PatronDTOValidator patronDTOValidator;
 
-    private static final Logger logger = LoggerFactory.getLogger(DateUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(AlephServiceTest.class);
 
     /**
      * Test for updating Aleph patron. 
