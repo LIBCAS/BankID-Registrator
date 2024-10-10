@@ -96,6 +96,14 @@ body > main {
     line-height: 1.7;
 }
 
+.page--minh70vh main {
+    min-height: 70vh;
+}
+
+.page--minh80vh main {
+    min-height: 80vh;
+}
+
 @media (min-width: 640px) {
 
     /* SM */

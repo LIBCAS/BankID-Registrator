@@ -6,15 +6,15 @@
   <title th:replace="fragments/head :: head"></title>
 </head>
 
-<body class="page-welcome">
-  <main layout:fragment="content" id="main" class="mb-10 text-center container mx-auto p-5">
-    <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900"
-      th:text="#{message.verifyViaBankid}"></h1>
-    <a th:href="${loginEndpoint}"
-      class="inline-block mt-5 px-6 py-3.5"
-      th:insert="~{fragments/svg/btn-bankid :: btn-bankid}" th:title="#{button.verifyViaBankid}"></a>
-    <hr>
-    <button id="js-resetIdentities" type="button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">Reset identities</button>
+<body class="page-welcome page--minh70vh">
+  <main layout:fragment="content" id="main" class="mb-10 text-center container mx-auto p-5 flex flex-col items-center justify-center gap-6">
+    <div class="flex flex-col gap-6 text-center max-w-3xl">
+      <h1 class="text-3xl font-extrabold text-center" th:text="#{page.home.heading}"></h1>
+      <p class="text-center" th:utext="#{page.home.description}"></p>
+      <a th:href="${loginEndpoint}" class="block my-0 mx-auto" th:insert="~{fragments/svg/btn-bankid :: btn-bankid}" th:title="#{button.verifyViaBankid}"></a>
+      <hr>
+      <button id="js-resetIdentities" type="button" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4">Reset identities</button>
+    </div>
   </main>
 </body>
 

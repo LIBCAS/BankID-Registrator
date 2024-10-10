@@ -275,6 +275,11 @@ public class MainController extends ControllerAbstract
 
             alephPatron = this.patronRepository.save(alephPatron);
 
+            identity.setAlephBarcode(alephPatron.getBarcode());
+            identity.setIsCasEmployee(alephPatron.getIsCasEmployee());
+            identity.setUpdatedAt(LocalDateTime.now());
+            this.identityService.save(identity);
+
             // Patron expiry date data from alephPatron
             String alephPatronExpiryDate = alephPatron.getExpiryDate();
             boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
