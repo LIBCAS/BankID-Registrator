@@ -22,7 +22,7 @@
                 <p th:if="${expiryDateIn1MonthOrLess}" th:text="#{message.membershipRenewal.instructions}">To renew your membership, review the personal information below and fill in the required information.</p>
                 <p th:if="${!expiryDateIn1MonthOrLess}" th:text="#{message.membershipRenewal.epiryDateTooFarAway}">Your membership can be renewed at the earliest 1 month before the expiration date.</p>
             </div>
-            <form th:if="${expiryDateIn1MonthOrLess}" method="post" th:object="${patron}" enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto text-left">
+            <form th:if="${expiryDateIn1MonthOrLess}" th:action="@{/membership-renewal}" method="post" th:object="${patron}" enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto text-left">
                 <div class="flex flex-col gap-7">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" required />
                     <input type="hidden" name="patronId" th:value="${patronId}" />
