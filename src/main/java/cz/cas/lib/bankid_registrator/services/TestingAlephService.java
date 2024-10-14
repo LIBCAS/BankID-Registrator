@@ -65,7 +65,7 @@ public class TestingAlephService extends AlephService implements AlephServiceIfa
         patron.setFirstname(Stream.of(mname, fname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Joanne Kathleen
-        patron.setName(Stream.of(lname, fname)
+        patron.setName(Stream.of(lname, mname, fname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Rowling Kathleen Joanne
 

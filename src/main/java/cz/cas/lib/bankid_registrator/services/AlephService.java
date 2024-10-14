@@ -130,6 +130,7 @@ public class AlephService extends AlephServiceAbstract
             }
 
             patron = (Patron) patronDataParse.get("patron");
+            patron.setNew(false);
         } catch (Exception e) {
             logger.error("Failed to parse patron data: {}", e.getMessage());
             result.put("error", "Failed to parse patron data");

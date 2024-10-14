@@ -199,6 +199,7 @@ public class IdentityController extends ControllerAbstract
         Model model, Locale locale
     ) {
         boolean isTokenValid = this.tokenService.isIdentityTokenValid(token);
+        boolean patronIsCasEmployee = false;
 
         if (!isTokenValid) {
             throw new HttpErrorException(HttpStatus.BAD_REQUEST, this.messageSource.getMessage("error.token.invalidOrMissing", null, locale));
@@ -207,10 +208,23 @@ public class IdentityController extends ControllerAbstract
         Map<String, Object> pswUpdate = this.updatePatronPassword(token, passwordDTO.getNewPassword());
 
         if (pswUpdate.containsKey("error")) {
-            throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage(pswUpdate.get("error").toString(), null, locale));
+            throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage("error.identityPassword.failed", null, locale));
+        }
+
+        try {
+            Long identityId = Long.parseLong(this.tokenService.extractIdentityIdFromToken(token));
+            Identity identity = this.identityService.findById(identityId).get();
+            String patronAlephId = identity.getAlephId();
+            Patron patron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
+
+            patronIsCasEmployee = patron.isCasEmployee;
+        } catch (Exception e) {
+            getLogger().error("Failed to get identity or patron from a password-setting form: " + e.getMessage());
+            throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage("error.identityPassword.failed", null, locale));
         }
 
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.title", null, locale));
+        model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
 
         return "identity_set_password_success";
     }

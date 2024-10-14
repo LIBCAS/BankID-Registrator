@@ -50,7 +50,7 @@ public class LocalAlephService extends AlephService implements AlephServiceIface
     @Override
     public Map<String, Object> newPatron(Connect userInfo, Identify userProfile)
     {
-        getLogger().info("Executing newPatronTest");
+        getLogger().info("Executing newPatronLocal");
         Assert.notNull(userInfo, "\"userInfo\" is required");
         Assert.notNull(userProfile, "\"userProfile\" is required");
 
@@ -59,14 +59,13 @@ public class LocalAlephService extends AlephService implements AlephServiceIface
         Patron patron = new Patron();
 
         String fname = userInfo.getGiven_name();      // Joanne
-        // String mname = this.generateTestingMname();   // Kathleen
-        String mname = "Testjqmrp";   // Kathleen
+        String mname = this.generateTestingMname();   // Kathleen
         String lname = userInfo.getFamily_name();     // Rowling
         patron.setLastname(lname);
         patron.setFirstname(Stream.of(mname, fname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Joanne Kathleen
-        patron.setName(Stream.of(lname, fname)
+        patron.setName(Stream.of(lname, mname, fname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Rowling Kathleen Joanne
 

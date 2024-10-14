@@ -12,19 +12,23 @@
             <div th:replace="fragments/progress-loader :: progress-loader"></div>
         </aside>
         <main layout:fragment="content" id="main" class="mb-10 container mx-auto text-center" th:style="${!patronLdapSynced} ? 'display: none;' : ''">
-            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.newRegistration.title}">New registration</h1>
-            <p th:text="#{page.newRegistrationSuccess.text}">KNAV identity registration was successful.</p>
-            <p th:if="${patronHasEmail && !patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.emailSent}">A confirmation message with a link to pay the membership fee and your username has been sent to your email.</p>
+            <h1 class="mb-6 text-3xl font-extrabold text-center" th:text="#{page.newRegistrationSuccess.title}"></h1>
+            <p th:text="#{page.newRegistrationSuccess.text}"></p>
+            <p th:text="#{page.newRegistrationSuccess.text2}"></p>
+            <!-- <p th:if="${patronHasEmail && !patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.emailSent}">A confirmation message with a link to pay the membership fee and your username has been sent to your email.</p>
             <p th:if="${patronHasEmail && patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.emailSentToEmployee}">A confirmation message with your username has been sent to your email.</p>
             <p>
                 <span th:if="${!patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.fee.instructions}">After paying the fee, your membership will be valid until</span>
                 <span th:if="${patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.fee.instructionsToEmployee}">Your membership will be valid until</span> <span th:text="${membershipExpiryDate}"></span>.
+            </p> -->
+            <p class="mt-2">
+                <span th:text="#{page.newRegistrationSuccess.membershipValidUntil}"></span>: <b th:text="${membershipExpiryDate}"></b>
             </p>
             <p class="mt-2">
-                <span th:text="#{page.newRegistrationSuccess.username}">Your username</span>: <b th:text="${alephBarcode}"></b>
+                <span th:text="#{page.newRegistrationSuccess.username}"></span>: <b th:text="${alephBarcode}"></b>
             </p>
-            <p class="mt-2">
-                <span th:text="#{page.newRegistrationSuccess.setPassword}">Set your password here</span>:
+            <p class="mt-4">
+                <h2 class="text-xl font-semibold text-center" th:text="#{page.newRegistrationSuccess.setPassword}"></h2>
             </p>
             <div th:replace="fragments/form-identity-set-password :: form-identity-set-password"></div>
 

@@ -3,12 +3,12 @@ body > main {
     padding: 2em 0;
 }
 
-.page-callback a, nav span a {
+.page-callback a, nav span a, main a {
     color: #0172b6;
     text-decoration: underline;
 }
 
-.page-callback a:hover, nav span a:hover {
+.page-callback a:hover, nav span a:hover, main a:hover {
     color: #000000;
 }
 
