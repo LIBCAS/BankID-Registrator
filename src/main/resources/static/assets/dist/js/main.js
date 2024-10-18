@@ -355,6 +355,16 @@ if (document.querySelector(".page-new-registration-success, .page-welcome")) {
 
 // PAGES: NEW REGISTRATION, MEMBERSHIP RENEWAL
 if (document.querySelector(".page-new-registration, .page-membership-renewal")) {
+    const formState = {
+        rfid: {
+            elm: document.getElementById("rfid"),
+            error: false,
+        },
+        email: {
+            elm: document.getElementById("email"),
+            error: false,
+        },
+    };
     const filesElm = document.getElementById("files");
     const filesInputElm = document.querySelector('[name="media"]');
     const emailInputElm = document.querySelector('[name="email"]');
@@ -419,14 +429,17 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
         checkRfid(rfid, patronId, csrfToken)
             .then(data => {
                 if (data.result === true) {
-                    rfidElm.value = "";
-                    showAlert(window.translations["alert.rfidAlreadyExists"], "danger");
+                    const errorMsg = window.translations["alert.rfidAlreadyInUse"];
+                    formState.rfid.error = errorMsg;
+                    showAlert(errorMsg, "danger");
                 } else {
+                    formState.rfid.error = false;
                     showAlert(window.translations["alert.rfidIsAvailable"], "success");
                 }
             })
             .catch(error => {
-                rfidElm.value = "";
+                const errorMsg = window.translations["alert.rfidCheckFailed"];
+                formState.rfid.error = errorMsg;
                 showAlert(window.translations["alert.rfidCheckFailed"], "danger");
             });
     });
@@ -447,14 +460,17 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
         checkEmail(email, patronId, csrfToken)
             .then(data => {
                 if (data.result === true) {
-                    emailElm.value = "";
+                    const errorMsg = window.translations["alert.emailAlreadyInUse"];
+                    formState.email.error = errorMsg;
                     showAlert(window.translations["alert.emailAlreadyInUse"], "danger");
                 } else {
+                    formState.email.error = false;
                     showAlert(window.translations["alert.emailIsAvailable"], "success");
                 }
             })
             .catch(error => {
-                emailElm.value = "";
+                const errorMsg = window.translations["alert.emailCheckFailed"];
+                formState.email.error = errorMsg;
                 showAlert(window.translations["alert.emailCheckFailed"], "danger");
             });
     });
@@ -466,6 +482,15 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
         const validFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.IDLE);
         const nowLoadingFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.INIT || file.status === FilePond.FileStatus.LOADING);
         const invalidFiles = pond.getFiles().filter(file => file.status !== FilePond.FileStatus.IDLE && file.status !== FilePond.FileStatus.INIT && file.status !== FilePond.FileStatus.LOADING);
+
+        for (let formField in formState) {
+            if (formState[formField].error) {
+                event.preventDefault();
+                alert(formState[formField].error);
+                formState[formField].elm.scrollIntoView({ behavior: "smooth" });
+                return;
+            }
+        }
 
         if (nowLoadingFiles.length > 0) {
             event.preventDefault();
