@@ -42,3 +42,6 @@ build/
 .svn/
 
 Procfile
+
+.local
+.bash_history

@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file: .env
+    shm_size: '2gb'
     environment:
       LOG_PATH: /app/logs
       STORAGE_PATH: /app/storage
