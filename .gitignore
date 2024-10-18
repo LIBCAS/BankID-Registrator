@@ -45,3 +45,6 @@ Procfile
 
 .local
 .bash_history
+.pki
+.cache
+.config
