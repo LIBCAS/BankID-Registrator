@@ -37,6 +37,8 @@ public class PatronDTO
 
     public String zip;         // z304-zip
 
+    public boolean useContactAddress = false;
+
     @Size(max = 50, message = "{form.error.field.sizeExceeded}")
     public String contactAddress0;         // z304-address-0 (for <z304-address-type>02</z304-address-type>)
 

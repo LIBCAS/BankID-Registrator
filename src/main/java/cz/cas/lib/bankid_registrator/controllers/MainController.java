@@ -515,8 +515,8 @@ public class MainController extends ControllerAbstract
 
             model.addAttribute("patronId", session.getAttribute("latestPatron"));
             model.addAttribute("patron", editedPatron);
-            model.addAttribute("bankIdPatron", session.getAttribute("bankIdPatronDTO"));
-            model.addAttribute("alephPatron", session.getAttribute("alephPatronDTO"));
+            model.addAttribute("bankIdPatron", (PatronDTO) session.getAttribute("bankIdPatronDTO"));
+            model.addAttribute("alephPatron", (PatronDTO) session.getAttribute("alephPatronDTO"));
             model.addAttribute("membershipExpiryDate", session.getAttribute("membershipExpiryDate"));
             model.addAttribute("membershipHasExpired", session.getAttribute("membershipHasExpired"));
             model.addAttribute("membershipExpiresToday", session.getAttribute("membershipExpiresToday"));

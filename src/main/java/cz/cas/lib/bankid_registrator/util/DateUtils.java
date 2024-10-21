@@ -4,6 +4,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,5 +201,15 @@ public class DateUtils
      */
     public static String getDateTime(String format) {
         return new SimpleDateFormat(format).format(new Date());
+    }
+
+    /**
+     * Gets the last date of the current month in the specified format.
+     * 
+     * @param format The format for the date string.
+     * @return The last date of the current month as a String.
+     */
+    public static String getLastDateOfCurrentMonth(String format) {
+        return LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()).format(DateTimeFormatter.ofPattern(format));
     }
 }

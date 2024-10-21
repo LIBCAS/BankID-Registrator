@@ -166,80 +166,83 @@
                         </div>
                         <div class="grid grid-cols-1 gap-2">
                             <fieldset class="space-y-2">
-                                <legend class="block font-bold">
-                                    <span th:text="#{message.contactAddress}"></span>
+                                <legend class="flex items-center font-bold cursor-pointer">
+                                    <input id="useContactAddress" name="useContactAddress" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{useContactAddress == true}" th:field="*{useContactAddress}" />
+                                    <label for="useContactAddress" class="ml-2 cursor-pointer" th:text="#{message.contactAddress}"></label>
                                 </legend>
-                                <div class="hidden flex flex-col gap-1">
-                                    <input type="text" name="contact_address_line1" th:placeholder="#{message.addressName}" class="block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{contactAddress0}" readonly />
-                                    <div th:if="${#fields.hasErrors('contactAddress0')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
-                                        <i class="fa-solid fa-triangle-exclamation"></i>
-                                        <span th:errors="*{contactAddress0}" class="ml-1"></span>
-                                    </div>
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label for="contact_address_line2" class="block text-sm font-medium">
-                                        <span th:text="#{message.streetHouseNum}"></span>
-                                    </label>
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                        <div class="flex flex-col gap-1">
-                                            <input type="text" id="contact_address_line2" name="contact_address_line2" th:placeholder="#{message.streetHouseNum}" class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}" />
-                                            <div th:if="${#fields.hasErrors('contactAddress1')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
-                                                <i class="fa-solid fa-triangle-exclamation"></i>
-                                                <span th:errors="*{contactAddress1}" class="ml-1"></span>
-                                            </div>
+                                <div id="contactAddressFields" class="space-y-2" th:classappend="${!patron.useContactAddress} ? 'hidden'">
+                                    <div class="hidden flex flex-col gap-1">
+                                        <input type="text" name="contact_address_line1" th:placeholder="#{message.addressName}" class="block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{contactAddress0}" readonly />
+                                        <div th:if="${#fields.hasErrors('contactAddress0')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
+                                            <i class="fa-solid fa-triangle-exclamation"></i>
+                                            <span th:errors="*{contactAddress0}" class="ml-1"></span>
                                         </div>
-                                        <button th:if="${patron.contactAddress1 == null && bankIdPatron.contactAddress1 != null and !#strings.isEmpty(bankIdPatron.contactAddress1)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
-                                            <span th:text="#{message.useThisBankIDValue}"></span>:<br>
-                                            <i th:text="${bankIdPatron.contactAddress1}"></i>
-                                        </button>
-                                        <button th:if="${patron.contactAddress1 == null && alephPatron.contactAddress1 != null and !#strings.isEmpty(alephPatron.contactAddress1)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
-                                            <span th:text="#{message.useThisKnavValue}"></span>:<br>
-                                            <i th:text="${alephPatron.contactAddress1}"></i>
-                                        </button>
                                     </div>
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label for="contact_address_line3" class="block text-sm font-medium">
-                                        <span th:text="#{message.municipality}"></span>
-                                    </label>
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                        <div class="flex flex-col gap-1">
-                                            <input type="text" id="contact_address_line3" name="contact_address_line3" th:placeholder="#{message.municipality}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}" />
-                                            <div th:if="${#fields.hasErrors('contactAddress2')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
-                                                <i class="fa-solid fa-triangle-exclamation"></i>
-                                                <span th:errors="*{contactAddress2}" class="ml-1"></span>
+                                    <div class="flex flex-col gap-1">
+                                        <label for="contact_address_line2" class="block text-sm font-medium">
+                                            <span th:text="#{message.streetHouseNum}"></span>
+                                        </label>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            <div class="flex flex-col gap-1">
+                                                <input type="text" id="contact_address_line2" name="contact_address_line2" th:placeholder="#{message.streetHouseNum}" class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}" />
+                                                <div th:if="${#fields.hasErrors('contactAddress1')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    <span th:errors="*{contactAddress1}" class="ml-1"></span>
+                                                </div>
                                             </div>
+                                            <button th:if="${patron.contactAddress1 == null && bankIdPatron.contactAddress1 != null and !#strings.isEmpty(bankIdPatron.contactAddress1)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                                <span th:text="#{message.useThisBankIDValue}"></span>:<br>
+                                                <i th:text="${bankIdPatron.contactAddress1}"></i>
+                                            </button>
+                                            <button th:if="${patron.contactAddress1 == null && alephPatron.contactAddress1 != null and !#strings.isEmpty(alephPatron.contactAddress1)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                                <span th:text="#{message.useThisKnavValue}"></span>:<br>
+                                                <i th:text="${alephPatron.contactAddress1}"></i>
+                                            </button>
                                         </div>
-                                        <button th:if="${patron.contactAddress2 == null && bankIdPatron.contactAddress2 != null and !#strings.isEmpty(bankIdPatron.contactAddress2)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
-                                            <span th:text="#{message.useThisBankIDValue}"></span>:<br>
-                                            <i th:text="${bankIdPatron.contactAddress2}"></i>
-                                        </button>
-                                        <button th:if="${patron.contactAddress2 == null && alephPatron.contactAddress2 != null and !#strings.isEmpty(alephPatron.contactAddress2)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
-                                            <span th:text="#{message.useThisKnavValue}"></span>:<br>
-                                            <i th:text="${alephPatron.contactAddress2}"></i>
-                                        </button>
                                     </div>
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <label for="contact_zip" class="block text-sm font-medium">
-                                        <span th:text="#{message.zipCode}"></span>
-                                    </label>
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                        <div class="flex flex-col gap-1">
-                                            <input type="text" id="contact_zip" name="contact_zip" th:placeholder="#{message.zipCode}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}" />
-                                            <div th:if="${#fields.hasErrors('contactZip')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
-                                                <i class="fa-solid fa-triangle-exclamation"></i>
-                                                <span th:errors="*{contactZip}" class="ml-1"></span>
+                                    <div class="flex flex-col gap-1">
+                                        <label for="contact_address_line3" class="block text-sm font-medium">
+                                            <span th:text="#{message.municipality}"></span>
+                                        </label>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            <div class="flex flex-col gap-1">
+                                                <input type="text" id="contact_address_line3" name="contact_address_line3" th:placeholder="#{message.municipality}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}" />
+                                                <div th:if="${#fields.hasErrors('contactAddress2')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    <span th:errors="*{contactAddress2}" class="ml-1"></span>
+                                                </div>
                                             </div>
+                                            <button th:if="${patron.contactAddress2 == null && bankIdPatron.contactAddress2 != null and !#strings.isEmpty(bankIdPatron.contactAddress2)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                                <span th:text="#{message.useThisBankIDValue}"></span>:<br>
+                                                <i th:text="${bankIdPatron.contactAddress2}"></i>
+                                            </button>
+                                            <button th:if="${patron.contactAddress2 == null && alephPatron.contactAddress2 != null and !#strings.isEmpty(alephPatron.contactAddress2)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                                <span th:text="#{message.useThisKnavValue}"></span>:<br>
+                                                <i th:text="${alephPatron.contactAddress2}"></i>
+                                            </button>
                                         </div>
-                                        <button th:if="${patron.contactZip == null && bankIdPatron.contactZip != null and !#strings.isEmpty(bankIdPatron.contactZip)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
-                                            <span th:text="#{message.useThisBankIDValue}"></span>:<br>
-                                            <i th:text="${bankIdPatron.contactZip}"></i>
-                                        </button>
-                                        <button th:if="${patron.contactZip == null && alephPatron.contactZip != null and !#strings.isEmpty(alephPatron.contactZip)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
-                                            <span th:text="#{message.useThisKnavValue}"></span>:<br>
-                                            <i th:text="${alephPatron.contactZip}"></i>
-                                        </button>
+                                    </div>
+                                    <div class="flex flex-col gap-1">
+                                        <label for="contact_zip" class="block text-sm font-medium">
+                                            <span th:text="#{message.zipCode}"></span>
+                                        </label>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                            <div class="flex flex-col gap-1">
+                                                <input type="text" id="contact_zip" name="contact_zip" th:placeholder="#{message.zipCode}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}" />
+                                                <div th:if="${#fields.hasErrors('contactZip')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                                    <span th:errors="*{contactZip}" class="ml-1"></span>
+                                                </div>
+                                            </div>
+                                            <button th:if="${patron.contactZip == null && bankIdPatron.contactZip != null and !#strings.isEmpty(bankIdPatron.contactZip)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                                <span th:text="#{message.useThisBankIDValue}"></span>:<br>
+                                                <i th:text="${bankIdPatron.contactZip}"></i>
+                                            </button>
+                                            <button th:if="${patron.contactZip == null && alephPatron.contactZip != null and !#strings.isEmpty(alephPatron.contactZip)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                                <span th:text="#{message.useThisKnavValue}"></span>:<br>
+                                                <i th:text="${alephPatron.contactZip}"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </fieldset>
@@ -266,21 +269,23 @@
                         </div>
                     </div>
                     <div class="flex flex-col gap-4">
-                        <div class="flex flex-col gap-2" data-accordion="collapse" data-active-classes="text-gray-900" data-inactive-classes="text-gray-900">
-                            <h3 id="accordion-rfid-heading" class="flex justify-between items-center text-md md:text-2xl font-semibold cursor-pointer" type="button" data-accordion-target="#accordion-rfid-body" aria-expanded="false" aria-controls="accordion-rfid-body">
-                                <span th:text="#{form.membershipRenewal.section3.title}"></span>
-                                <i class="text-md fa-solid fa-circle-info" th:title="#{message.moreInfo}"></i>
-                            </h3>
-                            <div id="accordion-rfid-body" class="flex flex-col gap-2 hidden" aria-labelledby="accordion-rfid-heading">
-                                <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.subtitle}"></h4>
-                                <p th:utext="#{form.membershipRenewal.section3.text1}"></p>
-                                <p th:utext="#{form.membershipRenewal.section3.text2}"></p>
-                                <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block1.h}"></h4>
-                                <p th:utext="#{form.membershipRenewal.section3.block1.text}"></p>
-                                <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block2.h}"></h4>
-                                <p th:utext="#{form.membershipRenewal.section3.block2.text}"></p>
-                                <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block3.h}"></h4>
-                                <p th:utext="#{form.membershipRenewal.section3.block3.text}"></p>
+                        <div class="flex flex-col gap-2">
+                            <h3 class="text-md md:text-2xl font-semibold" th:text="#{form.membershipRenewal.section3.title}"></h3>
+                            <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.subtitle}"></h4>
+                            <p th:utext="#{form.membershipRenewal.section3.text1}"></p>
+                            <p th:utext="#{form.membershipRenewal.section3.text2}"></p>
+                            <div class="flex flex-col gap-2" data-accordion="collapse" data-active-classes="text-gray-900" data-inactive-classes="text-gray-900">
+                                <h4 id="accordion-rfid-heading" class="flex justify-between items-center text-md md:text-xl font-semibold cursor-pointer" type="button" data-accordion-target="#accordion-rfid-body" aria-expanded="false" aria-controls="accordion-rfid-body">
+                                    <span th:text="#{form.membershipRenewal.section3.block1.h}"></span>
+                                    <i class="text-md fa-solid fa-circle-info" th:title="#{message.moreInfo}"></i>
+                                </h4>
+                                <div id="accordion-rfid-body" class="flex flex-col gap-2 hidden" aria-labelledby="accordion-rfid-heading">
+                                    <p th:utext="#{form.membershipRenewal.section3.block1.text}"></p>
+                                    <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block2.h}"></h4>
+                                    <p th:utext="#{form.membershipRenewal.section3.block2.text}"></p>
+                                    <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block3.h}"></h4>
+                                    <p th:utext="#{form.membershipRenewal.section3.block3.text}"></p>
+                                </div>
                             </div>
                         </div>
                         <div class="flex flex-col gap-1">
@@ -307,9 +312,9 @@
                     <div class="flex flex-col gap-2">
                         <h3 class="text-md md:text-2xl font-semibold" th:text="#{form.membershipRenewal.section4.title}"></h3>
                         <p th:utext="#{form.membershipRenewal.section4.text1}"></p>
-                        <div class="flex items-center">
-                            <input id="isCasEmployee" name="isCasEmployee" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{isCasEmployee == true}" th:field="*{isCasEmployee}" />
-                            <label for="isCasEmployee" class="ml-2 mb-0 font-medium" th:text="#{message.iAmCasEmployee}">
+                        <div class="flex items-center cursor-pointer">
+                            <input id="isCasEmployee" name="isCasEmployee" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{isCasEmployee == true}" th:field="*{isCasEmployee}" />
+                            <label for="isCasEmployee" class="ml-2 mb-0 font-medium cursor-pointer" th:text="#{message.iAmCasEmployee}">
                                 I am a CAS employee
                             </label>
                             <div th:if="${#fields.hasErrors('isCasEmployee')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
@@ -331,13 +336,16 @@
                             <i class="fa-solid fa-triangle-exclamation"></i>
                             <span th:text="${err}" class="ml-1"></span>
                         </div>
+                        <div class="text-sm mt-2">
+                            <b>**</b>&nbsp;<span th:text="#{form.text.requiredCasEmployeeInformation}"></span>
+                        </div>
                     </div>
                     <div class="flex flex-col mt-4 gap-2">
                         <div th:utext="#{form.membershipRenewal.declaration0}"></div>
                         <div class="flex gap-3">
-                            <input id="declaration1" name="declaration1" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration1 == true}" th:field="*{declaration1}" th:value="Y" required />
+                            <input id="declaration1" name="declaration1" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{declaration1 == true}" th:field="*{declaration1}" th:value="Y" required />
                             <div>
-                                <label for="declaration1" class="mb-0 font-medium">
+                                <label for="declaration1" class="mb-0 font-medium cursor-pointer">
                                     <span th:utext="#{form.membershipRenewal.declaration1}"></span>    
                                     <span th:title="#{form.text.requiredInformation}">*</span>
                                 </label>
@@ -345,9 +353,9 @@
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <input id="declaration2" name="declaration2" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration2 == true}" th:field="*{declaration2}" th:value="Y" required />
+                            <input id="declaration2" name="declaration2" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{declaration2 == true}" th:field="*{declaration2}" th:value="Y" required />
                             <div>
-                                <label for="declaration2" class="mb-0 font-medium">
+                                <label for="declaration2" class="mb-0 font-medium cursor-pointer">
                                     <span th:utext="#{form.membershipRenewal.declaration2}"></span>    
                                     <span th:title="#{form.text.requiredInformation}">*</span>
                                 </label>
@@ -355,9 +363,9 @@
                             </div>
                         </div>
                         <div class="flex gap-3">
-                            <input id="declaration3" name="declaration3" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration3 == true}" th:field="*{declaration3}" th:value="Y" required />
+                            <input id="declaration3" name="declaration3" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{declaration3 == true}" th:field="*{declaration3}" th:value="Y" required />
                             <div>
-                                <label for="declaration3" class="mb-0 font-medium">
+                                <label for="declaration3" class="mb-0 font-medium cursor-pointer">
                                     <span th:utext="#{form.membershipRenewal.declaration3}"></span>    
                                     <span th:title="#{form.text.requiredInformation}">*</span>
                                 </label>

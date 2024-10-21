@@ -5,6 +5,8 @@ import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.exceptions.PatronNotFoundException;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
+import cz.cas.lib.bankid_registrator.util.StringUtils;
+
 import java.util.Optional;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -34,7 +36,11 @@ public class PatronService extends PatronServiceAbstract
      * @param patron
      */
     public PatronDTO getPatronDTO(Patron patron) {
-        return modelMapper.map(patron, PatronDTO.class);
+        PatronDTO patronDTO = modelMapper.map(patron, PatronDTO.class);
+
+        patronDTO.setUseContactAddress(!StringUtils.isEmpty(patron.getContactAddress1(), patron.getContactAddress2(), patron.getContactZip()));
+
+        return patronDTO;
     }
 
     /**

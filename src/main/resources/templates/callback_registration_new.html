@@ -139,10 +139,11 @@
                     </div>
                     <div class="grid grid-cols-1 gap-2">
                         <fieldset class="space-y-2">
-                            <legend class="block font-bold">
-                                <span th:text="#{message.contactAddress}"></span>
+                            <legend class="flex items-center font-bold cursor-pointer">
+                                <input id="useContactAddress" name="useContactAddress" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{useContactAddress == true}" th:field="*{useContactAddress}" />
+                                <label for="useContactAddress" class="ml-2 cursor-pointer" th:text="#{message.contactAddress}"></label>
                             </legend>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                            <div id="contactAddressFields" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2" th:classappend="${!patron.useContactAddress} ? 'hidden'">
                                 <div class="hidden flex flex-col gap-1">
                                     <input type="text" name="contact_address_line1" th:placeholder="#{message.addressName}" class="block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{contactAddress0}" readonly />
                                     <div th:if="${#fields.hasErrors('contactAddress0')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
@@ -208,20 +209,22 @@
                     </div>
                 </div>
                 <div class="flex flex-col gap-4">
-                    <div class="flex flex-col gap-2" data-accordion="collapse" data-active-classes="text-gray-900" data-inactive-classes="text-gray-900">
-                        <h3 id="accordion-rfid-heading" class="flex justify-between items-center text-md md:text-2xl font-semibold cursor-pointer" type="button" data-accordion-target="#accordion-rfid-body" aria-expanded="false" aria-controls="accordion-rfid-body">
-                            <span th:text="#{form.newRegistration.section3.title}"></span>
-                            <i class="text-md fa-solid fa-circle-info" th:title="#{message.moreInfo}"></i>
-                        </h3>
-                        <div id="accordion-rfid-body" class="flex flex-col gap-2 hidden" aria-labelledby="accordion-rfid-heading">
-                            <h4 class="text-md md:text-xl font-semibold" th:text="#{form.newRegistration.section3.subtitle}"></h4>
-                            <p th:utext="#{form.newRegistration.section3.text1}"></p>
-                            <h4 class="text-md md:text-xl font-semibold" th:text="#{form.newRegistration.section3.block1.h}"></h4>
-                            <p th:utext="#{form.newRegistration.section3.block1.text}"></p>
-                            <h4 class="text-md md:text-xl font-semibold" th:text="#{form.newRegistration.section3.block2.h}"></h4>
-                            <p th:utext="#{form.newRegistration.section3.block2.text}"></p>
-                            <h4 class="text-md md:text-xl font-semibold" th:text="#{form.newRegistration.section3.block3.h}"></h4>
-                            <p th:utext="#{form.newRegistration.section3.block3.text}"></p>
+                    <div class="flex flex-col gap-2">
+                        <h3 class="text-md md:text-2xl font-semibold" th:text="#{form.newRegistration.section3.title}"></h3>
+                        <h4 class="text-md md:text-xl font-semibold" th:text="#{form.newRegistration.section3.subtitle}"></h4>
+                        <p th:utext="#{form.newRegistration.section3.text1}"></p>
+                        <div class="flex flex-col gap-2" data-accordion="collapse" data-active-classes="text-gray-900" data-inactive-classes="text-gray-900">
+                            <h4 id="accordion-rfid-heading" class="flex justify-between items-center text-md md:text-xl font-semibold cursor-pointer" type="button" data-accordion-target="#accordion-rfid-body" aria-expanded="false" aria-controls="accordion-rfid-body">
+                                <span th:text="#{form.newRegistration.section3.block1.h}"></span>
+                                <i class="text-md fa-solid fa-circle-info" th:title="#{message.moreInfo}"></i>
+                            </h4>
+                            <div id="accordion-rfid-body" class="flex flex-col gap-2 hidden" aria-labelledby="accordion-rfid-heading">
+                                <p th:utext="#{form.newRegistration.section3.block1.text}"></p>
+                                <h4 class="text-md md:text-xl font-semibold" th:text="#{form.newRegistration.section3.block2.h}"></h4>
+                                <p th:utext="#{form.newRegistration.section3.block2.text}"></p>
+                                <h4 class="text-md md:text-xl font-semibold" th:text="#{form.newRegistration.section3.block3.h}"></h4>
+                                <p th:utext="#{form.newRegistration.section3.block3.text}"></p>
+                            </div>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -238,9 +241,9 @@
                 <div class="flex flex-col gap-2">
                     <h3 class="text-md md:text-2xl font-semibold" th:text="#{form.newRegistration.section4.title}"></h3>
                     <p th:utext="#{form.newRegistration.section4.text1}"></p>
-                    <div class="flex items-center">
-                        <input id="isCasEmployee" name="isCasEmployee" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{isCasEmployee == true}" th:field="*{isCasEmployee}" />
-                        <label for="isCasEmployee" class="ml-2 mb-0 font-medium" th:text="#{message.iAmCasEmployee}">
+                    <div class="flex items-center cursor-pointer">
+                        <input id="isCasEmployee" name="isCasEmployee" type="checkbox" class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{isCasEmployee == true}" th:field="*{isCasEmployee}" />
+                        <label for="isCasEmployee" class="ml-2 mb-0 font-medium cursor-pointer" th:text="#{message.iAmCasEmployee}">
                             I am a CAS employee
                         </label>
                         <div th:if="${#fields.hasErrors('isCasEmployee')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
@@ -262,13 +265,16 @@
                         <i class="fa-solid fa-triangle-exclamation"></i>
                         <span th:text="${err}" class="ml-1"></span>
                     </div>
+                    <div class="text-sm mt-2">
+                        <b>**</b>&nbsp;<span th:text="#{form.text.requiredCasEmployeeInformation}"></span>
+                    </div>
                 </div>
                 <div class="flex flex-col mt-4 gap-2">
                     <div th:utext="#{form.newRegistration.declaration0}"></div>
                     <div class="flex gap-3">
-                        <input id="declaration1" name="declaration1" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration1 == true}" th:field="*{declaration1}" th:value="Y" required />
+                        <input id="declaration1" name="declaration1" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{declaration1 == true}" th:field="*{declaration1}" th:value="Y" required />
                         <div>
-                            <label for="declaration1" class="mb-0 font-medium">
+                            <label for="declaration1" class="mb-0 font-medium cursor-pointer">
                                 <span th:utext="#{form.newRegistration.declaration1}"></span>    
                                 <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
@@ -276,9 +282,9 @@
                         </div>
                     </div>
                     <div class="flex gap-3">
-                        <input id="declaration2" name="declaration2" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration2 == true}" th:field="*{declaration2}" th:value="Y" required />
+                        <input id="declaration2" name="declaration2" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{declaration2 == true}" th:field="*{declaration2}" th:value="Y" required />
                         <div>
-                            <label for="declaration2" class="mb-0 font-medium">
+                            <label for="declaration2" class="mb-0 font-medium cursor-pointer">
                                 <span th:utext="#{form.newRegistration.declaration2}"></span>    
                                 <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
@@ -286,9 +292,9 @@
                         </div>
                     </div>
                     <div class="flex gap-3">
-                        <input id="declaration3" name="declaration3" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" th:checked="*{declaration3 == true}" th:field="*{declaration3}" th:value="Y" required />
+                        <input id="declaration3" name="declaration3" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{declaration3 == true}" th:field="*{declaration3}" th:value="Y" required />
                         <div>
-                            <label for="declaration3" class="mb-0 font-medium">
+                            <label for="declaration3" class="mb-0 font-medium cursor-pointer">
                                 <span th:utext="#{form.newRegistration.declaration3}"></span>    
                                 <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>

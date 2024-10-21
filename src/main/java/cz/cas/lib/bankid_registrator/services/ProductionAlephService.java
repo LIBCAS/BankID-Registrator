@@ -61,7 +61,7 @@ public class ProductionAlephService extends AlephService implements AlephService
         String lname = userInfo.getFamily_name();     // Rowling
 
         patron.setLastname(lname);
-        patron.setFirstname(Stream.of(mname, fname)
+        patron.setFirstname(Stream.of(fname, mname)
             .filter(s -> !s.isEmpty())
             .collect(Collectors.joining(" ")));       // Joanne Kathleen
         patron.setName(Stream.of(lname, mname, fname)

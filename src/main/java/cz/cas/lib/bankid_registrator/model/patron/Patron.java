@@ -10,6 +10,9 @@ import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import java.util.Optional;
 import javax.persistence.*;
+
+import org.checkerframework.checker.units.qual.t;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -210,6 +213,13 @@ public class Patron {
                 this.expiryDate = DateUtils.addDaysToDateString(this.expiryDate, patronStatus.getMembershipLength(), "dd/MM/yyyy", "dd/MM/yyyy");
             } else {
                 this.expiryDate = DateUtils.addDaysToToday(patronStatus.getMembershipLength(), "dd/MM/yyyy");
+            }
+        });
+        Optional.ofNullable(patron.useContactAddress).ifPresent(e -> {
+            if (e != true) {
+                this.contactAddress1 = "";
+                this.contactAddress2 = "";
+                this.contactZip = "";
             }
         });
     }

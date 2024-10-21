@@ -340,7 +340,7 @@ if (document.querySelector(".page-new-registration-success, .page-welcome")) {
             progressStep: 12,
             checkFunction: checkLdapAccount,
             interval: 5000,
-            maxSteps: 11,
+            maxSteps: 10,
             progressTexts: [
                 window.translations["loader.newRegistration.validatingData"],
                 window.translations["loader.newRegistration.creatingIdentity"],
@@ -476,6 +476,15 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
     });
 
     document.getElementById("isCasEmployee").addEventListener("change", handleCasEmployeeChange);
+
+    document.getElementById("useContactAddress").addEventListener("change", (ev) => {
+        const contactAddressFields = document.getElementById("contactAddressFields");
+        if (ev.target.checked) {
+            contactAddressFields.classList.remove("hidden");
+        } else {
+            contactAddressFields.classList.add("hidden");
+        }
+    });
 
     document.querySelector("form").addEventListener("submit", (event) => {
         const casEmployeeChecked = document.getElementById("isCasEmployee").checked;
