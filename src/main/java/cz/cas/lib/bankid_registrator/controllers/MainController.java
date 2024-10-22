@@ -362,6 +362,8 @@ public class MainController extends ControllerAbstract
             return "callback_registration_new";
         }
 
+        // getLogger().info("Session ID: {}", session.getId());
+
         Long patronSysId = (Long) session.getAttribute("patron");
         Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
@@ -408,11 +410,14 @@ public class MainController extends ControllerAbstract
             getLogger().error("Error converting finalPatron to JSON", e);
         }
 
-        Map<String, Object> patronCreation = this.alephService.createPatron(patron);
-        if (patronCreation.containsKey("error")) {
-            getLogger().info("RESULT: {}", patronCreation);
-            getLogger().error("Error creating patron: {}", patronCreation.get("error"));
-            return "error";
+        synchronized (this) {
+            Map<String, Object> patronCreation = this.alephService.createPatron(patron);
+            if (patronCreation.containsKey("error")) {
+                getLogger().info("RESULT: {}", patronCreation);
+                getLogger().error("Error creating patron: {}", patronCreation.get("error"));
+                return "error";
+            }
+            // model.addAttribute("xml", patronCreation.get("xml-patron"));
         }
 
         String alephPatronBarcode = patron.getBarcode();
@@ -462,7 +467,6 @@ public class MainController extends ControllerAbstract
         model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
         model.addAttribute("patronHasEmail", patronHasEmail);
         model.addAttribute("membershipExpiryDate", membershipExpiryDate);
-        model.addAttribute("xml", patronCreation.get("xml-patron"));
         model.addAttribute("alephBarcode", alephPatronBarcode);
         model.addAttribute("token", this.tokenService.createIdentityToken(identity));
         model.addAttribute("apiToken", this.tokenService.createApiToken(identity.getId().toString()));
@@ -631,7 +635,7 @@ public class MainController extends ControllerAbstract
         model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
         model.addAttribute("patronHasEmail", patronHasEmail);
         model.addAttribute("membershipExpiryDate", membershipExpiryDate);
-        model.addAttribute("xml", patronUpdate.get("xml-patron"));
+        // model.addAttribute("xml", patronUpdate.get("xml-patron"));
         model.addAttribute("alephBarcode", alephPatronBarcode);
 
         return "membership_renewal_success";

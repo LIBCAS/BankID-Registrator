@@ -59,7 +59,7 @@ public class LocalAlephService extends AlephService implements AlephServiceIface
         Patron patron = new Patron();
 
         String fname = userInfo.getGiven_name();      // Joanne
-        String mname = "Testlypbz";   // Kathleen
+        String mname = this.generateTestingMname();   // Kathleen
         String lname = userInfo.getFamily_name();     // Rowling
         patron.setLastname(lname);
         patron.setFirstname(Stream.of(fname, mname)

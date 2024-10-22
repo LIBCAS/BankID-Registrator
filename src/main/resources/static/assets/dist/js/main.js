@@ -340,7 +340,7 @@ if (document.querySelector(".page-new-registration-success, .page-welcome")) {
             progressStep: 12,
             checkFunction: checkLdapAccount,
             interval: 5000,
-            maxSteps: 10,
+            maxSteps: 8,
             progressTexts: [
                 window.translations["loader.newRegistration.validatingData"],
                 window.translations["loader.newRegistration.creatingIdentity"],
