@@ -1,20 +1,24 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{emails/cs/layout}">
 <head>
     <meta charset="UTF-8">
 </head>
 <body>
-    <h1>Vaše žádost o prodloužení členství byla úspěšně odeslána</span>!</h1>
-    <div>
-        <span>Vaše uživatelské jméno: </span>
-        <span th:text="${alephPatronBarcode}"></span>
-    </div>
-    <div>
-        <p th:if="${!isCasEmployee}">Zde je váš <a href="#">odkaz</a> pro platbu.</p>
-        <p>
-            <span th:if="${!isCasEmployee}">Po zaplacení poplatku bude vaše členství prodlouženo do</span>
-            <span th:if="${isCasEmployee}">Vaše členství bude prodlouženo do</span> <b th:text="${membershipExpiryDate}"></b>.
-        </p>
-    </div>
+    <table>
+        <tr>
+            <td layout:fragment="content">
+                <h1>Vaše žádost o prodloužení členství byla úspěšně odeslána!</h1>
+                <p>
+                    <span>Vaše uživatelské jméno: </span>
+                    <b th:text="${alephPatronBarcode}"></b>
+                </p>
+                <p th:if="${!isEmployee}">Zde je váš <a href="#">odkaz</a> pro platbu.</p>
+                <p>
+                    <span th:if="${!isEmployee}">Po zaplacení poplatku bude vaše členství prodlouženo do</span>
+                    <span th:if="${isEmployee}">Vaše členství bude prodlouženo do</span> <b th:text="${membershipExpiryDate}"></b>.
+                </p>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
  */
 @Controller
 @Profile("local")
-@RequestMapping("/test")
+@RequestMapping("/local")
 public class LocalIdentityController extends ControllerAbstract
 {
     public LocalIdentityController(

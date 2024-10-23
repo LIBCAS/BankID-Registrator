@@ -1,20 +1,26 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{emails/en/layout}">
 <head>
     <meta charset="UTF-8">
 </head>
 <body>
-    <h1>You have successfully registered</span>!</h1>
-    <div>
-        <span>Your username: </span>
-        <span th:text="${alephPatronBarcode}"></span>
-    </div>
-    <div>
-        <p th:if="${!isCasEmployee}">Here is your <a href="#">link</a> for payment.</p>
-        <p>
-            <span th:if="${!isCasEmployee}">After paying the fee, your membership will be valid until</span>
-            <span th:if="${isCasEmployee}">Your membership will be valid until</span> <b th:text="${membershipExpiryDate}"></b>.
-        </p>
-    </div>
+    <table>
+        <tr>
+            <td layout:fragment="content">
+                <h1>You have successfully registered!</h1>
+                <div>
+                    <span>Your username: </span>
+                    <b th:text="${alephPatronBarcode}"></b>
+                </div>
+                <div>
+                    <p th:if="${!isEmployee}">Here is your <a href="#">link</a> for payment.</p>
+                    <p>
+                        <span th:if="${!isEmployee}">After paying the fee, your membership will be valid until</span>
+                        <span th:if="${isEmployee}">Your membership will be valid until</span> <b th:text="${membershipExpiryDate}"></b>.
+                    </p>
+                </div>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>

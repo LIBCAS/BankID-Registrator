@@ -18,7 +18,7 @@ import javax.servlet.http.HttpSession;
 
 @Controller
 @Profile("local")
-@RequestMapping("/test")
+@RequestMapping("/local")
 public class LocalMainController extends ControllerAbstract
 {
     private final AlephService alephService;

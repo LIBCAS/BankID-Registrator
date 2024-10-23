@@ -78,11 +78,11 @@ public class EmailService extends ServiceAbstract
      * @param locale
      * @throws MailException
      */
-    public void sendEmailNewRegistration(String to, String alephPatronBarcode, boolean isCasEmployee, String membershipExpiryDate, Locale locale) throws Exception
+    public void sendEmailNewRegistration(String to, String alephPatronBarcode, boolean isEmployee, String membershipExpiryDate, Locale locale) throws Exception
     {
         Context context = new Context();
         context.setVariable("alephPatronBarcode", alephPatronBarcode);
-        context.setVariable("isCasEmployee", isCasEmployee);
+        context.setVariable("isEmployee", isEmployee);
         context.setVariable("membershipExpiryDate", membershipExpiryDate);
 
         this.sendEmail(
@@ -102,11 +102,11 @@ public class EmailService extends ServiceAbstract
      * @param locale
      * @throws MailException
      */
-    public void sendEmailMembershipRenewal(String to, String alephPatronBarcode, boolean isCasEmployee, String membershipExpiryDate, Locale locale) throws Exception
+    public void sendEmailMembershipRenewal(String to, String alephPatronBarcode, boolean isEmployee, String membershipExpiryDate, Locale locale) throws Exception
     {
         Context context = new Context();
         context.setVariable("alephPatronBarcode", alephPatronBarcode);
-        context.setVariable("isCasEmployee", isCasEmployee);
+        context.setVariable("isEmployee", isEmployee);
         context.setVariable("membershipExpiryDate", membershipExpiryDate);
 
         this.sendEmail(
