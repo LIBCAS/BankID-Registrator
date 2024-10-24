@@ -1,6 +1,9 @@
 import { Modal } from "https://esm.sh/flowbite";  // In order to control the Flobite Modal class programmatically
 const apiUrl = "/bankid-registrator/api";
 
+const mainElm = document.querySelector("main");
+const footerElm = document.querySelector("footer");
+
 /**
  * Progress loader
  */
@@ -318,6 +321,21 @@ const createModal = (options) => {
 
     return new Modal(document.getElementById(modalElmId), options);
 };
+
+const checkFooterPosition = () => {
+    if (mainElm && footerElm) {
+        const mainHeight = mainElm.offsetHeight;
+        const viewportHeight = window.innerHeight;
+
+        if (mainHeight > viewportHeight) {
+            console.log("mainHeight > viewportHeight => remove fixed");
+            footerElm.classList.remove("fixed");
+        } else {
+            console.log("mainHeight <= viewportHeight => add fixed");
+            footerElm.classList.add("fixed");
+        }
+    }
+}
 
 // PAGE: NEW REGISTRATION SUCCESS
 if (document.querySelector(".page-new-registration-success, .page-welcome")) {
@@ -706,6 +724,9 @@ if (document.getElementById("form-identity-password")) {
 if (document.getElementById("js-printPage")) {
     document.getElementById("js-printPage").addEventListener("click", triggerPrintPage);
 }
+// Footer positioning
+setTimeout(checkFooterPosition, 1000);
+window.addEventListener("resize", checkFooterPosition);
 
 // TESTING
 const emptyIdentities = async () => {
