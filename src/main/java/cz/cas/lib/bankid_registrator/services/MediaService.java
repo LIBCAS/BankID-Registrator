@@ -6,6 +6,8 @@ import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.media.Media;
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,8 +34,10 @@ public class MediaService
     {
         Map<String, Object> result = new HashMap<>();
 
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
         String contentType = file.getContentType();
-        String fileName = file.getOriginalFilename();
+        String originalFileName = file.getOriginalFilename();
+        String fileName = originalFileName.length() > 10 ? timestamp : (timestamp + "_" + originalFileName);
 
         if (!contentType.equals("image/jpeg") && !contentType.equals("image/png") && !contentType.equals("application/pdf")) {
             result.put("error", "Unsupported file type: " + contentType);
