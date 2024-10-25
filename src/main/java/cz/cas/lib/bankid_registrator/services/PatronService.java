@@ -38,7 +38,8 @@ public class PatronService extends PatronServiceAbstract
     public PatronDTO getPatronDTO(Patron patron) {
         PatronDTO patronDTO = modelMapper.map(patron, PatronDTO.class);
 
-        patronDTO.setUseContactAddress(!StringUtils.isEmpty(patron.getContactAddress1(), patron.getContactAddress2(), patron.getContactZip()));
+        // // Uncomment the line below if you want to set the useContactAddress field based on the contact address fields
+        // patronDTO.setUseContactAddress(!StringUtils.isEmpty(patron.getContactAddress1(), patron.getContactAddress2(), patron.getContactZip()));
 
         return patronDTO;
     }
