@@ -7,9 +7,9 @@
             <span class="text-sm text-gray-500 dark:text-gray-400">© <span th:text="${#dates.year(#dates.createNow())}"></span> <a href="https://www.lib.cas.cz/" target="_blank" class="hover:underline">LIBCAS</a>
         </span>
         <ul class="flex flex-col flex-wrap md:flex-row items-center mt-3 text-sm font-medium text-gray-500 dark:text-gray-400 md:mt-0 gap-2 md:gap-5">
-            <li>
+            <!-- <li>
                 <a href="/bankid-registrator/identity/reset-password-request" class="hover:underline" th:text="#{message.passwordReset}"></a>
-            </li>
+            </li> -->
             <li>
                 <a th:href="@{|https://www.lib.cas.cz/${#locale.language}/about-the-library/library-regulations/|}" class="hover:underline" th:text="#{message.libraryRegulations}" target="_blank"></a>
             </li>

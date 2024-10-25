@@ -62,37 +62,37 @@
                             </legend>
                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                                 <div class="hidden">
-                                    <input type="text" name="permanent_address_line1" th:placeholder="#{message.addressName}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address0}" required readonly />
+                                    <input type="text" id="address0" name="address0" th:placeholder="#{message.addressName}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address0}" required readonly />
                                     <div th:if="${#fields.hasErrors('address0')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{address0}" class="ml-1"></span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label for="permanent_address_line2" class="block text-sm font-medium">
+                                    <label for="address1" class="block text-sm font-medium">
                                         <span th:text="#{message.streetHouseNum}"></span>
                                     </label>
-                                    <input type="text" id="permanent_address_line2" name="permanent_address_line2" th:placeholder="#{message.streetHouseNum}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address1}" required readonly />
+                                    <input type="text" id="address1" name="address1" th:placeholder="#{message.streetHouseNum}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address1}" required readonly />
                                     <div th:if="${#fields.hasErrors('address1')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{address1}" class="ml-1"></span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label for="permanent_address_line3" class="block text-sm font-medium">
+                                    <label for="address2" class="block text-sm font-medium">
                                         <span th:text="#{message.municipality}"></span>
                                     </label>
-                                    <input type="text" id="permanent_address_line3" name="permanent_address_line3" th:placeholder="#{message.municipality}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address2}" required readonly />
+                                    <input type="text" id="address2" name="address2" th:placeholder="#{message.municipality}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{address2}" required readonly />
                                     <div th:if="${#fields.hasErrors('address2')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{address2}" class="ml-1"></span>
                                     </div>
                                 </div>
                                 <div>
-                                    <label for="permanent_zip" class="block text-sm font-medium">
+                                    <label for="zip" class="block text-sm font-medium">
                                         <span th:text="#{message.zipCode}"></span>
                                     </label>
-                                    <input type="text" id="permanent_zip" name="permanent_zip" th:placeholder="#{message.zipCode}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{zip}" required readonly />
+                                    <input type="text" id="zip" name="zip" th:placeholder="#{message.zipCode}" class="mt-1 block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{zip}" required readonly />
                                     <div th:if="${#fields.hasErrors('zip')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{zip}" class="ml-1"></span>
@@ -145,37 +145,37 @@
                             </legend>
                             <div id="contactAddressFields" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2" th:classappend="${!patron.useContactAddress} ? 'hidden'">
                                 <div class="hidden flex flex-col gap-1">
-                                    <input type="text" name="contact_address_line1" th:placeholder="#{message.addressName}" class="block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{contactAddress0}" readonly />
+                                    <input type="text" id="contactAddress0" name="contactAddress0" th:placeholder="#{message.addressName}" class="block w-full border border-gray-300 bg-gray-300 rounded-md shadow-sm focus:outline-none focus:border-gray-300 focus:ring-0 sm:text-sm cursor-not-allowed" th:field="*{contactAddress0}" readonly />
                                     <div th:if="${#fields.hasErrors('contactAddress0')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{contactAddress0}" class="ml-1"></span>
                                     </div>
                                 </div>
                                 <div class="flex flex-col gap-1">
-                                    <label for="contact_address_line2" class="block text-sm font-medium">
+                                    <label for="contactAddress1" class="block text-sm font-medium">
                                         <span th:text="#{message.streetHouseNum}"></span>
                                     </label>
-                                    <input type="text" id="contact_address_line2" name="contact_address_line2" th:placeholder="#{message.streetHouseNum}" class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}" />
+                                    <input type="text" id="contactAddress1" name="contactAddress1" th:placeholder="#{message.streetHouseNum}" class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}" />
                                     <div th:if="${#fields.hasErrors('contactAddress1')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{contactAddress1}" class="ml-1"></span>
                                     </div>
                                 </div>
                                 <div class="flex flex-col gap-1">
-                                    <label for="contact_address_line3" class="block text-sm font-medium">
+                                    <label for="contactAddress2" class="block text-sm font-medium">
                                         <span th:text="#{message.municipality}"></span>
                                     </label>
-                                    <input type="text" id="contact_address_line3" name="contact_address_line3" th:placeholder="#{message.municipality}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}" />
+                                    <input type="text" id="contactAddress2" name="contactAddress2" th:placeholder="#{message.municipality}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}" />
                                     <div th:if="${#fields.hasErrors('contactAddress2')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{contactAddress2}" class="ml-1"></span>
                                     </div>
                                 </div>
                                 <div class="flex flex-col gap-1">
-                                    <label for="contact_zip" class="block text-sm font-medium">
+                                    <label for="contactZip" class="block text-sm font-medium">
                                         <span th:text="#{message.zipCode}"></span>
                                     </label>
-                                    <input type="text" id="contact_zip" name="contact_zip" th:placeholder="#{message.zipCode}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}" />
+                                    <input type="text" id="contactZip" name="contactZip" th:placeholder="#{message.zipCode}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}" />
                                     <div th:if="${#fields.hasErrors('contactZip')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{contactZip}" class="ml-1"></span>
