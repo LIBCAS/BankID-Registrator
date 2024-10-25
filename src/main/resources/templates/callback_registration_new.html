@@ -113,7 +113,12 @@
                                 <span th:text="#{message.email}">E-mail</span>&nbsp;
                                 <span th:title="#{form.text.requiredCasEmployeeInformation}">**</span>
                             </label>
-                            <input type="email" id="email" name="email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{email}" />
+                            <div class="relative">
+                                <input type="email" id="email" name="email" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{email}" />
+                                <button type="button" data-target="#email" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                    ✕
+                                </button>
+                            </div>
                             <div th:if="${#fields.hasErrors('email')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
                                 <span th:errors="*{email}" class="ml-1"></span>
@@ -130,7 +135,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
                             <label for="phone" class="block text-sm font-medium" th:text="#{message.mobilePhone}">Mobil</label>
-                            <input type="tel" id="phone" name="phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{smsNumber}" />
+                            <div class="relative">
+                                <input type="tel" id="phone" name="phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{smsNumber}" />
+                                <button type="button" data-target="#phone" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                    ✕
+                                </button>
+                            </div>
                             <div th:if="${#fields.hasErrors('smsNumber')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
                                 <span th:errors="*{smsNumber}" class="ml-1"></span>
@@ -155,7 +165,12 @@
                                     <label for="contactAddress1" class="block text-sm font-medium">
                                         <span th:text="#{message.streetHouseNum}"></span>
                                     </label>
-                                    <input type="text" id="contactAddress1" name="contactAddress1" th:placeholder="#{message.streetHouseNum}" class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}" />
+                                    <div class="relative">
+                                        <input type="text" id="contactAddress1" name="contactAddress1" th:placeholder="#{message.streetHouseNum}" class="js-autocomplete-address block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress1}" />
+                                        <button type="button" data-target="#contactAddress1" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                            ✕
+                                        </button>
+                                    </div>
                                     <div th:if="${#fields.hasErrors('contactAddress1')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{contactAddress1}" class="ml-1"></span>
@@ -165,7 +180,12 @@
                                     <label for="contactAddress2" class="block text-sm font-medium">
                                         <span th:text="#{message.municipality}"></span>
                                     </label>
-                                    <input type="text" id="contactAddress2" name="contactAddress2" th:placeholder="#{message.municipality}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}" />
+                                    <div class="relative">
+                                        <input type="text" id="contactAddress2" name="contactAddress2" th:placeholder="#{message.municipality}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactAddress2}" />
+                                        <button type="button" data-target="#contactAddress2" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                            ✕
+                                        </button>
+                                    </div>
                                     <div th:if="${#fields.hasErrors('contactAddress2')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{contactAddress2}" class="ml-1"></span>
@@ -175,7 +195,12 @@
                                     <label for="contactZip" class="block text-sm font-medium">
                                         <span th:text="#{message.zipCode}"></span>
                                     </label>
-                                    <input type="text" id="contactZip" name="contactZip" th:placeholder="#{message.zipCode}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}" />
+                                    <div class="relative">
+                                        <input type="text" id="contactZip" name="contactZip" th:placeholder="#{message.zipCode}" class="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{contactZip}" />
+                                        <button type="button" data-target="#contactZip" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                            ✕
+                                        </button>
+                                    </div>
                                     <div th:if="${#fields.hasErrors('contactZip')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                         <i class="fa-solid fa-triangle-exclamation"></i>
                                         <span th:errors="*{contactZip}" class="ml-1"></span>
@@ -229,8 +254,13 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                         <div>
-                            <label for="rfid" class="block text-sm font-medium" th:text="#{message.rfidWithExamples}"></label>
-                            <input type="text" id="rfid" name="rfid" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{rfid}" />
+                            <label for="rfid" class="block text-sm font-medium" th:utext="#{message.rfidWithExamples}"></label>
+                            <div class="relative">
+                                <input type="text" id="rfid" name="rfid" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{rfid}" />
+                                <button type="button" data-target="#rfid" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                    ✕
+                                </button>
+                            </div>
                             <div th:if="${#fields.hasErrors('rfid')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
                                 <span th:errors="*{rfid}" class="ml-1"></span>

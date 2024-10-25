@@ -328,10 +328,8 @@ const checkFooterPosition = () => {
         const viewportHeight = window.innerHeight;
 
         if (mainHeight > viewportHeight) {
-            console.log("mainHeight > viewportHeight => remove fixed");
             footerElm.classList.remove("fixed");
         } else {
-            console.log("mainHeight <= viewportHeight => add fixed");
             footerElm.classList.add("fixed");
         }
     }
@@ -545,6 +543,13 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
                 loaderAfterSubmit.show();
             }
         }
+    });
+
+    document.querySelectorAll('.js-clear-input').forEach(elm => {
+        elm.addEventListener('click', function() {
+            const inputElm = document.querySelector(this.getAttribute('data-target'));
+            inputElm.value = '';
+        });
     });
 
     const addressAutofillElms = document.querySelectorAll(".js-autocomplete-address");

@@ -96,6 +96,13 @@ body > main {
     line-height: 1.7;
 }
 
+/* Address autocomplete */
+@media only screen and (max-width: 600px) {
+    .autoComplete_wrapper > input {
+        width: 100% !important;
+    }
+}
+
 .page--minh70vh main {
     min-height: 70vh;
 }
