@@ -384,6 +384,8 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
     const filesElm = document.getElementById("files");
     const filesInputElm = document.querySelector('[name="media"]');
     const emailInputElm = document.querySelector('[name="email"]');
+    const clearBtnElms = document.querySelectorAll(".js-clear-input");
+    const clearableInputElms = Array.from(clearBtnElms).map(elm => document.querySelector(elm.getAttribute("data-target")));
     const filesWrapper = document.getElementById("files-control");
     const { csrfToken, csrfHeader } = getCsrfTokenAndHeader();
     const loaderAfterSubmit = new PageLoader({
@@ -545,12 +547,27 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
         }
     });
 
-    document.querySelectorAll('.js-clear-input').forEach(elm => {
-        elm.addEventListener('click', function() {
-            const inputElm = document.querySelector(this.getAttribute('data-target'));
-            inputElm.value = '';
+    const handleClearableInputChange = (ev) => {
+        clearableInputElms.forEach(elm => {
+            const clearBtnElm = document.querySelector(`.js-clear-input[data-target="#${elm.id}"]`);
+            if (elm.value.length > 0) {
+                clearBtnElm.classList.remove("hidden");
+            } else {
+                clearBtnElm.classList.add("hidden");
+            }
+        });
+    };
+    clearBtnElms.forEach(elm => {
+        elm.addEventListener("click", function() {
+            const inputElm = document.querySelector(this.getAttribute("data-target"));
+            inputElm.value = "";
+            handleClearableInputChange();
         });
     });
+    clearableInputElms.forEach(elm => {
+        elm.addEventListener("change", handleClearableInputChange);
+    });
+    handleClearableInputChange();
 
     const addressAutofillElms = document.querySelectorAll(".js-autocomplete-address");
     for (let i = 0; i < addressAutofillElms.length; i++) {
