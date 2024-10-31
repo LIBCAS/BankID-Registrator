@@ -164,6 +164,44 @@ public class ApiController extends ApiControllerAbstract
     }
 
     /**
+     * Check if an account with the given login (username + password) exists in the LDAP
+     * @param username Aleph patron ID, not Aleph patron barcode
+     * @param password Aleph patron password
+     * @param token
+     * @return
+     */
+    @GetMapping("/check-ldap-account/{username}/{password}")
+    public ResponseEntity<Map<String, Object>> checkLdapAccount(
+        @PathVariable String username,
+        @PathVariable String password,
+        @RequestParam("token") String token
+    ) {
+        if (!this.tokenService.isApiTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        Long patronSysIdLong = Long.parseLong(this.tokenService.extractClientIdFromApiToken(token));
+        String bid = this.patronService.getBankIdSubById(patronSysIdLong);
+        boolean isContinuable = this.patronService.isProcessing(bid);
+
+        // Check the validity of the request by checking if the application is currently working with the given bankIdSub, i.e. if the associated patron is being processed
+        if (!isContinuable) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        boolean accountExists = ldapService.accountExistsByLogin(username, password);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("result", accountExists);
+
+        if (accountExists) {
+            this.tokenService.invalidateToken(token);
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * !!! ONLY FOR TESTING PURPOSES !!!
      * Empty the `identities` and `identity_activities` tables
      * @param session

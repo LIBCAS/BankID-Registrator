@@ -1,21 +1,24 @@
 package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.configurations.LdapServiceConfig;
+import java.util.List;
+import javax.annotation.PostConstruct;
+import javax.naming.directory.Attributes;
+import javax.naming.NamingException;
+import org.springframework.ldap.AuthenticationException;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.stereotype.Service;
-
-import javax.annotation.PostConstruct;
-import javax.naming.directory.Attributes;
-import java.util.List;
+import org.springframework.context.MessageSource;
 
 @Service
-public class LdapService
+public class LdapService extends ServiceAbstract
 {
     private final LdapServiceConfig ldapConfig;
     private LdapTemplate ldapTemplate;
 
-    public LdapService(LdapServiceConfig ldapConfig) {
+    public LdapService(MessageSource messageSource, LdapServiceConfig ldapConfig) {
+        super(messageSource);
         this.ldapConfig = ldapConfig;
     }
 
@@ -49,7 +52,6 @@ public class LdapService
         return !result.isEmpty();
     }
 
-
     /**
      * Check if an account with the given email exists in the LDAP
      * @param email
@@ -61,5 +63,34 @@ public class LdapService
         List<Attributes> result = ldapTemplate.search("", searchFilter, (Attributes attributes) -> attributes);
 
         return !result.isEmpty();
+    }
+
+    /**
+     * Check if an account with the given username and password exists in the LDAP
+     * @param username Aleph patron ID, not Aleph patron barcode
+     * @param password
+     * @return
+     */
+    public boolean accountExistsByLogin(String username, String password)
+    {
+        try {
+            password = password.toUpperCase();
+
+            LdapContextSource contextSource = new LdapContextSource();
+            contextSource.setUrl(ldapConfig.getUrl());
+            contextSource.setBase(ldapConfig.getBaseDn());
+            contextSource.setUserDn("uid=" + username + "," + ldapConfig.getBaseDn());
+            contextSource.setPassword(password);
+            contextSource.afterPropertiesSet();
+
+            LdapTemplate tempLdapTemplate = new LdapTemplate(contextSource);
+            tempLdapTemplate.authenticate("", "(uid=" + username + ")", password);
+
+            return true;
+        } catch (AuthenticationException e) {
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

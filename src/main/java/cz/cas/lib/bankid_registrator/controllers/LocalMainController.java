@@ -3,6 +3,8 @@ package cz.cas.lib.bankid_registrator.controllers;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.services.AlephService;
+import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
+import cz.cas.lib.bankid_registrator.services.LdapService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import org.springframework.context.MessageSource;
@@ -23,15 +25,19 @@ public class LocalMainController extends ControllerAbstract
 {
     private final AlephService alephService;
     private final PatronService patronService;
+    private final LdapService ldapService;
 
     public LocalMainController(
         MessageSource messageSource,
         AlephService alephService,
-        PatronService patronService
+        PatronService patronService,
+        LdapService ldapService, 
+        IdentityAuthService identityAuthService
     ) {
-        super(messageSource);
+        super(messageSource, identityAuthService);
         this.alephService = alephService;
         this.patronService = patronService;
+        this.ldapService = ldapService;
 
         init();
     }
@@ -106,4 +112,52 @@ public class LocalMainController extends ControllerAbstract
 
         return "callback_registration_renewal";
     }
+
+    // @RequestMapping(value = "/test_a", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    // public String testA(Model model, Locale locale, HttpSession session) {
+    //     session.setAttribute("sessionVar1", "sessionVar1Value");
+
+    //     model.addAttribute("sessionVar1", session.getAttribute("sessionVar1"));
+    //     model.addAttribute("sessionVar2", session.getAttribute("sessionVar2"));
+    //     model.addAttribute("sessionId", session.getId());
+    //     model.addAttribute("pageTitle", "Test A");
+
+    //     return "test";
+    // }
+
+    // @RequestMapping(value = "/test_b", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    // public String testB(Model model, Locale locale, HttpSession session) {
+    //     session.setAttribute("sessionVar2", "sessionVar2Value");
+
+    //     model.addAttribute("sessionVar1", session.getAttribute("sessionVar1"));
+    //     model.addAttribute("sessionVar2", session.getAttribute("sessionVar2"));
+    //     model.addAttribute("sessionId", session.getId());
+    //     model.addAttribute("pageTitle", "Test B");
+
+    //     return "test";
+    // }
+
+    // @RequestMapping(value = "/test_c", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    // public String testC(Model model, Locale locale, HttpSession session) {
+    //     session.removeAttribute("sessionVar1");
+
+    //     model.addAttribute("sessionVar1", session.getAttribute("sessionVar1"));
+    //     model.addAttribute("sessionVar2", session.getAttribute("sessionVar2"));
+    //     model.addAttribute("sessionId", session.getId());
+    //     model.addAttribute("pageTitle", "Test C");
+
+    //     return "test";
+    // }
+
+    // @RequestMapping(value = "/test_d", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    // public String testD(Model model, Locale locale, HttpSession session) {
+    //     session.invalidate();
+
+    //     model.addAttribute("sessionVar1", session.getAttribute("sessionVar1"));
+    //     model.addAttribute("sessionVar2", session.getAttribute("sessionVar2"));
+    //     model.addAttribute("sessionId", session.getId());
+    //     model.addAttribute("pageTitle", "Test D");
+
+    //     return "test";
+    // }
 }
