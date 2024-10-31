@@ -1,6 +1,7 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
+import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.boot.web.servlet.error.ErrorController;
@@ -12,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 public class MainErrorController extends ControllerAbstract implements ErrorController
 {
-    public MainErrorController(MessageSource messageSource) {
-        super(messageSource);
+    public MainErrorController(MessageSource messageSource, IdentityAuthService identityAuthService) {
+        super(messageSource, identityAuthService);
     }
 
     @RequestMapping("/error")

@@ -7,6 +7,7 @@ import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
+import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
@@ -15,6 +16,7 @@ import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.AlephServiceIface;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
+import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.MainService;
 import cz.cas.lib.bankid_registrator.services.MediaService;
@@ -32,11 +34,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.time.LocalDateTime;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
 import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -79,11 +83,12 @@ public class MainController extends ControllerAbstract
         MediaService mediaService,
         IdentityService identityService,
         IdentityActivityService identityActivityService,
+        IdentityAuthService identityAuthService,
         AccessTokenContainer accessTokenContainer,
         EmailService emailService,
         TokenService tokenService
     ) {
-        super(messageSource);
+        super(messageSource, identityAuthService);
         this.mainConfig = mainConfig;
         this.mainService = mainService;
         this.alephService = alephService;
@@ -131,29 +136,31 @@ public class MainController extends ControllerAbstract
      * @return 
      */
     @RequestMapping(value="/login", method=RequestMethod.GET)
-    public String InitiateLoginEntry(Locale locale) {
-        getLogger().info("ACCESSING LOGIN PAGE ...");
-        StringBuilder strTmp = new StringBuilder(0);
+    public String InitiateLoginEntry(Locale locale, HttpSession session, HttpServletRequest request)
+    {
+        if (!this.identityAuthService.isLoggedin(request)) {
+            StringBuilder strTmp = new StringBuilder(0);
 
-        URI authorizationEndpoint = this.mainService.getBankIDAuthorizationEndpoint(this.mainConfig.getIssuer_url());
-        getLogger().info("authorizationEndpoint: {}", authorizationEndpoint);
-        if (authorizationEndpoint == null) {
-            // redirect to error page
-            return "error";
+            URI authorizationEndpoint = this.mainService.getBankIDAuthorizationEndpoint(this.mainConfig.getIssuer_url());
+            getLogger().info("authorizationEndpoint: {}", authorizationEndpoint);
+            if (authorizationEndpoint == null) {
+                return "error";
+            }
+
+            strTmp.append(authorizationEndpoint.toString().concat("?"));
+
+            String loginURL = this.mainService.getBankIDLoginURL(authorizationEndpoint.toString());
+            getLogger().info("loginURL: {}", loginURL);
+            if (loginURL == null) {
+                return "error";
+            }
+
+            strTmp.append(loginURL);
+
+            return "redirect:".concat(strTmp.toString());
+        } else {
+            return "redirect:/callback?code=" + session.getAttribute("code");
         }
-
-        strTmp.append(authorizationEndpoint.toString().concat("?"));
-
-        String loginURL = this.mainService.getBankIDLoginURL(authorizationEndpoint.toString());
-        getLogger().info("loginURL: {}", loginURL);
-        if (loginURL == null) {
-            // redirect to error page
-            return "error";
-        }
-
-        strTmp.append(loginURL);
-
-        return "redirect:".concat(strTmp.toString());
     }
 
     /**
@@ -168,23 +175,30 @@ public class MainController extends ControllerAbstract
         @RequestParam(value = "code", required = false) String code, 
         Model model, 
         Locale locale, 
-        HttpSession session
+        HttpSession session, 
+        HttpServletRequest request
     ) {
-        if (code == null) {
-            model.addAttribute("error", this.messageSource.getMessage("error.session.expired", null, locale));
-            return "error";
+        if (code == null && session.getAttribute("code") == null) {
+            throw new HttpErrorException(HttpStatus.NOT_FOUND, null);
+        }
+
+        code = code == null ? ((String) session.getAttribute("code")) : code;
+
+        boolean isIdentityLoggedIn = this.identityAuthService.isLoggedin(request);
+
+        if (!isIdentityLoggedIn) {
+            // If this is the first time the Bank iD verified identity is accessing the callback page, log them in
+            this.identityAuthService.login(request, code);
+        } else {
+            // If the Bank iD verified identity is already logged in, check if the access token is still valid and log them out if not
+            String existingAccessToken = (String) session.getAttribute("accessToken");
+            if (!this.mainService.isTokenValid(existingAccessToken)) {
+                this.identityAuthService.logout(request);
+                return "redirect:/welcome";
+            }
         }
 
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
-
-        if (!accessTokenContainer.getCodeTokenMap().containsKey(code)) {
-            accessTokenContainer.setAccessToken(code, mainService.getTokenExchange(code).getAccessToken());
-        } else {
-            // TODO valid access token
-        }
-
-        session.setAttribute("code", code);
-        model.addAttribute("code", code);
         
         Connect userInfo = mainService.getUserInfo(accessTokenContainer.getAccessToken(code));
 
@@ -209,6 +223,8 @@ public class MainController extends ControllerAbstract
         } catch (JsonProcessingException e) {
             getLogger().error("Error converting patron to JSON", e);
         }
+
+        model.addAttribute("isIdentityLoggedIn", true);
 
         if (bankIdPatron.isNew()) {
             identity = new Identity(UUID.randomUUID().toString());
@@ -330,6 +346,8 @@ public class MainController extends ControllerAbstract
      * @param session
      * @param model
      * @param media
+     * @param locale
+     * @param request
      * @return String
      */
     @PostMapping("/new-registration")
@@ -339,8 +357,13 @@ public class MainController extends ControllerAbstract
         HttpSession session, 
         Model model, 
         Locale locale, 
-        @RequestParam("media") MultipartFile[] mediaFiles
+        @RequestParam("media") MultipartFile[] mediaFiles, 
+        HttpServletRequest request
     ) {
+        if (!this.identityAuthService.isLoggedin(request)) {
+            return "error_session_expired";
+        }
+
         PatronDTO beforeEditedPatron = (PatronDTO) session.getAttribute("bankIdPatronDTO");
         if (beforeEditedPatron == null) {
             return "error_session_expired";
@@ -372,7 +395,6 @@ public class MainController extends ControllerAbstract
 
         session.removeAttribute("patron");
         session.removeAttribute("userProfile");
-        session.removeAttribute("code");
         session.removeAttribute("identity");
         session.removeAttribute("bankIdPatron");
         session.removeAttribute("bankIdPatronDTO");
@@ -462,8 +484,6 @@ public class MainController extends ControllerAbstract
             getLogger().error("Failed to send new registration confirmation email to " + patronEmail, e);
         }
 
-        session.setAttribute("alephBarcode", alephPatronBarcode);
-
         model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
         model.addAttribute("patronHasEmail", patronHasEmail);
         model.addAttribute("membershipExpiryDate", membershipExpiryDate);
@@ -483,6 +503,8 @@ public class MainController extends ControllerAbstract
      * @param session
      * @param model
      * @param media
+     * @param locale
+     * @param request
      * @return
      */
     @PostMapping("/membership-renewal")
@@ -492,8 +514,13 @@ public class MainController extends ControllerAbstract
         HttpSession session, 
         Model model, 
         Locale locale, 
-        @RequestParam("media") MultipartFile[] mediaFiles
+        @RequestParam("media") MultipartFile[] mediaFiles, 
+        HttpServletRequest request
     ) {
+        if (!this.identityAuthService.isLoggedin(request)) {
+            return "error_session_expired";
+        }
+
         Long alephPatronSysId = (Long) session.getAttribute("alephPatron");
 
         if (alephPatronSysId == null) {
@@ -539,7 +566,6 @@ public class MainController extends ControllerAbstract
         session.removeAttribute("alephPatron");
         session.removeAttribute("patron");
         session.removeAttribute("userProfile");
-        session.removeAttribute("code");
         session.removeAttribute("identity");
         session.removeAttribute("latestPatron");
         session.removeAttribute("latestPatronDTO");
@@ -630,8 +656,9 @@ public class MainController extends ControllerAbstract
             getLogger().error("Failed to send a membership renewal confirmation email to " + patronEmail, e);
         }
 
-        session.setAttribute("alephBarcode", alephPatronBarcode);
+        this.identityAuthService.logout(request);
 
+        model.addAttribute("isIdentityLoggedIn", false);
         model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
         model.addAttribute("patronHasEmail", patronHasEmail);
         model.addAttribute("membershipExpiryDate", membershipExpiryDate);
@@ -639,35 +666,5 @@ public class MainController extends ControllerAbstract
         model.addAttribute("alephBarcode", alephPatronBarcode);
 
         return "membership_renewal_success";
-    }
-
-    /**
-     * 
-     * @param model
-     * @return 
-     */
-    @RequestMapping(value="/guide", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String AboutEntry(Model model) {
-        return "guide";
-    }
-
-    /**
-     * 
-     * @param model
-     * @return 
-     */
-    @RequestMapping(value="/tos", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String TermsOfServiceEntry(Model model) {
-        return "terms_of_service";
-    }
-
-    /**
-     * 
-     * @param model
-     * @return 
-     */
-    @RequestMapping(value="/privacy-policy", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String UsagePolicyEntry(Model model) {
-        return "privacy_policy";
     }
 }

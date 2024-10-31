@@ -35,7 +35,7 @@ public class GlobalExceptionHandler extends ExceptionHandlerAbstract
         mav.addObject("error", e.getMessage());
         mav.addObject("appName", this.appName);
         mav.addObject("pageTitle", this.messageSource.getMessage("error.500.text", null, locale));
-        mav.addObject("errorCode", this.messageSource.getMessage("error.500.code", null, locale));
+        mav.addObject("errorCode", HttpStatus.INTERNAL_SERVER_ERROR.value());
         getLogger().error("Exception: " + e.getMessage(), e);
         mav.setViewName("error");
         return mav;
@@ -63,6 +63,22 @@ public class GlobalExceptionHandler extends ExceptionHandlerAbstract
         mav.setViewName("error");
         mav.setStatus(status);
 
+        return mav;
+    }
+
+    @ExceptionHandler(value = IdentityAuthException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ModelAndView handleIdentityAuthException(Exception e, Locale locale) {
+        String exMsg = this.messageSource.getMessage(e.getMessage().isEmpty() ? "error.identity.auth" : e.getMessage(), null, locale);
+
+        ModelAndView mav = new ModelAndView();
+        mav.addObject("lang", locale.getLanguage());
+        mav.addObject("error", exMsg);
+        mav.addObject("appName", this.appName);
+        mav.addObject("pageTitle", this.messageSource.getMessage("error.503.text", null, locale));
+        mav.addObject("errorCode", HttpStatus.SERVICE_UNAVAILABLE.value());
+        getLogger().error(exMsg, e);
+        mav.setViewName("error");
         return mav;
     }
 }

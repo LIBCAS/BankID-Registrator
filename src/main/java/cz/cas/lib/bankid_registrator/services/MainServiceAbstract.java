@@ -67,9 +67,10 @@ public abstract class MainServiceAbstract implements ServiceIface {
     /**
      * 
      * @param code
+     * @throws Exception
      * @return 
      */
-    public abstract TokenContainer getTokenExchange(String code);
+    public abstract TokenContainer getTokenExchange(String code) throws Exception;
 
     /**
      * 

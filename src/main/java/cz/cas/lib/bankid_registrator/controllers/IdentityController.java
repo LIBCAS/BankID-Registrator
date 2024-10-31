@@ -6,6 +6,7 @@ import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
+import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.util.WebUtils;
@@ -44,9 +45,10 @@ public class IdentityController extends ControllerAbstract
         TokenService tokenService,
         IdentityService identityService,
         AlephService alephService,
-        EmailService emailService
+        EmailService emailService,
+        IdentityAuthService identityAuthService
     ) {
-        super(messageSource);
+        super(messageSource, identityAuthService);
         this.tokenService = tokenService;
         this.identityService = identityService;
         this.alephService = alephService;
@@ -189,6 +191,7 @@ public class IdentityController extends ControllerAbstract
      * @param repeatNewPassword
      * @param model
      * @param locale
+     * @param request
      * @return
      */
     @RequestMapping(value="/identity/set-password", method=RequestMethod.POST, produces=MediaType.TEXT_HTML_VALUE)
@@ -196,8 +199,14 @@ public class IdentityController extends ControllerAbstract
         @RequestParam("token") String token,
         @Valid @ModelAttribute("passwordDTO") PatronPasswordDTO passwordDTO,
         BindingResult bindingResult,
-        Model model, Locale locale
+        Model model, 
+        Locale locale, 
+        HttpServletRequest request
     ) {
+        if (!this.identityAuthService.isLoggedin(request)) {
+            return "error_session_expired";
+        }
+
         boolean isTokenValid = this.tokenService.isIdentityTokenValid(token);
         boolean patronIsCasEmployee = false;
 
@@ -223,6 +232,9 @@ public class IdentityController extends ControllerAbstract
             throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage("error.identityPassword.failed", null, locale));
         }
 
+        this.identityAuthService.logout(request);
+
+        model.addAttribute("isIdentityLoggedIn", false);
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.title", null, locale));
         model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
 

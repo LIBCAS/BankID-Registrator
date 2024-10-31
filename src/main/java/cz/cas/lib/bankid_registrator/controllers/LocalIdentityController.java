@@ -2,6 +2,7 @@ package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
 import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
+import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
 import java.util.Locale;
 import javax.servlet.http.HttpSession;
 import org.springframework.context.MessageSource;
@@ -22,9 +23,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 public class LocalIdentityController extends ControllerAbstract
 {
     public LocalIdentityController(
-        MessageSource messageSource
+        MessageSource messageSource, 
+        IdentityAuthService identityAuthService
     ) {
-        super(messageSource);
+        super(messageSource, identityAuthService);
     }
 
     /**
