@@ -1,6 +1,5 @@
 package cz.cas.lib.bankid_registrator.exceptions;
 
-import cz.cas.lib.bankid_registrator.util.StringUtils;
 import java.util.Locale;
 import javax.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,62 +22,85 @@ public class GlobalExceptionHandler extends ExceptionHandlerAbstract
 
     private final MessageSource messageSource;
 
-    public GlobalExceptionHandler(MessageSource messageSource) {
+    public GlobalExceptionHandler(MessageSource messageSource)
+    {
         this.messageSource = messageSource;
     }
 
     @ExceptionHandler(value = Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ModelAndView handleException(Exception e, Locale locale) {
+    public ModelAndView handleException(Exception e, Locale locale)
+    {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        String statusCode = String.valueOf(status.value());
+        String statusMessage = this.messageSource.getMessage("error." + statusCode + ".text", null, status.getReasonPhrase(), locale);
+        String detailMessage = e.getMessage();
+
         ModelAndView mav = new ModelAndView();
         mav.addObject("lang", locale.getLanguage());
-        mav.addObject("error", e.getMessage());
         mav.addObject("appName", this.appName);
-        mav.addObject("pageTitle", this.messageSource.getMessage("error.500.text", null, locale));
-        mav.addObject("errorCode", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        getLogger().error("Exception: " + e.getMessage(), e);
+        mav.addObject("pageTitle", statusCode + " " + statusMessage);
+        mav.addObject("errorTitle", statusMessage);
+        mav.addObject("errorCode", statusCode);
+        if (detailMessage != null) {
+            mav.addObject("error", detailMessage);
+        }
         mav.setViewName("error");
+        mav.setStatus(status);
+
+        this.getLogger().error("Exception: " + statusMessage, e);
+
         return mav;
     }
 
     @ExceptionHandler(value = HttpErrorException.class)
-    public ModelAndView handleHttpErrorException(HttpErrorException e, Locale locale) {
-        ModelAndView mav = new ModelAndView();
-        mav.addObject("lang", locale.getLanguage());
-        mav.addObject("error", "");
-        mav.addObject("appName", this.appName);
-        mav.addObject("pageTitle", this.messageSource.getMessage("page.error.title", null, "Error", locale));
-
+    public ModelAndView handleHttpErrorException(HttpErrorException e, Locale locale)
+    {
         HttpStatus status = e.getStatus();
         String statusCode = String.valueOf(status.value());
-        if ((status.is4xxClientError() || status.is5xxServerError()) && StringUtils.isEmpty(e.getErrorMessage())) {
-            mav.addObject("errorCode", this.messageSource.getMessage("error." + statusCode + ".code", null, statusCode, locale));
-            mav.addObject("error", this.messageSource.getMessage("error." + statusCode + ".text", null, e.getErrorMessage(), locale));
-        } else {
-            mav.addObject("errorCode", statusCode);
-            mav.addObject("error", e.getErrorMessage());
-        }
+        String statusMessage = this.messageSource.getMessage("error." + statusCode + ".text", null, status.getReasonPhrase(), locale);
+        String detailMessage = e.getMessage();
 
-        getLogger().error("Exception: " + e.getErrorMessage());
+        ModelAndView mav = new ModelAndView();
+        mav.addObject("lang", locale.getLanguage());
+        mav.addObject("appName", this.appName);
+        mav.addObject("pageTitle", statusCode + " " + statusMessage);
+        mav.addObject("errorTitle", statusMessage);
+        mav.addObject("errorCode", statusCode);
+        if (detailMessage != null) {
+            mav.addObject("error", detailMessage);
+        }
         mav.setViewName("error");
         mav.setStatus(status);
+
+        this.getLogger().error("Exception: " + (detailMessage != null ? detailMessage : statusMessage), e);
 
         return mav;
     }
 
     @ExceptionHandler(value = IdentityAuthException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    public ModelAndView handleIdentityAuthException(Exception e, Locale locale) {
-        String exMsg = this.messageSource.getMessage(e.getMessage().isEmpty() ? "error.identity.auth" : e.getMessage(), null, locale);
+    public ModelAndView handleIdentityAuthException(IdentityAuthException e, Locale locale)
+    {
+        HttpStatus status = HttpStatus.SERVICE_UNAVAILABLE;
+        String statusCode = String.valueOf(status.value());
+        String statusMessage = this.messageSource.getMessage("error." + statusCode + ".text", null, status.getReasonPhrase(), locale);
+        String detailMessage = e.getMessage() != null ? e.getMessage() : this.messageSource.getMessage("error.identity.auth", null, null, locale);
 
         ModelAndView mav = new ModelAndView();
         mav.addObject("lang", locale.getLanguage());
-        mav.addObject("error", exMsg);
         mav.addObject("appName", this.appName);
-        mav.addObject("pageTitle", this.messageSource.getMessage("error.503.text", null, locale));
-        mav.addObject("errorCode", HttpStatus.SERVICE_UNAVAILABLE.value());
-        getLogger().error(exMsg, e);
+        mav.addObject("pageTitle", statusCode + " " + statusMessage);
+        mav.addObject("errorTitle", statusMessage);
+        mav.addObject("errorCode", statusCode);
+        if (detailMessage != null) {
+            mav.addObject("error", detailMessage);
+        }
         mav.setViewName("error");
+        mav.setStatus(status);
+
+        this.getLogger().error("Exception: " + (detailMessage != null ? detailMessage : statusMessage), e.getCause() != null ? e.getCause() : e);
+
         return mav;
     }
 }

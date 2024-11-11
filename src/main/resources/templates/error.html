@@ -8,12 +8,13 @@
 
 <body class="page-error">
   <main layout:fragment="content" class="mb-10 text-center container mx-auto p-5">
-    <h1 class="text-8xl font-bold my-4">
-      <span th:text="${pageTitle}"></span>
+    <h1 class="text-4xl font-bold my-4">
+      <span th:if="${errorTitle != null}" th:text="${errorTitle}"></span>
+      <span th:else th:text="${pageTitle}"></span>
       <br>
-      <span th:text="${errorCode}"></span>
+      <span class="text-7xl" th:text="${errorCode}"></span>
     </h1>
-    <div class="container my-2 text-4xl font-bold my-4">
+    <div th:if="${error != null}" class="container my-2 text-2xl font-bold my-4">
       <p th:text="${error}" />
     </div>
     <div class="container my-10">

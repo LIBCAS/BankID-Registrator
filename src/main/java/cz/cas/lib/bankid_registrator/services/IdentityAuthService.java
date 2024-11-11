@@ -4,6 +4,8 @@ import cz.cas.lib.bankid_registrator.exceptions.IdentityAuthException;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import cz.cas.lib.bankid_registrator.valueobjs.TokenContainer;
 
+import java.util.Locale;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import org.springframework.context.MessageSource;
@@ -50,10 +52,11 @@ public class IdentityAuthService extends ServiceAbstract
      * Log in the Bank iD verified identity
      * @param request
      * @param code authorization code provided by the Bank iD after successful verification
+     * @param locale
      * @throws IdentityAuthException
      * @return void
      */
-    public void login(HttpServletRequest request, String code) throws IdentityAuthException
+    public void login(HttpServletRequest request, String code, Locale locale) throws IdentityAuthException
     {
         try {
             HttpSession session = this.getCurrentSession(request);
@@ -71,7 +74,10 @@ public class IdentityAuthService extends ServiceAbstract
             session.setAttribute("userIp", userIp);
             session.setAttribute("userAgent", userAgent);
         } catch (Exception e) {
-            throw new IdentityAuthException("error.identity.auth.login", e);
+            throw new IdentityAuthException(
+                this.messageSource.getMessage("error.identity.auth.login", null, null, locale), 
+                e
+            );
         }
     }
 

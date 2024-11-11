@@ -456,8 +456,7 @@ public class AlephService extends AlephServiceAbstract
             Integer deletedRows = this.oracleRepository.deleteZ308RecordType07(patronId);
             getLogger().info("deletedRows: {}", deletedRows);
         } catch (Exception e) {
-            getLogger().error(MainService.class.getName(), e);
-            throw new Exception("Failed to delete patron's (" + patronId + ") BankIdSub identifier in Aleph");
+            throw new Exception("Failed to delete patron's (" + patronId + ") BankIdSub identifier in Aleph", e);
         }
     }
 

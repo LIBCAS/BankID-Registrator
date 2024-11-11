@@ -5,19 +5,27 @@ import org.springframework.http.HttpStatus;
 public class HttpErrorException extends RuntimeException
 {
     private final HttpStatus status;
-    private final String errorMessage;
+    private final String message;
 
-    public HttpErrorException(HttpStatus status, String errorMessage) {
-        super(errorMessage);
+    public HttpErrorException(HttpStatus status)
+    {
         this.status = status;
-        this.errorMessage = errorMessage;
+        this.message = null;
     }
 
-    public HttpStatus getStatus() {
-        return status;
+    public HttpErrorException(HttpStatus status, String message)
+    {
+        this.status = status;
+        this.message = message;
     }
 
-    public String getErrorMessage() {
-        return errorMessage;
+    public HttpStatus getStatus()
+    {
+        return this.status;
+    }
+
+    public String getMessage()
+    {
+        return this.message;
     }
 }

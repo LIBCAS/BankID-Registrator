@@ -188,7 +188,7 @@ public class MainController extends ControllerAbstract
 
         if (!isIdentityLoggedIn) {
             // If this is the first time the Bank iD verified identity is accessing the callback page, log them in
-            this.identityAuthService.login(request, code);
+            this.identityAuthService.login(request, code, locale);
         } else {
             // If the Bank iD verified identity is already logged in, check if the access token is still valid and log them out if not
             String existingAccessToken = (String) session.getAttribute("accessToken");
@@ -361,12 +361,18 @@ public class MainController extends ControllerAbstract
         HttpServletRequest request
     ) {
         if (!this.identityAuthService.isLoggedin(request)) {
-            return "error_session_expired";
+            throw new HttpErrorException(
+                HttpStatus.UNAUTHORIZED, 
+                this.messageSource.getMessage("error.identity.notLoggedIn", null, locale)
+            );
         }
 
         PatronDTO beforeEditedPatron = (PatronDTO) session.getAttribute("bankIdPatronDTO");
         if (beforeEditedPatron == null) {
-            return "error_session_expired";
+            throw new HttpErrorException(
+                HttpStatus.BAD_REQUEST, 
+                this.messageSource.getMessage("error.400.text", null, locale)
+            );
         }
 
         this.patronDTOValidator.validate(editedPatron, bindingResult, null, mediaFiles);
@@ -413,11 +419,17 @@ public class MainController extends ControllerAbstract
         getLogger().info("new-registration - code: {}", code);
 
         if (patronSysId == null || patron == null || userProfile == null || code == null || identity == null) {
-            return "error_session_expired";
+            throw new HttpErrorException(
+                HttpStatus.BAD_REQUEST, 
+                this.messageSource.getMessage("error.400.text", null, locale)
+            );
         }
 
         if (editedPatron.getExportConsent() != PatronBoolean.Y) {
-            return "error_export_consent";
+            throw new HttpErrorException(
+                HttpStatus.BAD_REQUEST, 
+                this.messageSource.getMessage("error.400.text", null, locale)
+            );
         }
 
         this.identityActivityService.logNewRegistrationSubmission(identity);
@@ -518,13 +530,19 @@ public class MainController extends ControllerAbstract
         HttpServletRequest request
     ) {
         if (!this.identityAuthService.isLoggedin(request)) {
-            return "error_session_expired";
+            throw new HttpErrorException(
+                HttpStatus.UNAUTHORIZED, 
+                this.messageSource.getMessage("error.identity.notLoggedIN", null, locale)
+            );
         }
 
         Long alephPatronSysId = (Long) session.getAttribute("alephPatron");
 
         if (alephPatronSysId == null) {
-            return "error_session_expired";
+            throw new HttpErrorException(
+                HttpStatus.BAD_REQUEST, 
+                this.messageSource.getMessage("error.400.text", null, locale)
+            );
         }
 
         Patron alephPatron = patronRepository.findById(alephPatronSysId).orElse(null);  // original Aleph patron
@@ -535,7 +553,10 @@ public class MainController extends ControllerAbstract
             PatronDTO beforeEditedPatron = (PatronDTO) session.getAttribute("latestPatronDTO");
 
             if (beforeEditedPatron == null) {
-                return "error_session_expired";
+                throw new HttpErrorException(
+                    HttpStatus.BAD_REQUEST, 
+                    this.messageSource.getMessage("error.400.text", null, locale)
+                );
             }
 
             editedPatron.restoreDefaults(beforeEditedPatron);
@@ -588,11 +609,17 @@ public class MainController extends ControllerAbstract
         }
 
         if (alephPatronSysId == null || alephPatron == null || patronSysId == null || patron == null || userProfile == null || code == null || identity == null) {
-            return "error_session_expired";
+            throw new HttpErrorException(
+                HttpStatus.BAD_REQUEST, 
+                this.messageSource.getMessage("error.400.text", null, locale)
+            );
         }
 
         if (editedPatron.getExportConsent() != PatronBoolean.Y) {
-            return "error_export_consent";
+            throw new HttpErrorException(
+                HttpStatus.BAD_REQUEST, 
+                this.messageSource.getMessage("error.400.text", null, locale)
+            );
         }
 
         this.identityActivityService.logMembershipRenewalSubmission(identity);
