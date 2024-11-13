@@ -10,9 +10,6 @@ import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import java.util.Optional;
 import javax.persistence.*;
-
-import org.checkerframework.checker.units.qual.t;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -209,7 +206,7 @@ public class Patron {
             PatronStatus patronStatus = e ? PatronStatus.STATUS_03 : PatronStatus.STATUS_16;
             this.status = patronStatus.getId();
 
-            if (this.expiryDate != null && !this.expiryDate.isEmpty()) {
+            if (this.expiryDate != null && !this.expiryDate.isEmpty() && !DateUtils.isDateExpired(this.expiryDate, "dd/MM/yyyy")) {
                 this.expiryDate = DateUtils.addDaysToDateString(this.expiryDate, patronStatus.getMembershipLength(), "dd/MM/yyyy", "dd/MM/yyyy");
             } else {
                 this.expiryDate = DateUtils.addDaysToToday(patronStatus.getMembershipLength(), "dd/MM/yyyy");

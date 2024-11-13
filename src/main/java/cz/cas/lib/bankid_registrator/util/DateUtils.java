@@ -88,7 +88,7 @@ public class DateUtils
      * 
      * @param dateString The date string to check.
      * @param format The format of the date string.
-     * @return true if the date is before today, false otherwise.
+     * @return true if the date is before today (expired), false otherwise.
      */
     public static boolean isDateExpired(String dateString, String format) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
