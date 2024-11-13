@@ -22,6 +22,7 @@ class ProgressLoader {
         this.counter = 0;
         this.intervalId = null;
         this.progressTexts = options.progressTexts || [];
+        this.afterCompleteFunction = options.afterCompleteFunction;
     }
 
     updateProgressCircle(progress) {
@@ -56,6 +57,9 @@ class ProgressLoader {
         // - or after the last step if it takes too long
         if (data.result === true || (data.error === true && this.counter === this.maxSteps - 1) || this.counter >= this.maxSteps + 3) {
             this.complete();
+            if (this.afterCompleteFunction) {
+                await this.afterCompleteFunction();
+            }
         }
     }
 
@@ -188,7 +192,27 @@ const checkEmail = async (email, patronSysId, csrfToken, csrfHeader = null) => {
 const checkLdapAccount = async (params) => {
     const { username, apiToken } = params;
 
-    const response = await fetch(`${apiUrl}/check-ldap-account/${username}?token=${apiToken}`, {
+    const response = await fetch(`${apiUrl}/check-ldap-account-login/${username}?token=${apiToken}`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+    });
+
+    if (!response.ok) {
+        return {
+            error: true
+        };
+    }
+
+    const data = await response.json();
+    return data;
+}
+
+const appLogout = async (params) => {
+    const { apiToken } = params;
+
+    const response = await fetch(`${apiUrl}/identity/logout?token=${apiToken}`, {
         method: "GET",
         headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -335,8 +359,8 @@ const checkFooterPosition = () => {
     }
 }
 
-// PAGE: NEW REGISTRATION SUCCESS
-if (document.querySelector(".page-new-registration-success, .page-welcome")) {
+// PAGE: NEW REGISTRATION - PASSWORD SETTING SUCCESSFUL
+if (document.querySelector(".page-identity-set-password-success")) {
     const mainElm = document.getElementById("main");
 
     if (document.getElementById("progress-loader")) {
@@ -363,6 +387,7 @@ if (document.querySelector(".page-new-registration-success, .page-welcome")) {
                 window.translations["loader.newRegistration.savingData"],
                 window.translations["loader.newRegistration.done"],
             ],
+            afterCompleteFunction: appLogout,
         });
 
         loader.start();

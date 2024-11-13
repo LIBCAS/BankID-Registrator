@@ -17,15 +17,6 @@ public class IdentityAuthController
     private IdentityAuthService identityAuthService;
 
     /**
-     * Route for logging out the Bank iD verified identity
-     * @param request
-     */
-    @GetMapping("/identity/logout")
-    public void routeLogout(HttpServletRequest request) {
-        this.identityAuthService.logout(request);
-    }
-
-    /**
      * Route for logging out the Bank iD verified identity with redirect
      * @param redirect Redirect URL
      * @param request

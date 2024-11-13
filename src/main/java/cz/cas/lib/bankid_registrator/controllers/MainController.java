@@ -501,8 +501,6 @@ public class MainController extends ControllerAbstract
         model.addAttribute("membershipExpiryDate", membershipExpiryDate);
         model.addAttribute("alephBarcode", alephPatronBarcode);
         model.addAttribute("token", this.tokenService.createIdentityToken(identity));
-        model.addAttribute("apiToken", this.tokenService.createApiToken(identity.getId().toString()));
-        model.addAttribute("patronLdapSynced", false);
         model.addAttribute("passwordDTO", new PatronPasswordDTO());
 
         return "new_registration_success";

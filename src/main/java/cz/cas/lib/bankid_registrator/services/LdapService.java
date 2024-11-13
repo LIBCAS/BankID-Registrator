@@ -4,7 +4,6 @@ import cz.cas.lib.bankid_registrator.configurations.LdapServiceConfig;
 import java.util.List;
 import javax.annotation.PostConstruct;
 import javax.naming.directory.Attributes;
-import javax.naming.NamingException;
 import org.springframework.ldap.AuthenticationException;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;

@@ -3,12 +3,14 @@ package cz.cas.lib.bankid_registrator.controllers;
 import cz.cas.lib.bankid_registrator.configurations.ApiConfig;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
+import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.LdapService;
 import cz.cas.lib.bankid_registrator.services.MapyCzService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
 import java.util.*;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.validation.constraints.NotBlank;
 import org.springframework.context.MessageSource;
@@ -36,6 +38,7 @@ public class ApiController extends ApiControllerAbstract
     private final MapyCzService mapyCzService;
     private final LdapService ldapService;
     private final TokenService tokenService;
+    private final IdentityAuthService identityAuthService;
 
     public ApiController(
         MessageSource messageSource, 
@@ -46,7 +49,8 @@ public class ApiController extends ApiControllerAbstract
         IdentityActivityService identityActivityService,
         MapyCzService mapyCzService,
         LdapService ldapService,
-        TokenService tokenService
+        TokenService tokenService,
+        IdentityAuthService identityAuthService
     ) {
         super(messageSource, apiConfig);
         this.patronService = patronService;
@@ -56,6 +60,7 @@ public class ApiController extends ApiControllerAbstract
         this.mapyCzService = mapyCzService;
         this.ldapService = ldapService;
         this.tokenService = tokenService;
+        this.identityAuthService = identityAuthService;
     }
 
     /**
@@ -166,16 +171,26 @@ public class ApiController extends ApiControllerAbstract
     /**
      * Check if an account with the given login (username + password) exists in the LDAP
      * @param username Aleph patron ID, not Aleph patron barcode
-     * @param password Aleph patron password
      * @param token
+     * @param request
      * @return
      */
-    @GetMapping("/check-ldap-account/{username}/{password}")
-    public ResponseEntity<Map<String, Object>> checkLdapAccount(
-        @PathVariable String username,
-        @PathVariable String password,
-        @RequestParam("token") String token
+    @GetMapping("/check-ldap-account-login/{username}")
+    public ResponseEntity<Map<String, Object>> checkLdapAccountLogin(
+        @PathVariable String username, 
+        @RequestParam("token") String token, 
+        HttpServletRequest request
     ) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+
+        String password = (String) session.getAttribute("patronPassword");
+        if (password == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+
         if (!this.tokenService.isApiTokenValid(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }
@@ -195,8 +210,34 @@ public class ApiController extends ApiControllerAbstract
         result.put("result", accountExists);
 
         if (accountExists) {
+            session.removeAttribute("patronPassword");
             this.tokenService.invalidateToken(token);
+            this.identityAuthService.logout(request);
         }
+
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Logout the Bank iD verified identity
+     * @param token
+     * @param request
+     * @return ResponseEntity<Map<String, Object>>
+     */
+    @GetMapping("/identity/logout")
+    public ResponseEntity<Map<String, Object>> routeLogout(
+        @RequestParam("token") String token, 
+        HttpServletRequest request
+    ) {
+        if (!this.tokenService.isApiTokenValid(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        this.tokenService.invalidateToken(token);
+        this.identityAuthService.logout(request);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("result", true);
 
         return ResponseEntity.ok(result);
     }

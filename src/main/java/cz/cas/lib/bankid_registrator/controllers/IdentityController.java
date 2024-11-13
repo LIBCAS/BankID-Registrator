@@ -8,6 +8,7 @@ import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
+import cz.cas.lib.bankid_registrator.services.LdapService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.util.WebUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
@@ -39,6 +40,7 @@ public class IdentityController extends ControllerAbstract
     private final IdentityService identityService;
     private final AlephService alephService;
     private final EmailService emailService;
+    private final LdapService ldapService;
 
     public IdentityController(
         MessageSource messageSource, 
@@ -46,13 +48,15 @@ public class IdentityController extends ControllerAbstract
         IdentityService identityService,
         AlephService alephService,
         EmailService emailService,
-        IdentityAuthService identityAuthService
+        IdentityAuthService identityAuthService,
+        LdapService ldapService
     ) {
         super(messageSource, identityAuthService);
         this.tokenService = tokenService;
         this.identityService = identityService;
         this.alephService = alephService;
         this.emailService = emailService;
+        this.ldapService = ldapService;
     }
 
     /**
@@ -214,17 +218,27 @@ public class IdentityController extends ControllerAbstract
             throw new HttpErrorException(HttpStatus.BAD_REQUEST, this.messageSource.getMessage("error.token.invalidOrMissing", null, locale));
         }
 
-        Map<String, Object> pswUpdate = this.updatePatronPassword(token, passwordDTO.getNewPassword());
+        String patronAlephId = null;
+
+        String patronPassword = passwordDTO.getNewPassword();
+        Map<String, Object> pswUpdate = this.updatePatronPassword(token, patronPassword);
 
         if (pswUpdate.containsKey("error")) {
             throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage("error.identityPassword.failed", null, locale));
         }
 
+        request.getSession().setAttribute("patronPassword", patronPassword);
+
         try {
             Long identityId = Long.parseLong(this.tokenService.extractIdentityIdFromToken(token));
             Identity identity = this.identityService.findById(identityId).get();
-            String patronAlephId = identity.getAlephId();
+            patronAlephId = identity.getAlephId();
+            String patronAlephBarcode = identity.getAlephBarcode();
             Patron patron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
+
+            model.addAttribute("alephId", patronAlephId);
+            model.addAttribute("alephBarcode", patronAlephBarcode);
+            model.addAttribute("apiToken", this.tokenService.createApiToken(identityId.toString()));
 
             patronIsCasEmployee = patron.isCasEmployee;
         } catch (Exception e) {
@@ -232,11 +246,12 @@ public class IdentityController extends ControllerAbstract
             throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage("error.identityPassword.failed", null, locale));
         }
 
-        this.identityAuthService.logout(request);
+        Boolean patronLdapSynced = this.ldapService.accountExistsByLogin(patronAlephId, patronPassword);
 
         model.addAttribute("isIdentityLoggedIn", false);
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.title", null, locale));
         model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
+        model.addAttribute("patronLdapSynced", patronLdapSynced);
 
         return "identity_set_password_success";
     }
