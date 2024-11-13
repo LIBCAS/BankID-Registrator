@@ -12,7 +12,7 @@
 	<artifactId>bankid-registrator</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>bankid-registrator</name>
-	<description>KNAV BankID Registrator</description>
+	<description>KNAV Bank iD Registrator</description>
 
         <inceptionYear>2022</inceptionYear>
         <licenses></licenses>
