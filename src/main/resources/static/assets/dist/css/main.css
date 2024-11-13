@@ -21,6 +21,11 @@ body > main {
     color: inherit !important;
 }
 
+a.disabled {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
 #files-control {
     display: none;
 }

@@ -26,7 +26,7 @@
                             id="language-dropdown-menu">
                             <ul class="py-2 font-medium" role="none">
                                 <li>
-                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=cs|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=cs|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'cs'} ? 'disabled'" role="menuitem">
                                         <div class="inline-flex items-center">
                                             <svg th:insert="~{fragments/svg/flag-cze :: flag-cze}" class="w-5 h-5 rounded-full me-2"></svg>
                                             Česky
@@ -34,21 +34,21 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=en|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=en|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'en'} ? 'disabled'" role="menuitem">
                                         <div class="inline-flex items-center">
                                             <svg th:insert="~{fragments/svg/flag-gbr :: flag-gbr}" class="w-5 h-5 rounded-full me-2"></svg>
                                             English
                                         </div>
                                     </a>
                                 </li>
-                                <li>
-                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=sk|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">
+                                <!-- <li>
+                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=sk|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'sk'} ? 'disabled'" role="menuitem">
                                         <div class="inline-flex items-center">
                                             <svg th:insert="~{fragments/svg/flag-skv :: flag-skv}" class="w-5 h-5 rounded-full me-2"></svg>
                                             Slovensky
                                         </div>
                                     </a>
-                                </li>
+                                </li> -->
                             </ul>
                         </div>
                     </div>
