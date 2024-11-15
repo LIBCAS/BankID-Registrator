@@ -9,7 +9,7 @@
         <main layout:fragment="content" class="mb-40 md:mb-20 text-center container mx-auto p-5">
             <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.membershipRenewal.title}"></h1>
             <div class="mb-12 max-w-4xl mx-auto text-left flex flex-col gap-2">
-                <h3 class="font-semibold" th:text="#{page.membershipRenewal.subtitle}"></h3>
+                <h3 th:if="${expiryDateIn1MonthOrLess}" class="font-semibold" th:text="#{page.membershipRenewal.subtitle}"></h3>
                 <p class="font-bold" th:if="${membershipHasExpired}">
                     <span th:text="#{message.membershipStatus.hasExpiredOnDate}">Your membership has expired on</span> <span th:text="${membershipExpiryDate}"></span>.
                 </p>
