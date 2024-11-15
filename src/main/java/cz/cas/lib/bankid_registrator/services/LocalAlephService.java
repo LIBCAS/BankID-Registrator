@@ -20,7 +20,6 @@ import cz.cas.lib.bankid_registrator.entities.entity.Address;
 import cz.cas.lib.bankid_registrator.entities.entity.AddressType;
 import cz.cas.lib.bankid_registrator.entities.entity.IDCard;
 import cz.cas.lib.bankid_registrator.entities.entity.IDCardType;
-import cz.cas.lib.bankid_registrator.entities.patron.PatronAction;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBorXOp;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;

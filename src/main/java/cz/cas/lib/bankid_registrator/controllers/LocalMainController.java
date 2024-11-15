@@ -1,6 +1,7 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
+import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.services.AlephService;
@@ -40,7 +41,7 @@ public class LocalMainController extends ControllerAbstract
     }
 
     @RequestMapping(value = "/callback_registration_new/{patronAlephId}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-    public String testCallbackRegistrationNew(
+    public String testViewCallbackRegistrationNew(
         @PathVariable("patronAlephId") String patronAlephId, 
         Model model, 
         Locale locale, 
@@ -60,7 +61,7 @@ public class LocalMainController extends ControllerAbstract
     }
 
     @RequestMapping(value = "/callback_registration_renewal/{patronAlephId}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-    public String testCallbackRegistrationRenewal(
+    public String testViewCallbackRegistrationRenewal(
         @PathVariable("patronAlephId") String patronAlephId, 
         Model model, 
         Locale locale, 
@@ -90,7 +91,7 @@ public class LocalMainController extends ControllerAbstract
     }
 
     @RequestMapping(value = "/callback_registration_renewal/expires-now/{patronAlephId}", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-    public String testCallbackRegistrationRenewalExpiresNow(
+    public String testViewCallbackRegistrationRenewalExpiresNow(
         @PathVariable("patronAlephId") String patronAlephId, 
         Model model, 
         Locale locale, 
@@ -119,51 +120,127 @@ public class LocalMainController extends ControllerAbstract
         return "callback_registration_renewal";
     }
 
-    // @RequestMapping(value = "/test_a", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-    // public String testA(Model model, Locale locale, HttpSession session) {
-    //     session.setAttribute("sessionVar1", "sessionVar1Value");
+    @RequestMapping(value = "/new_registration_success/normal/email", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String testViewNewRegistrationSuccess_normalWithEmail(
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        model.addAttribute("patronIsCasEmployee", false);
+        model.addAttribute("patronHasEmail", true);
+        model.addAttribute("membershipExpiryDate", DateUtils.addDaysToToday(365, "dd/MM/yyyy"));
+        model.addAttribute("alephBarcode", "123456789");
+        model.addAttribute("token", "myexampletoken");
+        model.addAttribute("passwordDTO", new PatronPasswordDTO());
 
-    //     model.addAttribute("sessionVar1", session.getAttribute("sessionVar1"));
-    //     model.addAttribute("sessionVar2", session.getAttribute("sessionVar2"));
-    //     model.addAttribute("sessionId", session.getId());
-    //     model.addAttribute("pageTitle", "Test A");
+        return "new_registration_success";
+    }
 
-    //     return "test";
-    // }
+    @RequestMapping(value = "/new_registration_success/employee/email", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String testViewNewRegistrationSuccess_employeeWithEmail(
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        model.addAttribute("patronIsCasEmployee", true);
+        model.addAttribute("patronHasEmail", true);
+        model.addAttribute("membershipExpiryDate", DateUtils.addDaysToToday(365, "dd/MM/yyyy"));
+        model.addAttribute("alephBarcode", "123456789");
+        model.addAttribute("token", "myexampletoken");
+        model.addAttribute("passwordDTO", new PatronPasswordDTO());
 
-    // @RequestMapping(value = "/test_b", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-    // public String testB(Model model, Locale locale, HttpSession session) {
-    //     session.setAttribute("sessionVar2", "sessionVar2Value");
+        return "new_registration_success";
+    }
 
-    //     model.addAttribute("sessionVar1", session.getAttribute("sessionVar1"));
-    //     model.addAttribute("sessionVar2", session.getAttribute("sessionVar2"));
-    //     model.addAttribute("sessionId", session.getId());
-    //     model.addAttribute("pageTitle", "Test B");
+    @RequestMapping(value = "/new_registration_success/normal/no-email", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String testViewNewRegistrationSuccess_normalNoEmail(
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        model.addAttribute("patronIsCasEmployee", false);
+        model.addAttribute("patronHasEmail", false);
+        model.addAttribute("membershipExpiryDate", DateUtils.addDaysToToday(365, "dd/MM/yyyy"));
+        model.addAttribute("alephBarcode", "123456789");
+        model.addAttribute("token", "myexampletoken");
+        model.addAttribute("passwordDTO", new PatronPasswordDTO());
 
-    //     return "test";
-    // }
+        return "new_registration_success";
+    }
 
-    // @RequestMapping(value = "/test_c", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-    // public String testC(Model model, Locale locale, HttpSession session) {
-    //     session.removeAttribute("sessionVar1");
+    @RequestMapping(value = "/new_registration_success/employee/no-email", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String testViewNewRegistrationSuccess_employeeNoEmail(
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        model.addAttribute("patronIsCasEmployee", true);
+        model.addAttribute("patronHasEmail", false);
+        model.addAttribute("membershipExpiryDate", DateUtils.addDaysToToday(365, "dd/MM/yyyy"));
+        model.addAttribute("alephBarcode", "123456789");
+        model.addAttribute("token", "myexampletoken");
+        model.addAttribute("passwordDTO", new PatronPasswordDTO());
 
-    //     model.addAttribute("sessionVar1", session.getAttribute("sessionVar1"));
-    //     model.addAttribute("sessionVar2", session.getAttribute("sessionVar2"));
-    //     model.addAttribute("sessionId", session.getId());
-    //     model.addAttribute("pageTitle", "Test C");
+        return "new_registration_success";
+    }
 
-    //     return "test";
-    // }
+    @RequestMapping(value = "/membership_renewal_success/normal/email", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String testViewMembershipRenewalSuccess_normalWithEmail(
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        model.addAttribute("isIdentityLoggedIn", false);
+        model.addAttribute("patronIsCasEmployee", false);
+        model.addAttribute("patronHasEmail", true);
+        model.addAttribute("membershipExpiryDate", DateUtils.addDaysToToday(365, "dd/MM/yyyy"));
+        model.addAttribute("alephBarcode", "123456789");
 
-    // @RequestMapping(value = "/test_d", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
-    // public String testD(Model model, Locale locale, HttpSession session) {
-    //     session.invalidate();
+        return "membership_renewal_success";
+    }
 
-    //     model.addAttribute("sessionVar1", session.getAttribute("sessionVar1"));
-    //     model.addAttribute("sessionVar2", session.getAttribute("sessionVar2"));
-    //     model.addAttribute("sessionId", session.getId());
-    //     model.addAttribute("pageTitle", "Test D");
+    @RequestMapping(value = "/membership_renewal_success/employee/email", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String testViewMembershipRenewalSuccess_employeeWithEmail(
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        model.addAttribute("isIdentityLoggedIn", false);
+        model.addAttribute("patronIsCasEmployee", true);
+        model.addAttribute("patronHasEmail", true);
+        model.addAttribute("membershipExpiryDate", DateUtils.addDaysToToday(365, "dd/MM/yyyy"));
+        model.addAttribute("alephBarcode", "123456789");
 
-    //     return "test";
-    // }
+        return "membership_renewal_success";
+    }
+
+    @RequestMapping(value = "/membership_renewal_success/normal/no-email", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String testViewMembershipRenewalSuccess_normalNoEmail(
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        model.addAttribute("isIdentityLoggedIn", false);
+        model.addAttribute("patronIsCasEmployee", false);
+        model.addAttribute("patronHasEmail", false);
+        model.addAttribute("membershipExpiryDate", DateUtils.addDaysToToday(365, "dd/MM/yyyy"));
+        model.addAttribute("alephBarcode", "123456789");
+
+        return "membership_renewal_success";
+    }
+
+    @RequestMapping(value = "/membership_renewal_success/employee/no-email", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
+    public String testViewMembershipRenewalSuccess_employeeNoEmail(
+        Model model, 
+        Locale locale, 
+        HttpSession session
+    ) {
+        model.addAttribute("isIdentityLoggedIn", false);
+        model.addAttribute("patronIsCasEmployee", true);
+        model.addAttribute("patronHasEmail", false);
+        model.addAttribute("membershipExpiryDate", DateUtils.addDaysToToday(365, "dd/MM/yyyy"));
+        model.addAttribute("alephBarcode", "123456789");
+
+        return "membership_renewal_success";
+    }
 }

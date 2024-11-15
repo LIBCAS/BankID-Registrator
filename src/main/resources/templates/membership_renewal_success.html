@@ -6,18 +6,28 @@
     </head>
 
     <body class="page-new-registration-success">
-        <main layout:fragment="content" class="mb-10 container mx-auto text-center">
-            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.membershipRenewal.title}">Membership renewal</h1>
-            <p th:text="#{page.membershipRenewalSuccess.text}">KNAV identity registration was successful.</p>
-            <p th:if="${patronHasEmail && !patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.emailSent}">A confirmation with a link to pay the membership fee has been sent to your email.</p>
-            <p th:if="${patronHasEmail && patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.emailSentToEmployee}">A confirmation has been sent to your email.</p>
-            <p>
-                <span th:if="${!patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.fee.instructions}">After paying the fee, your membership will be extended until</span>
-                <span th:if="${patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.instructsToEmployee}">Your membership will be extended until</span> <span class="font-bold" th:text="${membershipExpiryDate}"></span>.
+        <main layout:fragment="content" id="main" class="mb-10 container mx-auto text-center">
+            <h1 class="mb-6 text-3xl font-extrabold text-center" th:text="#{page.membershipRenewalSuccess.title}"></h1>
+            <p class="mt-2">
+                <span th:text="#{message.registrationIsRenewedUntil}"></span>: <b th:text="${membershipExpiryDate}"></b>
             </p>
             <p class="mt-2">
-                <span th:text="#{page.membershipRenewalSuccess.username}">Your username</span>: <b th:text="${alephBarcode}"></b>
+                <span th:text="#{message.usernameRemains}"></span>: <b th:text="${alephBarcode}"></b>
             </p>
+            <p th:if="${!patronIsCasEmployee}" class="mt-4">
+                <b th:text="#{page.membershipRenewalSuccess.fee.details}"></b>
+            </p>
+            <!-- <p th:text="#{page.membershipRenewalSuccess.text}"></p>
+            <p th:if="${patronHasEmail && !patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.emailSent}"></p>
+            <p th:if="${patronHasEmail && patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.emailSentToEmployee}"></p>
+            <p>
+                <span th:if="${!patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.fee.instructions}"></span>
+                <span th:if="${patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.instructsToEmployee}"></span> <span class="font-bold" th:text="${membershipExpiryDate}"></span>.
+            </p>
+            <p class="mt-2">
+                <span th:text="#{page.membershipRenewalSuccess.username}"></span>: <b th:text="${alephBarcode}"></b>
+            </p> -->
+            <p class="mt-4" th:text="#{page.membershipRenewalSuccess.email.instructions}"></p>
             <p class="mt-4">
                 <a href="https://katalog.lib.cas.cz/KNAV/MyResearch/Fines" target="_blank" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4" th:text="#{message.login}"></a>
             </p>
