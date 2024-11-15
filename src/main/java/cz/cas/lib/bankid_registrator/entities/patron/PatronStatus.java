@@ -3,6 +3,7 @@ package cz.cas.lib.bankid_registrator.entities.patron;
 public enum PatronStatus {
     STATUS_03("03", "Institute Staff", 1095, "", "", true),
     STATUS_04("04", "User biannual", 183, "44", "46", false),
+    STATUS_06("06", "Library Staff", 18250, "", "", false),
     STATUS_07("07", "Honorary membership", 1095, "", "", false),
     STATUS_08("08", "VIP", 18250, "", "", false),
     STATUS_09("09", "ILL Borrower PRAGUE", 1825, "", "", false),
