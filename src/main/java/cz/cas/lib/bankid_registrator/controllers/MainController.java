@@ -7,6 +7,7 @@ import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
+import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
 import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
@@ -218,6 +219,9 @@ public class MainController extends ControllerAbstract
         Patron bankIdPatron = (Patron) bankIdPatronCreation.get("patron");
         PatronDTO bankIdPatronDTO = this.patronService.getPatronDTO(bankIdPatron);
 
+        // Setting bankIdPatronDTO's conLng to the current locale
+        bankIdPatronDTO.setConLng(locale.getLanguage().equals("en") ? PatronLanguage.ENG : PatronLanguage.CZE);
+
         try {
             getLogger().info("patron: {}", bankIdPatron.toJson());
         } catch (JsonProcessingException e) {
@@ -307,6 +311,9 @@ public class MainController extends ControllerAbstract
             PatronDTO latestPatronDTO = this.patronService.getPatronDTO(latestPatron);
 
             latestPatron = this.patronRepository.save(latestPatron);
+
+            // Setting latestPatron's conLng to the current locale
+            latestPatron.setConLng(locale.getLanguage().equals("en") ? PatronLanguage.ENG : PatronLanguage.CZE);
 
             try {
                 getLogger().info("latestPatron: {}", latestPatron.toJson());

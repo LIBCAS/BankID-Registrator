@@ -1,10 +1,10 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
+import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
-import cz.cas.lib.bankid_registrator.services.LdapService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import org.springframework.context.MessageSource;
@@ -25,19 +25,16 @@ public class LocalMainController extends ControllerAbstract
 {
     private final AlephService alephService;
     private final PatronService patronService;
-    private final LdapService ldapService;
 
     public LocalMainController(
         MessageSource messageSource,
         AlephService alephService,
         PatronService patronService,
-        LdapService ldapService, 
         IdentityAuthService identityAuthService
     ) {
         super(messageSource, identityAuthService);
         this.alephService = alephService;
         this.patronService = patronService;
-        this.ldapService = ldapService;
 
         init();
     }
@@ -51,6 +48,9 @@ public class LocalMainController extends ControllerAbstract
     ) {
         Patron bankIdPatron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
         PatronDTO bankIdPatronDTO = this.patronService.getPatronDTO(bankIdPatron);
+
+        // Setting bankIdPatronDTO's conLng to the current locale
+        bankIdPatronDTO.setConLng(locale.getLanguage().equals("en") ? PatronLanguage.ENG : PatronLanguage.CZE);
 
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
         model.addAttribute("patronId", 1);
@@ -68,6 +68,9 @@ public class LocalMainController extends ControllerAbstract
     ) {
         Patron bankIdPatron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
         PatronDTO bankIdPatronDTO = this.patronService.getPatronDTO(bankIdPatron);
+
+        // Setting bankIdPatronDTO's conLng to the current locale
+        bankIdPatronDTO.setConLng(locale.getLanguage().equals("en") ? PatronLanguage.ENG : PatronLanguage.CZE);
 
         String alephPatronExpiryDate = bankIdPatron.getExpiryDate();
         boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
@@ -95,6 +98,9 @@ public class LocalMainController extends ControllerAbstract
     ) {
         Patron bankIdPatron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
         PatronDTO bankIdPatronDTO = this.patronService.getPatronDTO(bankIdPatron);
+
+        // Setting bankIdPatronDTO's conLng to the current locale
+        bankIdPatronDTO.setConLng(locale.getLanguage().equals("en") ? PatronLanguage.ENG : PatronLanguage.CZE);
 
         String alephPatronExpiryDate = DateUtils.getLastDateOfCurrentMonth("dd/MM/yyyy");
         boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
