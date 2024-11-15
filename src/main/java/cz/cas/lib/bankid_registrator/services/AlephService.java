@@ -1094,17 +1094,25 @@ logger.info("AAA doHttpRequest method: {}", method);
             // z308 - RFID
             // If the new RFID is not identical to the old RFID
             if (patron.getRfid().trim().equals(alephPatron.getRfid().trim()) == false) {
-                // If the new RFID is provided and the old RFID was also provided, delete the old RFID ...
                 if (patron.getRfid().equals("") == Boolean.FALSE && alephPatron.getRfid().equals("") == Boolean.FALSE) {
+                    // If the new RFID is provided and the old RFID was also provided, delete the old RFID ...
                     transformer.setParameter("is-z308-key-type-03-d", Boolean.TRUE);
                     transformer.setParameter("z308-key-type-03-d-key-data", alephPatron.getRfid());
                     transformer.setParameter("z308-key-type-03-d-id", patronId);
-                }
-                // ... and create the new RFID
-                if (patron.getRfid().equals("") == Boolean.FALSE) {
+                    // ... and create the new RFID
                     transformer.setParameter("is-z308-key-type-03", Boolean.TRUE);
                     transformer.setParameter("z308-key-type-03-key-data", patron.getRfid());
                     transformer.setParameter("z308-key-type-03-id", patronId);
+                } else if (patron.getRfid().equals("") == Boolean.FALSE && alephPatron.getRfid().equals("") == Boolean.TRUE) {
+                    // If the new RFID is provided and the old RFID was not provided, create the new RFID
+                    transformer.setParameter("is-z308-key-type-03", Boolean.TRUE);
+                    transformer.setParameter("z308-key-type-03-key-data", patron.getRfid());
+                    transformer.setParameter("z308-key-type-03-id", patronId);
+                } else if (patron.getRfid().equals("") == Boolean.TRUE && alephPatron.getRfid().equals("") == Boolean.FALSE) {
+                    // If the new RFID is not provided and the old RFID was provided, delete the old RFID
+                    transformer.setParameter("is-z308-key-type-03-d", Boolean.TRUE);
+                    transformer.setParameter("z308-key-type-03-d-key-data", alephPatron.getRfid());
+                    transformer.setParameter("z308-key-type-03-d-id", patronId);
                 }
             }
 
