@@ -242,37 +242,37 @@ public class ApiController extends ApiControllerAbstract
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * !!! ONLY FOR TESTING PURPOSES !!!
-     * Empty the `identities` and `identity_activities` tables
-     * @param session
-     * @return
-     */
-    @GetMapping("/reset-identities")
-    public ResponseEntity<Map<String, Object>> resetIdentities(HttpSession session)
-    {
-        Map<String, Object> result = new HashMap<>();
+    // /**
+    //  * !!! ONLY FOR TESTING PURPOSES !!!
+    //  * Empty the `identities` and `identity_activities` tables
+    //  * @param session
+    //  * @return
+    //  */
+    // @GetMapping("/reset-identities")
+    // public ResponseEntity<Map<String, Object>> resetIdentities(HttpSession session)
+    // {
+    //     Map<String, Object> result = new HashMap<>();
 
-        try {
-            // Get patron IDs of all BankID-verified identities which have an Aleph patron linked to them
-            String[] alephIds = this.identityService.getAllAlephIds();
+    //     try {
+    //         // Get patron IDs of all BankID-verified identities which have an Aleph patron linked to them
+    //         String[] alephIds = this.identityService.getAllAlephIds();
 
-            // Delete those identities from the application database
-            this.identityActivityService.emptyTable();
-            this.identityService.emptyTable();
+    //         // Delete those identities from the application database
+    //         this.identityActivityService.emptyTable();
+    //         this.identityService.emptyTable();
 
-            // Delete the reference to those identities from the Aleph database
-            for (String alephId : alephIds) {
-                this.alephService.deletePatronBankIdSub(alephId);
-            }
+    //         // Delete the reference to those identities from the Aleph database
+    //         for (String alephId : alephIds) {
+    //             this.alephService.deletePatronBankIdSub(alephId);
+    //         }
 
-            result.put("result", true);
-            result.put("message", alephIds.length == 1 ? "1 identity deleted" : (alephIds.length + " identities deleted"));
-        } catch (Exception e) {
-            result.put("result", false);
-            result.put("message", e.getMessage());
-        }
+    //         result.put("result", true);
+    //         result.put("message", alephIds.length == 1 ? "1 identity deleted" : (alephIds.length + " identities deleted"));
+    //     } catch (Exception e) {
+    //         result.put("result", false);
+    //         result.put("message", e.getMessage());
+    //     }
 
-        return ResponseEntity.ok(result);
-    }
+    //     return ResponseEntity.ok(result);
+    // }
 }

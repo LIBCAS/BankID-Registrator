@@ -792,35 +792,35 @@ if (document.getElementById("js-deleteIdentity")) {
 setTimeout(checkFooterPosition, 1000);
 window.addEventListener("resize", checkFooterPosition);
 
-// TESTING
-const emptyIdentities = async () => {
-    const response = await fetch(`${apiUrl}/reset-identities`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-    });
+// // TESTING
+// const emptyIdentities = async () => {
+//     const response = await fetch(`${apiUrl}/reset-identities`, {
+//         method: "GET",
+//         headers: {
+//             "Content-Type": "application/x-www-form-urlencoded",
+//         }
+//     });
 
-    if (!response.ok) {
-        alert(`HTTP-Error: ${response.status} ${response.error}`);
-    }
+//     if (!response.ok) {
+//         alert(`HTTP-Error: ${response.status} ${response.error}`);
+//     }
 
-    const data = await response.json();
-    return data;
-}
-const btnEmptyIdentities = document.getElementById("js-resetIdentities");
-if (btnEmptyIdentities) {
-    btnEmptyIdentities.addEventListener("click", async () => {
-        emptyIdentities()
-            .then(data => {
-                if (data.result === true) {
-                    alert(data.message);
-                } else {
-                    alert("An error occurred while resetting the identities.");
-                }
-            })
-            .catch(error => {
-                alert("An error occurred while resetting the identities.");
-            });
-    });
-}
+//     const data = await response.json();
+//     return data;
+// }
+// const btnEmptyIdentities = document.getElementById("js-resetIdentities");
+// if (btnEmptyIdentities) {
+//     btnEmptyIdentities.addEventListener("click", async () => {
+//         emptyIdentities()
+//             .then(data => {
+//                 if (data.result === true) {
+//                     alert(data.message);
+//                 } else {
+//                     alert("An error occurred while resetting the identities.");
+//                 }
+//             })
+//             .catch(error => {
+//                 alert("An error occurred while resetting the identities.");
+//             });
+//     });
+// }
