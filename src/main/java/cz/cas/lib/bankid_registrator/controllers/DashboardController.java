@@ -158,4 +158,32 @@
 
             return "redirect:/dashboard/identity/" + identityId;
         }
+
+        /**
+         * Deletes an identity and redirects to the dashboard.
+         */
+        @RequestMapping(value = "/dashboard/identity/{id}/delete", method = RequestMethod.GET)
+        public String deleteIdentity(Locale locale, @PathVariable("id") Long identityId) {
+            Optional<Identity> identityOpt = identityService.findById(identityId);
+
+            if (identityOpt.isPresent()) {
+                Identity identity = identityOpt.get();
+
+                // Soft-delete identity
+                identity.setDeleted(true);
+                identityService.save(identity);
+
+                // Delete media files
+                List<Media> medias = mediaService.findByIdentityId(identityId);
+                for (Media media : medias) {
+                    try {
+                        mediaService.delete(media);
+                    } catch (RuntimeException e) {
+                        throw new RuntimeException(this.messageSource.getMessage("error.media.failedToDelete", null, locale) + " " + media.getName() + ": " + e.getMessage(), e);
+                    }
+                }
+            }
+
+            return "redirect:/dashboard";
+        }
     }

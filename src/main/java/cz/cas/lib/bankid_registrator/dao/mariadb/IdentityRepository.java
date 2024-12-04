@@ -31,7 +31,7 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
     List<String> findAllAlephIds();
 
     @Query(
-        "SELECT i FROM Identity i WHERE " +
+        "SELECT i FROM Identity i WHERE i.deleted = false AND " +
         "(:searchAlephIdOrBarcode IS NULL OR :searchAlephIdOrBarcode = '' OR " +
         "COALESCE(i.alephId, '') LIKE %:searchAlephIdOrBarcode% OR " +
         "COALESCE(i.alephBarcode, '') LIKE %:searchAlephIdOrBarcode%) AND " +

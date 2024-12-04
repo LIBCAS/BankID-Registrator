@@ -11,18 +11,20 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
-public class MediaService
+public class MediaService extends ServiceAbstract
 {
-    @Autowired
-    MainConfiguration mainConfig;
+    private final MainConfiguration mainConfig;
+    private final MediaRepository mediaRepository;
 
-    @Autowired
-    private MediaRepository mediaRepository;
+    public MediaService(MainConfiguration mainConfig, MediaRepository mediaRepository) {
+        super(null);
+        this.mainConfig = mainConfig;
+        this.mediaRepository = mediaRepository;
+    }
 
     /**
      * Upload a media file
@@ -74,5 +76,22 @@ public class MediaService
      */
     public List<Media> findByIdentityId(Long identityId) {
         return mediaRepository.findByIdentityId(identityId);
+    }
+
+    /**
+     * Delete a media file
+     * @param media
+     * @throws RuntimeException
+     */
+    public void delete(Media media) {
+        Path filePath = Paths.get(media.getPath());
+
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e); 
+        }
+            
+        mediaRepository.delete(media);
     }
 }

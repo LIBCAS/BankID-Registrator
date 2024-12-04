@@ -139,6 +139,20 @@ function triggerPrintPage() {
     window.print();
 }
 
+/**
+ * 
+ * Trigger the delete identity
+ */
+function triggerDeleteIdentity(event) {
+    event.preventDefault();
+
+    const endpoint = event.target.href;
+
+    if (confirm(window.translations["indentity.removal.warning"])) {
+        window.location.href = endpoint;
+    }
+}
+
 const checkRfid = async (rfid, patronSysId, csrfToken, csrfHeader = null) => {
     const request = {
         method: "POST",
@@ -770,6 +784,9 @@ if (document.getElementById("form-identity-password")) {
 // COMMON
 if (document.getElementById("js-printPage")) {
     document.getElementById("js-printPage").addEventListener("click", triggerPrintPage);
+}
+if (document.getElementById("js-deleteIdentity")) {
+    document.getElementById("js-deleteIdentity").addEventListener("click", triggerDeleteIdentity);
 }
 // Footer positioning
 setTimeout(checkFooterPosition, 1000);

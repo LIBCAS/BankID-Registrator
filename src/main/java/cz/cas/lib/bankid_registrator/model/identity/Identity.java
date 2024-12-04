@@ -46,6 +46,9 @@ public class Identity
     @Column(name="checked_by_admin", nullable = true)
     private Boolean checkedByAdmin;
 
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
