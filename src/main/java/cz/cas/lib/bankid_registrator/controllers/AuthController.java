@@ -27,19 +27,19 @@ public class AuthController
     @Autowired
     private AppUserDetailsService userDetailsService;
 
-    @GetMapping("/user/register")
-    public String showRegistrationForm(Model model)
-    {
-        model.addAttribute("user", new User());
-        return "admin_registration";
-    }
+    // @GetMapping("/user/register")
+    // public String showRegistrationForm(Model model)
+    // {
+    //     model.addAttribute("user", new User());
+    //     return "admin_registration";
+    // }
 
-    @PostMapping("/user/register")
-    public String registerUser(User user)
-    {
-        userDetailsService.saveUser(user);
-        return "redirect:/user/login";
-    }
+    // @PostMapping("/user/register")
+    // public String registerUser(User user)
+    // {
+    //     userDetailsService.saveUser(user);
+    //     return "redirect:/user/login";
+    // }
 
     @GetMapping("/user/login")
     public String showLoginForm(Authentication authentication)
