@@ -11,10 +11,10 @@
                 <a href="/bankid-registrator/identity/reset-password-request" class="hover:underline" th:text="#{message.passwordReset}"></a>
             </li> -->
             <li>
-                <a th:href="@{|https://www.lib.cas.cz/${#locale.language}/about-the-library/library-regulations/|}" class="hover:underline" th:text="#{message.libraryRegulations}" target="_blank"></a>
+                <a th:href="#{a.href.libraryRegulations}" class="hover:underline" th:text="#{message.libraryRegulations}" target="_blank"></a>
             </li>
             <li>
-                <a th:href="@{|https://www.lib.cas.cz/${#locale.language}/about-the-library/ppd/info-remote-access-online/|}" class="hover:underline" th:text="#{message.privacyPolicy}" target="_blank"></a>
+                <a th:href="#{a.href.privacyPolicy}" class="hover:underline" th:text="#{message.privacyPolicy}" target="_blank"></a>
             </li>
         </ul>
         </div>
