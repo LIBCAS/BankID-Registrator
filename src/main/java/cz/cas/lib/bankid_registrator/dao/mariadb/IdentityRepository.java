@@ -31,12 +31,16 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
     List<String> findAllAlephIds();
 
     @Query(
-        "SELECT i FROM Identity i WHERE i.deleted = false AND " +
+        "SELECT DISTINCT i FROM Identity i " +
+        "JOIN IdentityActivity ia ON i = ia.identity " +
+        "WHERE i.deleted = false AND " +
         "(:searchAlephIdOrBarcode IS NULL OR :searchAlephIdOrBarcode = '' OR " +
         "COALESCE(i.alephId, '') LIKE %:searchAlephIdOrBarcode% OR " +
         "COALESCE(i.alephBarcode, '') LIKE %:searchAlephIdOrBarcode%) AND " +
         "(:filterCasEmployee IS NULL OR i.isCasEmployee = :filterCasEmployee) AND " +
-        "(:filterCheckedByAdmin IS NULL OR i.checkedByAdmin = :filterCheckedByAdmin)"
+        "(:filterCheckedByAdmin IS NULL OR i.checkedByAdmin = :filterCheckedByAdmin) AND " +
+        "(ia.activityEvent = cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent.MEMBERSHIP_RENEWAL_SUCCESS OR " +
+        "ia.activityEvent = cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent.NEW_REGISTRATION_SUCCESS)"
     )
     Page<Identity> findIdentities(Pageable pageable, String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin);
 }
