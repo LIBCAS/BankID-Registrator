@@ -2,12 +2,21 @@ package cz.cas.lib.bankid_registrator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
+import cz.cas.lib.bankid_registrator.entities.entity.Address;
+import cz.cas.lib.bankid_registrator.entities.entity.AddressType;
+import cz.cas.lib.bankid_registrator.entities.entity.Gender;
+import cz.cas.lib.bankid_registrator.entities.entity.MaritalStatus;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
+import cz.cas.lib.bankid_registrator.product.Connect;
+import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
+import cz.cas.lib.bankid_registrator.services.LocalAlephService;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
+import java.util.ArrayList;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +30,9 @@ class AlephServiceTest
 {
     @Autowired
     private AlephService alephService;
+
+    @Autowired
+    private LocalAlephService localAlephService;
 
     @Autowired
     private PatronDTOValidator patronDTOValidator;
@@ -100,6 +112,114 @@ class AlephServiceTest
         assertTrue(
             patronUpdate.containsKey("success") && (Boolean) patronUpdate.get("success"),
             "Patron update was not successful."
+        );
+    }
+
+    /**
+     * Test Aleph patron existence check by name and birth date even if Bank iD service returns user profile with uppercase name (`family_name`, `middle_name`, `given_name`).
+     * 
+     * <p>Example usage:</p>
+     * First modify the `customName`, `customGiveName`, `customFamilyName`, `customMiddleName`, `customBirthDate` variables in this test method - fill them with some existing Aleph patron's data but in uppercase. After that run the test:
+     * <pre>{@code
+     * ./mvnw test -Dtest=AlephServiceTest#testGetAlephPatronIdByNameAndBirth_shouldNotBeEmpty_ifBankidProfileNamesUppercase
+     * }</pre>
+     */
+    @Test
+    void testGetAlephPatronIdByNameAndBirth_shouldNotBeEmpty_ifBankidProfileNamesUppercase()
+    {
+        // Setup custom user profile data which would normally be provided by Bank iD service when the user verifies their identity
+        String customName = "MGR. JOE DOE";
+        String customGiveName = "JOE";
+        String customFamilyName = "DOE";
+        String customMiddleName = "";
+        String customBirthDate = "2003-06-09";  // yyyy-MM-dd
+
+        // The `localAlephService.generateTestingMname` method generates a random middle name but we want to use a custom one defined above
+        LocalAlephService spyLocalAlephService = Mockito.spy(localAlephService);
+        Mockito.doReturn(customMiddleName).when(spyLocalAlephService).generateTestingMname();
+
+        Connect userInfo = new Connect(
+            customName,
+            customGiveName,
+            customFamilyName,
+            null,
+            "Johnny",
+            "johnny.doe",
+            "john.doe@example.com",
+            true,
+            "male",
+            customBirthDate,
+            "Europe/Prague",
+            "cs_CZ",
+            "+420123456789",
+            true,
+            System.currentTimeMillis(),
+            "unique-sub-id",
+            "txn-12345",
+            null,
+            null
+        );
+
+        ArrayList<Address> addresses = new ArrayList<>();
+        addresses.add(new Address(
+            AddressType.PERMANENT_RESIDENCE,
+            "V Parku",
+            "2308",
+            "8",
+            null,
+            "Praha",
+            "Chodov",
+            "14800",
+            "CZ",
+            "26013691"
+        ));
+
+        Identify userProfile = new Identify(
+            null,
+            null,
+            customGiveName,
+            customFamilyName,
+            null,
+            "+420123456789",
+            "john.doe@example.com",
+            addresses,
+            customBirthDate,
+            24,
+            null,
+            Gender.male,
+            "900101/1234",
+            "Czech Republic",
+            "Prague",
+            "Czech",
+            new String[] { "Czech" },
+            MaritalStatus.SINGLE,
+            null,
+            null,
+            null,
+            false,
+            true,
+            false,
+            System.currentTimeMillis(),
+            "unique-sub-id",
+            "txn-12345",
+            null
+        );
+
+        // Mapping BankID user data to a Patron entity (so-called "BankId patron")
+        Map<String, Object> bankIdPatronCreation = spyLocalAlephService.newPatron(userInfo, userProfile);
+
+        Patron bankIdPatron = (Patron) bankIdPatronCreation.get("patron");
+
+        try {
+            logger.info("patron: {}", bankIdPatron.toJson());
+        } catch (JsonProcessingException e) {
+            logger.error("Error converting patron to JSON", e);
+        }
+
+        // Check that the BankId patron exists in Aleph even though the names are in uppercase and even though the `userInfo.name` contains a title (`Mgr.`, `PhD`, etc.)
+        assertFalse(
+            bankIdPatron.isNew(),
+            "Patron does not exist in Aleph."
         );
     }
 }

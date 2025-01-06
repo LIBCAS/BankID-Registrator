@@ -51,4 +51,21 @@ public class StringUtils
         }
         return true;
     }
+
+    /**
+     * Formats a string so that it is capitalized if the input string was all uppercase.
+     * @param str The string to format.
+     * @return The formatted string.
+     */
+    public static String capitalizeIfUppercase(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+
+        if (str.equals(str.toUpperCase())) {
+            return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+        }
+
+        return str;
+    }
 }

@@ -1,18 +1,5 @@
 package cz.cas.lib.bankid_registrator.services;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.springframework.context.annotation.Profile;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
-
 import cz.cas.lib.bankid_registrator.configurations.AlephServiceConfig;
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import cz.cas.lib.bankid_registrator.dao.oracle.OracleRepository;
@@ -26,6 +13,18 @@ import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
+import cz.cas.lib.bankid_registrator.util.StringUtils;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 @Service
 @Profile("testing")
@@ -58,9 +57,14 @@ public class TestingAlephService extends AlephService implements AlephServiceIfa
 
         Patron patron = new Patron();
 
-        String fname = userInfo.getGiven_name();      // Joanne
-        String mname = this.generateTestingMname();   // Kathleen
-        String lname = userInfo.getFamily_name();     // Rowling
+        // String fname = userInfo.getGiven_name();      // Joanne
+        // String mname = this.generateTestingMname();   // Kathleen
+        // String lname = userInfo.getFamily_name();     // Rowling
+
+        String fname = StringUtils.capitalizeIfUppercase(userInfo.getGiven_name());      // Joanne
+        String mname = StringUtils.capitalizeIfUppercase(this.generateTestingMname());     // Kathleen
+        String lname = StringUtils.capitalizeIfUppercase(userInfo.getFamily_name());     // Rowling
+
         patron.setLastname(lname);
         patron.setFirstname(Stream.of(fname, mname)
             .filter(s -> !s.isEmpty())
