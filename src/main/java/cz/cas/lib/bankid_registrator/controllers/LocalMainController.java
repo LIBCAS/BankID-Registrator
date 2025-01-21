@@ -50,6 +50,8 @@ public class LocalMainController extends ControllerAbstract
         Patron bankIdPatron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
         PatronDTO bankIdPatronDTO = this.patronService.getPatronDTO(bankIdPatron);
 
+        bankIdPatronDTO.setBirthDate(this.convertAlephPatronBirthdateForView(bankIdPatron.getBirthDate()));
+
         // Setting bankIdPatronDTO's conLng to the current locale
         bankIdPatronDTO.setConLng(locale.getLanguage().equals("en") ? PatronLanguage.ENG : PatronLanguage.CZE);
 
@@ -69,6 +71,8 @@ public class LocalMainController extends ControllerAbstract
     ) {
         Patron bankIdPatron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
         PatronDTO bankIdPatronDTO = this.patronService.getPatronDTO(bankIdPatron);
+
+        bankIdPatronDTO.setBirthDate(this.convertAlephPatronBirthdateForView(bankIdPatron.getBirthDate()));
 
         // Setting bankIdPatronDTO's conLng to the current locale
         bankIdPatronDTO.setConLng(locale.getLanguage().equals("en") ? PatronLanguage.ENG : PatronLanguage.CZE);
@@ -99,6 +103,8 @@ public class LocalMainController extends ControllerAbstract
     ) {
         Patron bankIdPatron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
         PatronDTO bankIdPatronDTO = this.patronService.getPatronDTO(bankIdPatron);
+
+        bankIdPatronDTO.setBirthDate(this.convertAlephPatronBirthdateForView(bankIdPatron.getBirthDate()));
 
         // Setting bankIdPatronDTO's conLng to the current locale
         bankIdPatronDTO.setConLng(locale.getLanguage().equals("en") ? PatronLanguage.ENG : PatronLanguage.CZE);
@@ -242,5 +248,35 @@ public class LocalMainController extends ControllerAbstract
         model.addAttribute("alephBarcode", "123456789");
 
         return "membership_renewal_success";
+    }
+
+    /**
+     * Converting patron's birthday retrieved from Aleph via the `this.PatronService.getAlephPatron` method in preparation for usage in a Thymeleaf template like so: 
+     * <pre>{@code
+     * th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}"
+     * }</pre>
+     * 
+     * <b>EXPLANATION:</b>
+     * <p>
+     * Normally, Thymeleaf templates containing a new registration form or a membership renewal form use patron data prepared by the `this.PatronService.newPatron` method which converts Bank iD's "yyyy-MM-dd" birthday format into "yyyyMMdd". Such birthday format is then used in the Thymeleaf template like so: 
+     * <pre>{@code
+     * th:value="${T(cz.cas.lib.bankid_registrator.util.DateUtils).convertAlephDate(patron.birthDate)}"
+     * }</pre>
+     * </p>
+     * <p>However, since all methods in this controller are only for testing Thymeleaf templates, we are using the `this.PatronService.getAlephPatron` method for retrieving Patron data from Aleph instead of using the `this.PatronService.newPatron` for retrieving Patron data from Bank iD. Unlike Bank iD, Aleph returns patron's birthday in the "dd-MM-yyyy".</p>
+     * <p>For that reason, this `convertAlephPatronBirthdateForView` method is used to convert patron's birthday into a format which can be used in the Thymeleaf templates as if the patron data were retrieved from Bank iD.</p>
+     * 
+     * @param alephPatronBirthday
+     * @return
+     */
+    private String convertAlephPatronBirthdateForView(String alephPatronBirthday)
+    {
+        String testFormat = "dd-MM-yyyy";
+        if (DateUtils.isValidDateFormat(alephPatronBirthday, testFormat)) {
+            String convertedDate = DateUtils.convertDateFormat(alephPatronBirthday, testFormat, "yyyyMMdd");
+            return convertedDate != null ? convertedDate : alephPatronBirthday;
+        } else {
+            return alephPatronBirthday;
+        }
     }
 }

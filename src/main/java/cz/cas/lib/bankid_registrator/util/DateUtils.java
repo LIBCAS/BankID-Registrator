@@ -118,7 +118,9 @@ public class DateUtils
     /**
      * Converts a String date formats
      * @param dateStr the date String to convert.
-     * @return
+     * @param inputFormat - format of the `dateStr`, for example: "yyyy-MM-dd"
+     * @param outputFormat - desired format, for example: "dd-MM-yyyy"
+     * @return the converted date String or null if parsing fails.
      */
     public static String convertDateFormat(String dateStr, String inputFormat, String outputFormat) {
         SimpleDateFormat inputFormatFinal = new SimpleDateFormat(inputFormat);
@@ -211,5 +213,22 @@ public class DateUtils
      */
     public static String getLastDateOfCurrentMonth(String format) {
         return LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()).format(DateTimeFormatter.ofPattern(format));
+    }
+
+    /**
+     * Checks if a given date string adheres to a specific date format.
+     *
+     * @param dateStr The date string to check.
+     * @param format The expected date format.
+     * @return true if the date string matches the format, false otherwise.
+     */
+    public static boolean isValidDateFormat(String dateStr, String format) {
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(format);
+            LocalDate.parse(dateStr, formatter);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
