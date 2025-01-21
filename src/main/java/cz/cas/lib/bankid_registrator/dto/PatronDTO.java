@@ -75,12 +75,18 @@ public class PatronDTO
     @AssertTrue(message = "{form.error.field.required}")
     public boolean declaration3 = false;    // Declaration of data processing consent
 
+    public boolean declaration4 = false;    // Commitment to paying the registration fee 
+
     public boolean isCasEmployee = false;         // is CAS employee
 
     @Size(max = 20, message = "{form.error.field.sizeExceeded}")
     public String rfid;
 
     public String expiryDate;      // z305-expiry-date
+
+    public boolean getDeclaration4() {
+        return declaration4;
+    }
 
     public boolean getIsCasEmployee() {
         return isCasEmployee;
@@ -105,8 +111,20 @@ public class PatronDTO
         updateExportConsent();
     }
 
+    public void setDeclaration4(boolean declaration4) {
+        this.declaration4 = declaration4;
+        updateExportConsent();
+    } 
+
     private void updateExportConsent() {
-        this.exportConsent = (this.declaration1 && this.declaration2 && this.declaration3) ? PatronBoolean.Y : PatronBoolean.N;
+        if (
+            (this.declaration1 && this.declaration2 && this.declaration3 && this.declaration4 && !this.isCasEmployee) 
+            || (this.declaration1 && this.declaration2 && this.declaration3 && this.isCasEmployee)
+        ) {
+            this.exportConsent = PatronBoolean.Y;
+        } else {
+            this.exportConsent = PatronBoolean.N;
+        }
     }
 
     public void restoreDefaults(PatronDTO defaultPatron) {

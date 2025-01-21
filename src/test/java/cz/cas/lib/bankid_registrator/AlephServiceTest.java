@@ -83,6 +83,7 @@ class AlephServiceTest
         patronNewDTO.setDeclaration1(true);
         patronNewDTO.setDeclaration2(true);
         patronNewDTO.setDeclaration3(true);
+        patronNewDTO.setDeclaration4(true);
         patronNewDTO.setRfid("T" + dtNow);
 
         // Validate the PatronDTO

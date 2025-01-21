@@ -426,6 +426,7 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
     const clearBtnElms = document.querySelectorAll(".js-clear-input");
     const clearableInputElms = Array.from(clearBtnElms).map(elm => document.querySelector(elm.getAttribute("data-target")));
     const filesWrapper = document.getElementById("files-control");
+    const declaration4Wrapper = document.getElementById("declaration4-control");
     const { csrfToken, csrfHeader } = getCsrfTokenAndHeader();
     const loaderAfterSubmit = new PageLoader({
         loaderElm: document.getElementById("page-loader"),
@@ -437,11 +438,16 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
 
     function handleCasEmployeeChange(ev) {
         const casEmployeeValue = ev ? ev.target.checked : document.getElementById("isCasEmployee").checked;
+        const declaration4InputElm = document.getElementById("declaration4");
     
         if (casEmployeeValue) {
             filesWrapper.style.display = "block";
+            declaration4Wrapper.style.display = "none";
+            declaration4InputElm.required = false;
         } else {
             filesWrapper.style.display = "none";
+            declaration4Wrapper.style.display = "block";
+            declaration4InputElm.required = true;
         }
     }
 
@@ -569,7 +575,7 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
             showAlert(window.translations["alert.attachedFilesInvalid"], "danger");
             return;
         }
-    
+
         if (casEmployeeChecked && validFiles.length === 0 && emailInputElm.value.trim().length === 0) {
             event.preventDefault();
             showAlert(window.translations["alert.casEmployeesFormRequirements"], "danger");

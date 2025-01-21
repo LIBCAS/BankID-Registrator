@@ -45,6 +45,11 @@ public class PatronDTOValidator implements Validator
     public void validate(Object target, Errors errors, @Nullable String patronId, @Nullable MultipartFile[] mediaFiles) {
         PatronDTO patron = (PatronDTO) target;
 
+        // Validate declaration4
+        if (!patron.getIsCasEmployee() && !patron.getDeclaration4()) {
+            errors.rejectValue("declaration4", "form.error.field.required", "You must commit to paying the registration fee");
+        }
+
         // Validate RFID
         if (patron.getRfid() != null && !patron.getRfid().isEmpty()) {
             if (alephService.isRfidInUse(patron.getRfid(), patronId)) {

@@ -296,7 +296,7 @@
                     </div>
                 </div>
                 <div class="flex flex-col mt-4 gap-2">
-                    <div th:utext="#{form.newRegistration.declaration0}"></div>
+                    <div th:utext="#{form.newRegistration.declaration1.intro}"></div>
                     <div class="flex gap-3">
                         <input id="declaration1" name="declaration1" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{declaration1 == true}" th:field="*{declaration1}" th:value="Y" required />
                         <div>
@@ -325,6 +325,19 @@
                                 <span th:title="#{form.text.requiredInformation}">*</span>
                             </label>
                             <div th:if="${#fields.hasErrors('declaration3')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{declaration3}" class="ml-1"></span></div>
+                        </div>
+                    </div>
+                    <div id="declaration4-control">
+                        <div th:utext="#{form.newRegistration.declaration4.intro}"></div>
+                        <div class="flex gap-3">
+                            <input id="declaration4" name="declaration4" type="checkbox" class="mt-1 focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded cursor-pointer" th:checked="*{declaration4 == true}" th:field="*{declaration4}" th:value="Y" />
+                            <div>
+                                <label for="declaration4" class="mb-0 font-medium cursor-pointer">
+                                    <span th:utext="#{form.newRegistration.declaration4}"></span>
+                                    <span th:title="#{form.text.requiredInformation}">*</span>
+                                </label>
+                                <div th:if="${#fields.hasErrors('declaration4')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium"><i class="fa-solid fa-triangle-exclamation"></i><span th:errors="*{declaration4}" class="ml-1"></span></div>
+                            </div>
                         </div>
                     </div>
                 </div>
