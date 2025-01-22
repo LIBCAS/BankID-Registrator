@@ -37,7 +37,7 @@ public class LocalIdentityController extends ControllerAbstract
      * @return
      */
     @RequestMapping(value="/identity_reset_password_request", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String ResetPasswordRequestView(Model model, Locale locale, HttpSession session) {
+    public String testResetPasswordRequestView(Model model, Locale locale, HttpSession session) {
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordResetRequest.title", null, locale));
 
         return "identity_reset_password_request";
@@ -50,7 +50,7 @@ public class LocalIdentityController extends ControllerAbstract
      * @return 
      */
     @RequestMapping(value="/identity_reset_password", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String ResetPasswordView(Model model, Locale locale, HttpSession session) {
+    public String testResetPasswordView(Model model, Locale locale, HttpSession session) {
         String token = "1234567890";
         boolean isTokenValid = true;
 
@@ -63,5 +63,33 @@ public class LocalIdentityController extends ControllerAbstract
         model.addAttribute("passwordDTO", new PatronPasswordDTO());
 
         return "identity_reset_password";
+    }
+
+    /**
+     * A page displayed after the password for an identity (normal user) has been successfully set during the new registration process
+     */
+    @RequestMapping(value="/identity_set_password_success/normal", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
+    public String testNewRegistrationPasswordSetSuccessView_normal(Model model, Locale locale) {
+        model.addAttribute("alephBarcode", "123456789");
+        model.addAttribute("isIdentityLoggedIn", false);
+        model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.title", null, locale));
+        model.addAttribute("patronIsCasEmployee", false);
+        model.addAttribute("patronLdapSynced", true);
+
+        return "identity_set_password_success";
+    }
+
+    /**
+     * A page displayed after the password for an identity (employee) has been successfully set during the new registration process
+     */
+    @RequestMapping(value="/identity_set_password_success/employee", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
+    public String testNewRegistrationPasswordSetSuccessView_employee(Model model, Locale locale) {
+        model.addAttribute("alephBarcode", "123456789");
+        model.addAttribute("isIdentityLoggedIn", false);
+        model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.title", null, locale));
+        model.addAttribute("patronIsCasEmployee", true);
+        model.addAttribute("patronLdapSynced", true);
+
+        return "identity_set_password_success";
     }
 }
