@@ -153,6 +153,20 @@ function triggerDeleteIdentity(event) {
     }
 }
 
+/**
+ * 
+ * Trigger the identity restoration
+ */
+function triggerRestoreIdentity(event) {
+    event.preventDefault();
+
+    const endpoint = event.target.href;
+
+    if (confirm(window.translations["indentity.restoration.warning"])) {
+        window.location.href = endpoint;
+    }
+}
+
 const checkRfid = async (rfid, patronSysId, csrfToken, csrfHeader = null) => {
     const request = {
         method: "POST",
@@ -793,6 +807,9 @@ if (document.getElementById("js-printPage")) {
 }
 if (document.getElementById("js-deleteIdentity")) {
     document.getElementById("js-deleteIdentity").addEventListener("click", triggerDeleteIdentity);
+}
+if (document.getElementById("js-restoreIdentity")) {
+    document.getElementById("js-restoreIdentity").addEventListener("click", triggerRestoreIdentity);
 }
 // Footer positioning
 setTimeout(checkFooterPosition, 1000);

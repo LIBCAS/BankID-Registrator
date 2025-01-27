@@ -72,6 +72,14 @@ public class IdentityActivityService
         this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.MEMBERSHIP_RENEWAL_EMAIL_SENT));
     }
 
+    public void logIdentityDeleted(Identity identity) {
+        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.IDENTITY_DELETED));
+    }
+
+    public void logIdentityRestored(Identity identity) {
+        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.IDENTITY_RESTORED));
+    }
+
     public void logAppExit(Identity identity) {
         this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.APP_EXIT));
     }

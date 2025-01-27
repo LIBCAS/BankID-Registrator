@@ -17,9 +17,13 @@
                         <option th:selected="${filterCasEmployee == false}" th:value="false" th:text="#{message.no}"></option>
                     </select>
                     <select name="filterCheckedByAdmin" class="border p-2">
-                        <option value="" th:text="#{message.isIdentityAdminChecked}">Filter Checked By Admin</option>
+                        <option value="" th:text="#{message.isIdentityAdminChecked}"></option>
                         <option th:selected="${filterCheckedByAdmin == true}" th:value="true" th:text="#{message.yes}"></option>
                         <option th:selected="${filterCheckedByAdmin == false}" th:value="false" th:text="#{message.no}"></option>
+                    </select>
+                    <select name="filterSoftDeleted" class="border p-2">
+                        <option th:selected="${filterSoftDeleted == true}" th:value="true" th:text="#{message.excludeSoftDeleted}"></option>
+                        <option th:selected="${filterSoftDeleted == false}" th:value="false" th:text="#{message.includeSoftDeleted}"></option>
                     </select>
                     <button type="submit" th:text="#{message.filter}" class="bg-blue-500 text-white p-2"></button>
                 </form>
@@ -62,7 +66,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="identity : ${identityPage.content}" class="bg-white border-b">
+                        <tr th:each="identity : ${identityPage.content}" th:class="${identity.deleted} ? 'bg-red-100 border-b' : 'bg-white border-b'">
                             <th scope="row" th:text="${identity.id}" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"></th>
                             <td th:text="${identity.alephId}" class="px-6 py-4"></td>
                             <td th:text="${identity.alephBarcode}" class="px-6 py-4"></td>

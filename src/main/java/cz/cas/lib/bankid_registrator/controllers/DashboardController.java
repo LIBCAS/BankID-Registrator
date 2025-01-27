@@ -63,6 +63,7 @@
          * @param searchAlephBarcode
          * @param filterCasEmployee
          * @param filterCheckedByAdmin
+         * @param filterSoftDeleted
          * @return 
          */
         @RequestMapping(value = "/dashboard", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
@@ -74,12 +75,13 @@
             @RequestParam(defaultValue = "asc") String sortDir, 
             @RequestParam(required = false) String searchAlephIdOrBarcode, 
             @RequestParam(required = false) Boolean filterCasEmployee, 
-            @RequestParam(required = false) Boolean filterCheckedByAdmin
+            @RequestParam(required = false) Boolean filterCheckedByAdmin,
+            @RequestParam(defaultValue = "true") Boolean filterSoftDeleted
         ) {
+            // this.logger.info("Searching for identities with Aleph ID / barcode: " + searchAlephIdOrBarcode + ", CAS employee: " + filterCasEmployee + ", checked by admin: " + filterCheckedByAdmin + ", exclude soft-deleted: " + filterSoftDeleted);
             Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
             PageRequest pageable = PageRequest.of(page, DashboardController.PAGE_SIZE, sort);
-            this.logger.info("Searching for identities with Aleph ID / barcode: " + searchAlephIdOrBarcode + ", CAS employee: " + filterCasEmployee + ", checked by admin: " + filterCheckedByAdmin);
-            Page<Identity> identityPage = this.identityService.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin);
+            Page<Identity> identityPage = this.identityService.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted);
 
             model.addAttribute("pageTitle", this.messageSource.getMessage("page.identitiesDashboard.title", null, locale));
 
@@ -92,6 +94,7 @@
             model.addAttribute("searchAlephIdOrBarcode", searchAlephIdOrBarcode);
             model.addAttribute("filterCasEmployee", filterCasEmployee);
             model.addAttribute("filterCheckedByAdmin", filterCheckedByAdmin);
+            model.addAttribute("filterSoftDeleted", filterSoftDeleted);
 
             return "dashboard";
         }
@@ -182,6 +185,28 @@
                         throw new RuntimeException(this.messageSource.getMessage("error.media.failedToDelete", null, locale) + " " + media.getName() + ": " + e.getMessage(), e);
                     }
                 }
+
+                this.identityActivityService.logIdentityDeleted(identity);
+            }
+
+            return "redirect:/dashboard";
+        }
+
+        /**
+         * Restores a soft-deleted identity and redirects to the dashboard.
+         */
+        @RequestMapping(value = "/dashboard/identity/{id}/restore", method = RequestMethod.GET)
+        public String restoreIdentity(Locale locale, @PathVariable("id") Long identityId) {
+            Optional<Identity> identityOpt = identityService.findById(identityId);
+
+            if (identityOpt.isPresent()) {
+                Identity identity = identityOpt.get();
+
+                // Restore a soft-deleted identity
+                identity.setDeleted(false);
+                identityService.save(identity);
+
+                this.identityActivityService.logIdentityRestored(identity);
             }
 
             return "redirect:/dashboard";
