@@ -19,5 +19,6 @@ public enum ActivityEvent {
     MEMBERSHIP_RENEWAL_EMAIL_SENT,
     IDENTITY_DELETED,   // soft-delete
     IDENTITY_RESTORED,  // restore soft-deleted
+    IDENTITY_MARKED_AS_DELETED_IN_ALEPH,
     APP_EXIT
 }

@@ -49,6 +49,9 @@ public class Identity
     @Column(name = "deleted", nullable = false)
     private boolean deleted = false;
 
+    @Column(name = "deleted_in_aleph", nullable = false)
+    private boolean alephDeleted = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

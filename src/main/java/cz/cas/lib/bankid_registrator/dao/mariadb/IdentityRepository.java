@@ -34,6 +34,7 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
         "SELECT DISTINCT i FROM Identity i " +
         "JOIN IdentityActivity ia ON i = ia.identity " +
         "WHERE (:filterSoftDeleted = true AND i.deleted = false OR :filterSoftDeleted = false) AND " +
+        "i.alephDeleted = false AND " +
         "(:searchAlephIdOrBarcode IS NULL OR :searchAlephIdOrBarcode = '' OR " +
         "COALESCE(i.alephId, '') LIKE %:searchAlephIdOrBarcode% OR " +
         "COALESCE(i.alephBarcode, '') LIKE %:searchAlephIdOrBarcode%) AND " +

@@ -211,4 +211,37 @@
 
             return "redirect:/dashboard";
         }
+
+        /**
+         * Marks an identity as deleted in Aleph; this will unpair patron barcode and patron ID from the identity 
+         */
+        @RequestMapping(value = "/dashboard/identity/{id}/aleph-deleted", method = RequestMethod.GET)
+        public String markIdentityAsDeletedInAleph(Locale locale, @PathVariable("id") Long identityId) {
+            Optional<Identity> identityOpt = identityService.findById(identityId);
+
+            if (identityOpt.isPresent()) {
+                Identity identity = identityOpt.get();
+
+                identity.setAlephDeleted(true);
+                identity.setAlephBarcode(null);
+                identity.setAlephId(null);
+                identity.setDeleted(true);
+                identityService.save(identity);
+
+                // Delete media files
+                List<Media> medias = mediaService.findByIdentityId(identityId);
+                for (Media media : medias) {
+                    try {
+                        mediaService.delete(media);
+                    } catch (RuntimeException e) {
+                        throw new RuntimeException(this.messageSource.getMessage("error.media.failedToDelete", null, locale) + " " + media.getName() + ": " + e.getMessage(), e);
+                    }
+                }
+
+                this.identityActivityService.logIdentityDeleted(identity);
+                this.identityActivityService.logIdentityMarkedAsDeletedInAleph(identity);
+            }
+
+            return "redirect:/dashboard";
+        }
     }

@@ -167,6 +167,20 @@ function triggerRestoreIdentity(event) {
     }
 }
 
+/**
+ * 
+ * Trigger the marking of an identity as deleted in Aleph
+ */
+function triggerMarkIdentityAsDeletedInAleph(event) {
+    event.preventDefault();
+
+    const endpoint = event.target.href;
+
+    if (confirm(window.translations["indentity.markAsDeletedInAleph.warning"])) {
+        window.location.href = endpoint;
+    }
+}
+
 const checkRfid = async (rfid, patronSysId, csrfToken, csrfHeader = null) => {
     const request = {
         method: "POST",
@@ -810,6 +824,9 @@ if (document.getElementById("js-deleteIdentity")) {
 }
 if (document.getElementById("js-restoreIdentity")) {
     document.getElementById("js-restoreIdentity").addEventListener("click", triggerRestoreIdentity);
+}
+if (document.getElementById("js-identityAlephDeleted")) {
+    document.getElementById("js-identityAlephDeleted").addEventListener("click", triggerMarkIdentityAsDeletedInAleph);
 }
 // Footer positioning
 setTimeout(checkFooterPosition, 1000);

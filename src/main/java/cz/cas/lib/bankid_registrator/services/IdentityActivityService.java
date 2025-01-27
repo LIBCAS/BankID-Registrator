@@ -80,6 +80,10 @@ public class IdentityActivityService
         this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.IDENTITY_RESTORED));
     }
 
+    public void logIdentityMarkedAsDeletedInAleph(Identity identity) {
+        this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.IDENTITY_MARKED_AS_DELETED_IN_ALEPH));
+    }
+
     public void logAppExit(Identity identity) {
         this.identityActivityRepository.save(new IdentityActivity(identity, ActivityEvent.APP_EXIT));
     }

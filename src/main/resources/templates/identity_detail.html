@@ -158,6 +158,9 @@
                     <span th:if="${identity.checkedByAdmin == null || identity.checkedByAdmin == false}" th:text="#{message.markAsAdminChecked}">Mark as checked</span>
                     <span th:if="${identity.checkedByAdmin == true}" th:text="#{message.markAsAdminUnchecked}">Mark as unchecked</span>
                 </a>
+                <a th:if="${identity.alephDeleted == false}" id="js-identityAlephDeleted" th:href="@{/dashboard/identity/{id}/aleph-deleted(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 mt-4" th:text="#{message.markAsDeletedInAleph}">
+                    Mark as deleted in Aleph
+                </a>
                 <a th:if="${identity.deleted == false}" id="js-deleteIdentity" th:href="@{/dashboard/identity/{id}/delete(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 mt-4" th:text="#{message.delete}">
                     Delete
                 </a>
