@@ -142,7 +142,7 @@ a.disabled {
 }
 
 @media print {
- 
+
     .no-print {
         display: none !important;
     }
@@ -153,5 +153,9 @@ a.disabled {
 
     .print-block {
         display: block !important;
+    }
+
+    .page--minh70vh main {
+        min-height: unset;
     }
 }  

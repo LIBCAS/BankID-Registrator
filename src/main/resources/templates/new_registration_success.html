@@ -5,9 +5,9 @@
         <title th:replace="fragments/head :: head"></title>
     </head>
 
-    <body class="page-new-registration-success">
-        <main layout:fragment="content" id="main" class="mb-10 container mx-auto text-center">
-            <h1 class="mb-6 text-3xl font-extrabold text-center" th:text="#{page.newRegistrationSuccess.title}"></h1>
+    <body class="page-final-sucess page-new-registration-success">
+        <main layout:fragment="content" id="main" class="mb-10 container mx-auto text-center print:m-0 print:p-0 print:max-w-none">
+            <h1 class="mb-6 text-3xl font-extrabold text-center print:text-2xl" th:text="#{page.newRegistrationSuccess.title}"></h1>
             <p th:if="${!patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.text}"></p>
             <p th:if="${patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.text.employee}"></p>
             <p th:text="#{page.newRegistrationSuccess.text2}"></p>
@@ -17,16 +17,18 @@
                 <span th:if="${!patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.fee.instructions}">After paying the fee, your membership will be valid until</span>
                 <span th:if="${patronIsCasEmployee}" th:text="#{page.newRegistrationSuccess.fee.instructionsToEmployee}">Your membership will be valid until</span> <span th:text="${membershipExpiryDate}"></span>.
             </p> -->
-            <p class="mt-2">
+            <p class="mt-2 text-xl">
                 <span th:text="#{page.newRegistrationSuccess.membershipValidUntil}"></span>: <b th:text="${membershipExpiryDate}"></b>
             </p>
-            <p class="mt-2">
+            <p class="mt-2 text-xl">
                 <span th:text="#{page.newRegistrationSuccess.username}"></span>: <b th:text="${alephBarcode}"></b>
             </p>
-            <p class="mt-4">
-                <h2 class="text-xl font-semibold text-center" th:text="#{page.newRegistrationSuccess.setPassword}"></h2>
+            <p class="mt-4 no-print">
+                <h2 class="text-xl font-semibold text-center no-print" th:text="#{page.newRegistrationSuccess.setPassword}"></h2>
             </p>
-            <div th:replace="fragments/form-identity-set-password :: form-identity-set-password"></div>
+            <div class="no-print">
+                <div th:replace="fragments/form-identity-set-password :: form-identity-set-password"></div>
+            </div>
 
             <!-- <div class="hidden mt-2">
                 <div class="text-center" style="width: 90%; padding: 10px; color: firebrick; background-color: lightgrey;">
