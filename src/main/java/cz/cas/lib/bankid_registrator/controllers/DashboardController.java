@@ -1,5 +1,6 @@
     package cz.cas.lib.bankid_registrator.controllers;
 
+    import cz.cas.lib.bankid_registrator.entities.patron.PatronFineStatus;
     import cz.cas.lib.bankid_registrator.model.identity.Identity;
     import cz.cas.lib.bankid_registrator.model.identity.IdentityActivity;
     import cz.cas.lib.bankid_registrator.model.media.Media;
@@ -9,12 +10,16 @@
     import cz.cas.lib.bankid_registrator.services.IdentityService;
     import cz.cas.lib.bankid_registrator.services.MediaService;
     import cz.cas.lib.bankid_registrator.util.DateUtils;
+    import java.util.Arrays;
     import java.util.List;
     import java.util.Locale;
     import java.util.Map;
+    import java.util.Objects;
     import java.util.Optional;
+    import java.util.stream.Collectors;
     import org.springframework.context.MessageSource;
     import org.springframework.data.domain.Page;
+    import org.springframework.data.domain.PageImpl;
     import org.springframework.data.domain.PageRequest;
     import org.springframework.data.domain.Sort;
     import org.springframework.http.MediaType;
@@ -59,10 +64,11 @@
          * @param page
          * @param sortField
          * @param sortDir
-         * @param searchAlephId
-         * @param searchAlephBarcode
+         * @param searchAlephIdOrBarcode
+         * @param searchFullname
          * @param filterCasEmployee
          * @param filterCheckedByAdmin
+         * @param filterPaymentStatus
          * @param filterSoftDeleted
          * @return 
          */
@@ -74,27 +80,85 @@
             @RequestParam(defaultValue = "id") String sortField, 
             @RequestParam(defaultValue = "asc") String sortDir, 
             @RequestParam(required = false) String searchAlephIdOrBarcode, 
+            @RequestParam(required = false) String searchFullname, 
             @RequestParam(required = false) Boolean filterCasEmployee, 
             @RequestParam(required = false) Boolean filterCheckedByAdmin,
+            @RequestParam(required = false) List<String> filterPaymentStatus,
             @RequestParam(defaultValue = "true") Boolean filterSoftDeleted
         ) {
-            // this.logger.info("Searching for identities with Aleph ID / barcode: " + searchAlephIdOrBarcode + ", CAS employee: " + filterCasEmployee + ", checked by admin: " + filterCheckedByAdmin + ", exclude soft-deleted: " + filterSoftDeleted);
+            // Filtering and sorting identity data
             Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
             PageRequest pageable = PageRequest.of(page, DashboardController.PAGE_SIZE, sort);
             Page<Identity> identityPage = this.identityService.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted);
 
-            model.addAttribute("pageTitle", this.messageSource.getMessage("page.identitiesDashboard.title", null, locale));
+            // Retrieving Aleph patron data to be merged with identity data
+            List<String> patronIds = identityPage.getContent().stream()
+                .map(Identity::getAlephId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+            Map<String, List<Object[]>> identitiesAlephData = this.alephService.getBulkPatronsData(patronIds);
 
-            model.addAttribute("identityPage", identityPage);
+            // Filtering final data (= identity data + Aleph patron data)
+            List<Identity> filteredIdentities = identityPage.getContent().stream()
+                .filter(identity -> {
+                    String alephId = identity.getAlephId();
+                    if (!identitiesAlephData.containsKey(alephId)) return true;
+
+                    List<Object[]> patronRecords = identitiesAlephData.get(alephId);
+
+                    // Filter by payment status
+                    boolean matchesPaymentStatus = filterPaymentStatus != null && !filterPaymentStatus.isEmpty() 
+                        ? patronRecords.stream().anyMatch(record -> filterPaymentStatus.contains(String.valueOf(record[1])))
+                        : true;
+
+                    // Filter by full name
+                    boolean matchesFullname = searchFullname != null && !searchFullname.isEmpty()
+                        ? patronRecords.stream().anyMatch(record -> {
+                            String fullname = String.valueOf(record[2]).toLowerCase();
+                            return fullname.contains(searchFullname.toLowerCase());
+                        })
+                        : true;
+
+                    return matchesPaymentStatus && matchesFullname;
+                })
+                .collect(Collectors.toList());
+
+            // Translate payment statuses in the final data
+            identitiesAlephData.forEach((patronId, rows) -> {
+                for (Object[] row : rows) {
+                    String translatedStatus = messageSource.getMessage(
+                        "patronPaymentStatus." + String.valueOf(row[1]),
+                        null,
+                        locale
+                    );
+                    Object[] updatedRow = Arrays.copyOf(row, row.length + 1);
+                    updatedRow[row.length] = translatedStatus;
+                    rows.set(rows.indexOf(row), updatedRow);
+                }
+            });
+
+            Page<Identity> finalPage = new PageImpl<>(filteredIdentities, pageable, filteredIdentities.size());
+
+            model.addAttribute("pageTitle", this.messageSource.getMessage("page.identitiesDashboard.title", null, locale));
+            model.addAttribute("identityPage", finalPage);
+            model.addAttribute("identitiesAlephData", identitiesAlephData);
             model.addAttribute("currentPage", page);
-            model.addAttribute("totalPages", identityPage.getTotalPages());
+            model.addAttribute("totalPages", finalPage.getTotalPages());
             model.addAttribute("sortField", sortField);
             model.addAttribute("sortDir", sortDir);
             model.addAttribute("reverseSortDir", sortDir.equals("asc") ? "desc" : "asc");
             model.addAttribute("searchAlephIdOrBarcode", searchAlephIdOrBarcode);
+            model.addAttribute("searchFullname", searchFullname);
             model.addAttribute("filterCasEmployee", filterCasEmployee);
             model.addAttribute("filterCheckedByAdmin", filterCheckedByAdmin);
             model.addAttribute("filterSoftDeleted", filterSoftDeleted);
+            model.addAttribute("filterPaymentStatus", filterPaymentStatus);
+            model.addAttribute("patronFineStatusMap", Map.of(
+                PatronFineStatus.PAID.getKey(), "bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm",
+                PatronFineStatus.NOT_PAID.getKey(), "bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm",
+                PatronFineStatus.CANCELLED.getKey(), "bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm",
+                PatronFineStatus.UNKNOWN.getKey(), "bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm"
+            ));
 
             return "dashboard";
         }

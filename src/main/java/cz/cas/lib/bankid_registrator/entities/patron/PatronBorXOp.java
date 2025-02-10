@@ -1,6 +1,6 @@
 package cz.cas.lib.bankid_registrator.entities.patron;
 
-// Possible perations: "bor-info", "bor-auth"
+// Possible operations: "bor-info", "bor-auth"
 public enum PatronBorXOp {
     BOR_INFO("bor-info"),
     BOR_AUTH("bor-auth"),

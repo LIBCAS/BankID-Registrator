@@ -3,6 +3,7 @@
  */
 package cz.cas.lib.bankid_registrator.dao.oracle;
 
+import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.persistence.EntityManager;
@@ -159,5 +160,44 @@ public class OracleRepository
         query.setParameter("patronId", patronId + " %");
 
         return ((Number) query.executeUpdate()).intValue();
+    }
+
+    /**
+     * Retrieves data of multiple Aleph patrons at once
+     * @param patronIds
+     * @return
+     */
+    public List<Object[]> getBulkPatronsData(List<String> patronIds)
+    {
+        String feeDescr = "Bank iD";
+
+        String sql = "SELECT " +
+                        "TRIM(SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1)) AS patron_id, " +
+                        "Z31.Z31_STATUS AS payment_status, " +
+                        "Z303.Z303_NAME AS fullname, " +
+                        "Z304.Z304_EMAIL_ADDRESS AS email, " +
+                        "Z304.Z304_SMS_NUMBER AS phone, " +
+                        "Z31.Z31_PAYMENT_CATALOGER AS cataloger, " +
+                        "Z31.Z31_UPD_TIME_STAMP AS modified_at " +
+                    "FROM KNA50.Z31 Z31 " +
+                        "JOIN KNA50.Z304 Z304 ON SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) = SUBSTR(Z304.Z304_REC_KEY, 1, INSTR(Z304.Z304_REC_KEY, ' ') - 1) " +
+                        "JOIN KNA50.Z303 Z303 ON SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) = SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) " +
+                    "WHERE Z31.Z31_DESCRIPTION = :feeDescr " +
+                        "AND Z304.Z304_ADDRESS_TYPE = 1 " +
+                        "AND SUBSTR(Z304.Z304_REC_KEY, 1, INSTR(Z304.Z304_REC_KEY, ' ') - 1) IN  :patronIds " +
+                        "AND Z31.Z31_DATE_X = (" +
+                            "SELECT MAX(Z31_SUB.Z31_DATE_X) " +
+                            "FROM KNA50.Z31 Z31_SUB " +
+                            "WHERE SUBSTR(Z31_SUB.Z31_REC_KEY, 1, INSTR(Z31_SUB.Z31_REC_KEY, ' ') - 1) = SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1)" +
+                        ")";
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("feeDescr", feeDescr);
+        query.setParameter("patronIds", patronIds);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> result = query.getResultList();
+
+        return result;
     }
 }

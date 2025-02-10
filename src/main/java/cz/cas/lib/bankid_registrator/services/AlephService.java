@@ -6,6 +6,7 @@ import cz.cas.lib.bankid_registrator.dao.oracle.OracleRepository;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronAction;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBorXOp;
+import cz.cas.lib.bankid_registrator.entities.patron.PatronFineStatus;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronHold;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronItem;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
@@ -23,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1560,7 +1562,7 @@ logger.info("AAA doHttpRequest method: {}", method);
      * @return Long
      */
     public Long getMaxBankIdZ303RecKey() {
-        // return this.identityService.getMaxId();  // TODO: Use this line in production
+        // return this.identityService.getMaxId();  // IMPORTANT: You might want to use this line in production
         return this.oracleRepository.getMaxBankIdZ303RecKey();
     }
 
@@ -1625,5 +1627,26 @@ logger.info("AAA doHttpRequest method: {}", method);
     public boolean isNewAlephPatron(Patron patron) {
         boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
         return isNewInOracle;
+    }
+
+    /**
+     * Retrieves data of multiple Aleph patrons at once
+     * @param patronIds - a list of Aleph patron IDs
+     * @return a map with patron IDs as keys and patron data as values
+     */
+    public Map<String, List<Object[]>> getBulkPatronsData(List<String> patronIds) {
+        List<Object[]> patronDataList = oracleRepository.getBulkPatronsData(patronIds);
+
+        List<Object[]> processedData = patronDataList.stream()
+            .map(row -> {
+                String fineStatusCode = String.valueOf(row[1]);
+                PatronFineStatus fineStatus = PatronFineStatus.getByCode(fineStatusCode);
+                row[1] = fineStatus.getKey();
+                return row;
+            })
+            .collect(Collectors.toList());
+
+        return processedData.stream()
+            .collect(Collectors.groupingBy(row -> (String) row[0]));
     }
 }

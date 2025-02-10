@@ -5,12 +5,15 @@
     </head>
 
     <body class="page-dashboard">
-        <main layout:fragment="content" class="mb-10 container text-center mx-auto">
+        <main layout:fragment="content" class="mb-10 px-10 text-center mx-auto">
             <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="${pageTitle}"></h1>
 
             <div class="mb-4 flex items-center justify-center gap-4">
-                <form th:action="@{/dashboard}" method="GET">
-                    <input type="text" name="searchAlephIdOrBarcode" th:placeholder="#{message.searchIdentityByPatronIdOrBarcode}" th:value="${searchAlephIdOrBarcode}" class="border p-2"/>
+                <form th:action="@{/dashboard}" method="GET" class="flex items-center justify-center gap-4 flex-wrap">
+                    <div class="flex flex-col gap-4">
+                        <input type="text" name="searchAlephIdOrBarcode" th:placeholder="#{message.searchIdentityByPatronIdOrBarcode}" th:value="${searchAlephIdOrBarcode}" class="border p-2"/>
+                        <input type="text" name="searchFullname" th:placeholder="#{message.searchIdentityByFullname}" th:value="${searchFullname}" class="border p-2"/>
+                    </div>
                     <select name="filterCasEmployee" class="border p-2">
                         <option value="" th:text="#{message.isIdentityCasEmployee}"></option>
                         <option th:selected="${filterCasEmployee == true}" th:value="true" th:text="#{message.yes}"></option>
@@ -25,6 +28,13 @@
                         <option th:selected="${filterSoftDeleted == true}" th:value="true" th:text="#{message.excludeSoftDeleted}"></option>
                         <option th:selected="${filterSoftDeleted == false}" th:value="false" th:text="#{message.includeSoftDeleted}"></option>
                     </select>
+                    <fieldset class="border p-2 inline-block text-start">
+                        <legend th:text="#{message.paymentStatus}"></legend>
+                        <label th:each="status : ${T(cz.cas.lib.bankid_registrator.entities.patron.PatronFineStatus).values()}" class="block">
+                            <input type="checkbox" name="filterPaymentStatus" th:value="${status.key}" th:checked="${filterPaymentStatus == null || #lists.contains(filterPaymentStatus, status.key)}"/>
+                            <span th:utext="${#messages.msg('patronPaymentStatus.' + status.key)}" th:classappend="${patronFineStatusMap[status.key]}"></span>
+                        </label>
+                    </fieldset>
                     <button type="submit" th:text="#{message.filter}" class="bg-blue-500 text-white p-2"></button>
                 </form>
                 <a th:href="@{/dashboard}" th:text="#{message.clearFilters}" class="bg-red-500 text-white p-2"></a>
@@ -44,10 +54,12 @@
                             </th>
                             <th th:text="#{message.patronId}" scope="col" class="px-6 py-3"></th>
                             <th th:text="#{message.patronBarcode}" scope="col" class="px-6 py-3"></th>
+                            <th th:text="#{message.fullname}" scope="col" class="px-6 py-3"></th>
+                            <th th:text="#{message.paymentStatus}" scope="col" class="px-6 py-3"></th>
                             <th th:text="#{message.isIdentityCasEmployee}" scope="col" class="px-6 py-3"></th>
                             <th th:text="#{message.isIdentityAdminChecked}" scope="col" class="px-6 py-3"></th>
                             <th scope="col" class="px-6 py-3">
-                                <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
+                                <a th:href="@{/dashboard(sortField='createdAt', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
                                     <span th:text="#{message.createdAt}"></span>
                                     <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z"></path>
@@ -55,7 +67,7 @@
                                 </a>
                             </th>
                             <th scope="col" class="px-6 py-3">
-                                <a th:href="@{/dashboard(sortField='id', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
+                                <a th:href="@{/dashboard(sortField='updatedAt', sortDir=${reverseSortDir})}" class="flex flex-nowrap items-center">
                                     <span th:text="#{message.updatedAt}"></span>
                                     <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
                                         <path d="M8.574 11.024h6.852a2.075 2.075 0 0 0 1.847-1.086 1.9 1.9 0 0 0-.11-1.986L13.736 2.9a2.122 2.122 0 0 0-3.472 0L6.837 7.952a1.9 1.9 0 0 0-.11 1.986 2.074 2.074 0 0 0 1.847 1.086Zm6.852 1.952H8.574a2.072 2.072 0 0 0-1.847 1.087 1.9 1.9 0 0 0 .11 1.985l3.426 5.05a2.123 2.123 0 0 0 3.472 0l3.427-5.05a1.9 1.9 0 0 0 .11-1.985 2.074 2.074 0 0 0-1.846-1.087Z"></path>
@@ -66,10 +78,18 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="identity : ${identityPage.content}" th:class="${identity.deleted} ? 'bg-red-100 border-b' : 'bg-white border-b'">
-                            <th scope="row" th:text="${identity.id}" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"></th>
+                        <tr th:each="identity : ${identityPage.content}" th:class="${identity.deleted} ? 'bg-red-100 border-b hover:bg-gray-100' : 'bg-white border-b hover:bg-gray-100'">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                <a th:text="${identity.id}" th:href="@{/dashboard/identity/{id}(id=${identity.id})}" th:title="#{message.view}"></a>
+                            </th>
                             <td th:text="${identity.alephId}" class="px-6 py-4"></td>
                             <td th:text="${identity.alephBarcode}" class="px-6 py-4"></td>
+                            <td class="px-6 py-4">
+                                <span th:if="${identitiesAlephData.containsKey(identity.alephId)}" th:text="${identitiesAlephData.get(identity.alephId)[0][2]}"></span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span th:if="${identitiesAlephData.containsKey(identity.alephId)}" th:utext="${identitiesAlephData.get(identity.alephId)[0][7]}" th:classappend="${patronFineStatusMap[identitiesAlephData.get(identity.alephId)[0][1]]}"></span>
+                            </td>
                             <td class="px-6 py-4">
                                 <span th:if="${identity.isCasEmployee == null || identity.isCasEmployee == false}" th:text="#{message.no}"></span>
                                 <span th:if="${identity.isCasEmployee == true}" th:text="#{message.yes}"></span>
@@ -81,13 +101,23 @@
                             <td th:text="${dateUtils.convertDateTimeFormat(identity.createdAt)}" class="px-6 py-4"></td>
                             <td th:text="${dateUtils.convertDateTimeFormat(identity.updatedAt)}" class="px-6 py-4"></td>
                             <td class="px-6 py-4 text-right">
-                                <a th:href="@{/dashboard/identity/{id}(id=${identity.id})}" th:text="#{message.view}" class="font-medium text-blue-600 hover:underline"></a>
+                                <div class="flex flex-row gap-4 align-center justify-end">
+                                    <a th:if="${identitiesAlephData.containsKey(identity.alephId) && !#strings.isEmpty(identitiesAlephData.get(identity.alephId)[0][3])}" th:href="${'mailto:' + identitiesAlephData.get(identity.alephId)[0][3]}" th:title="${identitiesAlephData.get(identity.alephId)[0][3]}" class="no-underline hover:no-underline">
+                                        <i class="text-xl fa-regular fa-envelope"></i>
+                                    </a>
+                                    <a th:if="${identitiesAlephData.containsKey(identity.alephId) && !#strings.isEmpty(identitiesAlephData.get(identity.alephId)[0][4])}" th:href="${'tel:' + identitiesAlephData.get(identity.alephId)[0][4]}" th:title="${identitiesAlephData.get(identity.alephId)[0][4]}" class="no-underline hover:no-underline">
+                                        <i class="text-lg fa-solid fa-phone"></i>
+                                    </a>
+                                    <a th:href="@{/dashboard/identity/{id}(id=${identity.id})}" th:title="#{message.view}" class="no-underline hover:no-underline">
+                                        <i class="text-xl fa-regular fa-eye"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
-            </div>            
-            
+            </div>
+
             <div class="mt-4 flex items-center justify-center gap-4">
                 <a th:if="${currentPage > 0}" 
                     th:href="@{/dashboard(page=${currentPage - 1}, sortField=${sortField}, sortDir=${sortDir}, searchAlephId=${searchAlephId}, searchAlephBarcode=${searchAlephBarcode}, filterCasEmployee=${filterCasEmployee}, filterCheckedByAdmin=${filterCheckedByAdmin})}"
