@@ -11,6 +11,7 @@ import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.LocalAlephService;
+import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
 import java.util.ArrayList;
@@ -30,6 +31,9 @@ class AlephServiceTest
 {
     @Autowired
     private AlephService alephService;
+
+    @Autowired
+    private PatronService patronService;
 
     @Autowired
     private LocalAlephService localAlephService;
@@ -53,7 +57,7 @@ class AlephServiceTest
      *
      * <p>Example usage:</p>
      * <pre>{@code
-     * ./mvnw -Dtest=AlephServiceTest -Dpatron=PREFIX12345 test
+     * ./mvnw -Dtest=AlephServiceTest#testUpdatePatron -Dpatron=PREFIX12345 test
      * }</pre>
      */
     @Test
@@ -79,12 +83,24 @@ class AlephServiceTest
         // Setting new Patron's data in a PatronDTO object
         PatronDTO patronNewDTO = new PatronDTO();
         patronNewDTO.setEmail("t" + dtNow + "@test.com");
+        patronNewDTO.setSmsNumber(patronNew.getSmsNumber());
         patronNewDTO.setIsCasEmployee(false);
+        patronNewDTO.setUseContactAddress(true);
+        patronNewDTO.setContactAddress0(patronNew.getContactAddress0());
+        patronNewDTO.setContactAddress1(patronNew.getContactAddress1());
+        patronNewDTO.setContactAddress2(patronNew.getContactAddress2());
+        patronNewDTO.setContactZip(patronNew.getContactZip());
         patronNewDTO.setDeclaration1(true);
         patronNewDTO.setDeclaration2(true);
         patronNewDTO.setDeclaration3(true);
         patronNewDTO.setDeclaration4(true);
         patronNewDTO.setRfid("T" + dtNow);
+
+        try {
+            logger.info("PATRON UPDATES: {}", patronNewDTO.toJson());
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to parse patron updates data: {}", e.getMessage());
+        }
 
         // Validate the PatronDTO
         BindingResult bindingResult = new BeanPropertyBindingResult(patronNewDTO, "patronNewDTO");
@@ -95,6 +111,8 @@ class AlephServiceTest
 
         // Assign the new data to the final patron
         patronNew.update(patronNewDTO);
+        patronNew.setStatus(this.patronService.determinePatronStatus(patronNew).getId());
+        patronNew.setExpiryDate(this.patronService.determinePatronExpiryDate(patronNew));
         try {
             logger.info("FINAL PATRON WITH UPDATES: {}", patronNew.toJson());
         } catch (JsonProcessingException e) {

@@ -200,18 +200,7 @@ public class Patron {
         Optional.ofNullable(patron.conLng).ifPresent(e -> this.conLng = e);
         Optional.ofNullable(patron.exportConsent).ifPresent(e -> this.exportConsent = e);
         Optional.ofNullable(patron.rfid).ifPresent(e -> this.rfid = e.trim());
-        Optional.ofNullable(patron.isCasEmployee).ifPresent(e -> {
-            this.isCasEmployee = e;
-
-            PatronStatus patronStatus = e ? PatronStatus.STATUS_03 : PatronStatus.STATUS_16;
-            this.status = patronStatus.getId();
-
-            if (this.expiryDate != null && !this.expiryDate.isEmpty() && !DateUtils.isDateExpired(this.expiryDate, "dd/MM/yyyy")) {
-                this.expiryDate = DateUtils.addDaysToDateString(this.expiryDate, patronStatus.getMembershipLength(), "dd/MM/yyyy", "dd/MM/yyyy");
-            } else {
-                this.expiryDate = DateUtils.addDaysToToday(patronStatus.getMembershipLength(), "dd/MM/yyyy");
-            }
-        });
+        Optional.ofNullable(patron.isCasEmployee).ifPresent(e -> this.isCasEmployee = e);
         Optional.ofNullable(patron.useContactAddress).ifPresent(e -> {
             if (e != true) {
                 this.contactAddress1 = "";

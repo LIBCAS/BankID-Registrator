@@ -444,6 +444,8 @@ public class MainController extends ControllerAbstract
         this.patronRepository.deleteById(patronSysId);
 
         patron.update(editedPatron);
+        patron.setStatus(this.patronService.determinePatronStatus(patron).getId());
+        patron.setExpiryDate(this.patronService.determinePatronExpiryDate(patron));
 
         try {
             getLogger().info("new-registration - finalPatron: {}", patron.toJson());
@@ -633,6 +635,8 @@ public class MainController extends ControllerAbstract
         this.patronRepository.deleteById(alephPatronSysId);
 
         patron.update(editedPatron);
+        patron.setStatus(this.patronService.determinePatronStatus(patron).getId());
+        patron.setExpiryDate(this.patronService.determinePatronExpiryDate(patron));
 
         try {
             getLogger().info("membership-renewal - finalPatron: {}", patron.toJson());

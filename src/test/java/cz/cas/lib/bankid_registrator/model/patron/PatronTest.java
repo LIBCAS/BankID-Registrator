@@ -68,56 +68,56 @@ class PatronTest
         assertEquals(PatronStatus.STATUS_03.getId(), patron.getStatus());
     }
 
-    @Test
-    void testUpdateExpiryDateWithFutureDateAsCasEmployee() {
-        PatronDTO patronDTO = new PatronDTO();
-        patronDTO.isCasEmployee = true;
+    // @Test
+    // void testUpdateExpiryDateWithFutureDateAsCasEmployee() {
+    //     PatronDTO patronDTO = new PatronDTO();
+    //     patronDTO.isCasEmployee = true;
 
-        // Mock current expiry date as a future date
-        String expiryDate = DateUtils.addDaysToToday(10, "dd/MM/yyyy");
-        patron.setExpiryDate(expiryDate);
-        assertFalse(DateUtils.isDateExpired(patron.getExpiryDate(), "dd/MM/yyyy"));
+    //     // Mock current expiry date as a future date
+    //     String expiryDate = DateUtils.addDaysToToday(10, "dd/MM/yyyy");
+    //     patron.setExpiryDate(expiryDate);
+    //     assertFalse(DateUtils.isDateExpired(patron.getExpiryDate(), "dd/MM/yyyy"));
 
-        patron.update(patronDTO);
+    //     patron.update(patronDTO);
 
-        assertEquals(PatronStatus.STATUS_03.getId(), patron.getStatus());
-        String newExpiryDate = DateUtils.addDaysToSpecificDate(expiryDate, PatronStatus.STATUS_03.getMembershipLength(), "dd/MM/yyyy", "dd/MM/yyyy");
-        assertEquals(patron.getExpiryDate(), newExpiryDate);
-    }
+    //     assertEquals(PatronStatus.STATUS_03.getId(), patron.getStatus());
+    //     String newExpiryDate = DateUtils.addDaysToSpecificDate(expiryDate, PatronStatus.STATUS_03.getMembershipLength(), "dd/MM/yyyy", "dd/MM/yyyy");
+    //     assertEquals(patron.getExpiryDate(), newExpiryDate);
+    // }
 
-    @Test
-    void testUpdateExpiryDateWithExpiredDateAsNonCasEmployee() {
-        PatronDTO patronDTO = new PatronDTO();
-        patronDTO.isCasEmployee = false;
+    // @Test
+    // void testUpdateExpiryDateWithExpiredDateAsNonCasEmployee() {
+    //     PatronDTO patronDTO = new PatronDTO();
+    //     patronDTO.isCasEmployee = false;
 
-        // Mock current expiry date as an expired date
-        String expiryDate = DateUtils.addDaysToToday(-10, "dd/MM/yyyy");
-        patron.setExpiryDate(expiryDate);
-        assertTrue(DateUtils.isDateExpired(patron.getExpiryDate(), "dd/MM/yyyy"));
+    //     // Mock current expiry date as an expired date
+    //     String expiryDate = DateUtils.addDaysToToday(-10, "dd/MM/yyyy");
+    //     patron.setExpiryDate(expiryDate);
+    //     assertTrue(DateUtils.isDateExpired(patron.getExpiryDate(), "dd/MM/yyyy"));
 
-        patron.update(patronDTO);
+    //     patron.update(patronDTO);
 
-        assertEquals(PatronStatus.STATUS_16.getId(), patron.getStatus());
-        String newExpiryDate = DateUtils.addDaysToToday(PatronStatus.STATUS_16.getMembershipLength(), "dd/MM/yyyy");
-        assertEquals(patron.getExpiryDate(), newExpiryDate);
-    }
+    //     assertEquals(PatronStatus.STATUS_16.getId(), patron.getStatus());
+    //     String newExpiryDate = DateUtils.addDaysToToday(PatronStatus.STATUS_16.getMembershipLength(), "dd/MM/yyyy");
+    //     assertEquals(patron.getExpiryDate(), newExpiryDate);
+    // }
 
-    @Test
-    void testUpdateExpiryDateWithTodayExpiryDateAsCasEmployee() {
-        PatronDTO patronDTO = new PatronDTO();
-        patronDTO.isCasEmployee = true;
+    // @Test
+    // void testUpdateExpiryDateWithTodayExpiryDateAsCasEmployee() {
+    //     PatronDTO patronDTO = new PatronDTO();
+    //     patronDTO.isCasEmployee = true;
 
-        // Mock current expiry date as today's date
-        String expiryDate = DateUtils.addDaysToToday(0, "dd/MM/yyyy");
-        patron.setExpiryDate(expiryDate);
-        assertFalse(DateUtils.isDateExpired(patron.getExpiryDate(), "dd/MM/yyyy"));
+    //     // Mock current expiry date as today's date
+    //     String expiryDate = DateUtils.addDaysToToday(0, "dd/MM/yyyy");
+    //     patron.setExpiryDate(expiryDate);
+    //     assertFalse(DateUtils.isDateExpired(patron.getExpiryDate(), "dd/MM/yyyy"));
 
-        patron.update(patronDTO);
+    //     patron.update(patronDTO);
 
-        assertEquals(PatronStatus.STATUS_03.getId(), patron.getStatus());
-        String newExpiryDate = DateUtils.addDaysToSpecificDate(expiryDate, PatronStatus.STATUS_03.getMembershipLength(), "dd/MM/yyyy", "dd/MM/yyyy");
-        assertEquals(patron.getExpiryDate(), newExpiryDate);
-    }
+    //     assertEquals(PatronStatus.STATUS_03.getId(), patron.getStatus());
+    //     String newExpiryDate = DateUtils.addDaysToSpecificDate(expiryDate, PatronStatus.STATUS_03.getMembershipLength(), "dd/MM/yyyy", "dd/MM/yyyy");
+    //     assertEquals(patron.getExpiryDate(), newExpiryDate);
+    // }
 
     @Test
     void testUpdateUseContactAddressFalse() {

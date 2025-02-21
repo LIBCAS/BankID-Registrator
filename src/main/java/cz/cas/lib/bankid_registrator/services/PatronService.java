@@ -1,10 +1,13 @@
 package cz.cas.lib.bankid_registrator.services;
 
+import cz.cas.lib.bankid_registrator.configurations.AppConfig;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
+import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
 import cz.cas.lib.bankid_registrator.exceptions.PatronNotFoundException;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
+import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
 
 import java.util.Optional;
@@ -14,10 +17,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class PatronService extends PatronServiceAbstract
 {
+    private final AppConfig appConfig;
     private final PatronRepository patronRepository;
     private final ModelMapper modelMapper;
 
-    public PatronService(PatronRepository patronRepository, ModelMapper modelMapper) {
+    public PatronService(AppConfig appConfig, PatronRepository patronRepository, ModelMapper modelMapper) {
+        this.appConfig = appConfig;
         this.patronRepository = patronRepository;
         this.modelMapper = modelMapper;
     }
@@ -78,6 +83,61 @@ public class PatronService extends PatronServiceAbstract
         // }
 
         return patronIdOpt.orElse(null);
+    }
+
+    /**
+     * Determine patron's reader status for the very next membership
+     * @param patron The patron object
+     * @return The determined reader status for the very next membership
+     */
+    public PatronStatus determinePatronStatus(Patron patron) {
+        if (patron.getIsCasEmployee()) {
+            return PatronStatus.STATUS_03;
+        }
+
+        int patronAgeWhenMembershipStarts;
+        String currentPatronExpiryDate = patron.getExpiryDate();
+        String expiryDateFormat = "dd/MM/yyyy";
+        if (currentPatronExpiryDate != null && !currentPatronExpiryDate.isEmpty() && !DateUtils.isDateExpired(currentPatronExpiryDate, expiryDateFormat)) {
+            // In case of a membership renewal when the reader's membership is still not expired yet, we will calculate the patron's age on the expiration day of the current membership which is a future date
+            patronAgeWhenMembershipStarts = DateUtils.calculateAge(patron.getBirthDate(), null, currentPatronExpiryDate, expiryDateFormat);
+        } else {
+            // In case of a new membership registration or a membership renewal with reader's membership already expired, we will calculate the patron's age as of today
+            patronAgeWhenMembershipStarts = DateUtils.calculateAge(patron.getBirthDate(), null, null, null);
+        }
+
+        // Based on the patron's age we can determine if the patron will be retired on the starting date of the very next membership 
+        if (patronAgeWhenMembershipStarts >= appConfig.getRetirementAge()) {
+            return PatronStatus.STATUS_10;
+        }
+
+        return PatronStatus.STATUS_16;
+    }
+
+    /**
+     * Determine the expiry date of the very next membership.
+     * 
+     * <b>IMPORTANT</b>: Before calling this method, you should set patron's status for the very next membership based on the `determinePatronStatus` method.
+     * 
+     * @param patron The patron object
+     * @return The determined expiry date of the very next membership in the `dd/MM/yyyy` format
+     */
+    public String determinePatronExpiryDate(Patron patron) {
+        String expiryDateFormat = "dd/MM/yyyy";
+        PatronStatus patronStatus = PatronStatus.getById(patron.getStatus());
+        int membershipLength = patronStatus.getMembershipLength();
+        String nextPatronExpiryDate;
+        String currentPatronExpiryDate = patron.getExpiryDate();
+
+        if (currentPatronExpiryDate != null && !currentPatronExpiryDate.isEmpty() && !DateUtils.isDateExpired(currentPatronExpiryDate, expiryDateFormat)) {
+            // In case of a membership renewal when the reader's membership is still not expired yet, we will calculate the expiry date of the very next membership which will begin on the expiration date of the current membership
+            nextPatronExpiryDate = DateUtils.addDaysToDateString(currentPatronExpiryDate, membershipLength, expiryDateFormat, expiryDateFormat);
+        } else {
+            // In case of a new membership registration or a membership renewal with reader's membership already expired, we will calculate the expiry date of the very next membership which will start today
+            nextPatronExpiryDate = DateUtils.addDaysToToday(membershipLength, expiryDateFormat);
+        }
+
+        return nextPatronExpiryDate;
     }
 
     /**

@@ -7,7 +7,7 @@ public enum PatronStatus {
     STATUS_07("07", "Honorary membership", 1095, "", "", false),
     STATUS_08("08", "VIP", 18250, "", "", false),
     STATUS_09("09", "ILL Borrower PRAGUE", 1825, "", "", false),
-    STATUS_10("10", "Retirees", 365, "44", "46", false),
+    STATUS_10("10", "Retirees", 365, "59", "59", false),
     STATUS_11("11", "ILL Borrower", 1825, "", "", false),
     STATUS_15("15", "Retirees-study user", 365, "44", "46", false),
     STATUS_16("16", "User", 365, "59", "59", false),

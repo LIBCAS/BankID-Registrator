@@ -53,6 +53,33 @@ public class DateUtils
     }
 
     /**
+     * Adds a specific number of years to a given date.
+     * 
+     * @param inputDate The date to which years will be added, as a String.
+     * @param yearsToAdd The number of years to add.
+     * @param inputFormat The format of the input date string.
+     * @param outputFormat The format for the output date string.
+     * @return The new date as a String after adding the specified number of years.
+     */
+    public static String addYearsToDateString(String inputDate, int yearsToAdd, String inputFormat, String outputFormat) {
+        DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern(inputFormat);
+        LocalDate date = LocalDate.parse(inputDate, inputFormatter);
+        LocalDate newDate = date.plusYears(yearsToAdd);
+        return newDate.format(DateTimeFormatter.ofPattern(outputFormat));
+    }
+
+    /**
+     * Adds a specific number of years to today's date.
+     * 
+     * @param yearsToAdd The number of years to add to today.
+     * @param format The format for the output date string.
+     * @return The new date as a String after adding the specified number of years to today.
+     */
+    public static String addYearsToToday(int yearsToAdd, String format) {
+        return addYearsToDateString(LocalDate.now().format(DateTimeFormatter.ofPattern(format)), yearsToAdd, format, format);
+    }
+
+    /**
      * Adds a specific number of days to a specific date.
      * 
      * @param dateString The date to which days will be added, as a String.
@@ -229,6 +256,36 @@ public class DateUtils
             return true;
         } catch (Exception e) {
             return false;
+        }
+    }
+
+    /**
+     * Calculate person's age on a given date (if specified) based on their birth date
+     * 
+     * @param birthDate - person's birth date
+     * @param birthDateFormat - person's birth date format, default is 'yyyyMMdd'
+     * @param onDate - calculation date, default is today
+     * @param onDateFormat - calculation date format, default is 'yyyyMMdd'
+     * @return person's age in years
+     */
+    public static int calculateAge(String birthDate, String birthDateFormat, String onDate, String onDateFormat) {
+        try {
+            String defaultFormat = "yyyyMMdd";
+
+            DateTimeFormatter birthFormatter = DateTimeFormatter.ofPattern(
+                birthDateFormat != null && !birthDateFormat.isEmpty() ? birthDateFormat : defaultFormat
+            );
+            DateTimeFormatter onFormatter = DateTimeFormatter.ofPattern(
+                onDateFormat != null && !onDateFormat.isEmpty() ? onDateFormat : defaultFormat
+            );
+
+            LocalDate birthLocalDate = LocalDate.parse(birthDate, birthFormatter);
+            LocalDate calculationDate = (onDate != null && !onDate.isEmpty()) ? LocalDate.parse(onDate, onFormatter) : LocalDate.now();
+
+            return calculationDate.getYear() - birthLocalDate.getYear() - (calculationDate.getDayOfYear() < birthLocalDate.getDayOfYear() ? 1 : 0);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
         }
     }
 }

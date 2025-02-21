@@ -198,13 +198,6 @@ public class AlephService extends AlephServiceAbstract
         // Patron action
         patron.setAction(PatronAction.I);
 
-        // Patron status (Aleph reader membership status)
-        if (patronIsCasEmployee) {
-            patron.setStatus(PatronStatus.STATUS_03.getId());
-        } else {
-            patron.setStatus(PatronStatus.STATUS_16.getId());
-        }
-
         // Patron Aleph ID and Aleph barcode
         Long maxBankidPatronId = this.getMaxBankIdZ303RecKey();
         patron.setId(this.generatePatronId(maxBankidPatronId));
@@ -325,13 +318,6 @@ public class AlephService extends AlephServiceAbstract
 
         // Patron action
         patron.setAction(PatronAction.A);
-
-        // Patron status (Aleph reader membership status)
-        if (patronIsCasEmployee) {
-            patron.setStatus(PatronStatus.STATUS_03.getId());
-        } else {
-            patron.setStatus(PatronStatus.STATUS_16.getId());
-        }
 
         // Update the patron
         Map<String, String> patronXmlUpdate = this.updatePatronXML(patron, alephPatron);
