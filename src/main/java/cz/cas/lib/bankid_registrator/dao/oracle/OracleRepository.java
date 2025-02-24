@@ -3,13 +3,17 @@
  */
 package cz.cas.lib.bankid_registrator.dao.oracle;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +23,8 @@ public class OracleRepository
 {
     @PersistenceContext(unitName = "oracleEntityManager")
     private EntityManager entityManager;
+
+    private static final Logger logger = LoggerFactory.getLogger(OracleRepository.class);
 
     /**
      * Search for an Aleph patron based on the given name and birth date.
@@ -103,9 +109,10 @@ public class OracleRepository
      * Checks if the given email is already in use by any patron except the given one (if any).
      * @param email The email address to check.
      * @param patronId The patron ID to exclude from the check.
+     * @param limitPatronPrefixes Array of patron ID prefixes to limit the query to.
      * @return true if the email exists, false otherwise.
      */
-    public boolean isExistingPatronEmail(String email, @Nullable String patronId)
+    public boolean isExistingPatronEmail(String email, @Nullable String patronId, @Nullable String[] limitPatronPrefixes)
     {
         String sanitizedPatronId = (patronId != null) ? patronId.replace("%", "\\%").replace("_", "\\_") : null;
 
@@ -115,7 +122,15 @@ public class OracleRepository
 
         if (sanitizedPatronId != null) {
             sql += " AND Z304_REC_KEY NOT LIKE :patronId ESCAPE '\\'";
-        }        
+        }
+
+        if (limitPatronPrefixes != null && limitPatronPrefixes.length > 0) {
+            sql += " AND (" + 
+                Arrays.stream(limitPatronPrefixes)
+                    .map(prefix -> "Z304_REC_KEY LIKE :prefix_" + prefix.replaceAll("[^a-zA-Z0-9]", ""))
+                    .collect(Collectors.joining(" OR ")) +
+               ")";
+        }
 
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("email", email);
@@ -123,8 +138,18 @@ public class OracleRepository
         if (sanitizedPatronId != null) {
             query.setParameter("patronId", sanitizedPatronId + " %");
         }
-        
+
+        if (limitPatronPrefixes != null && limitPatronPrefixes.length > 0) {
+            for (String prefix : limitPatronPrefixes) {
+                String safePrefix = prefix.replaceAll("[^a-zA-Z0-9]", "");
+                query.setParameter("prefix_" + safePrefix, prefix + "%");
+            }
+        }
+
         int count = ((Number) query.getSingleResult()).intValue();
+
+        logger.info("Check email occurrence: email={}, patronId={}, limitPatronPrefixes={}, count={}", email, patronId, limitPatronPrefixes, count);
+
         return count > 0;
     }
 

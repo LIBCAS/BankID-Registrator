@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Test PatronService
  * 
  * <p><b>Usage:</b></p>
+ * Check the `RETIREMENT_AGE` and adjust it if needed. Then you can run the tests with:
  * <pre>{@code
  * ./mvnw test -Dtest=PatronServiceTest
  * }</pre>
@@ -32,7 +33,7 @@ class PatronServiceTest
 
     private AppConfig appConfig;
 
-    private static final int RETIREMENT_AGE = 70; // Set retirement age for testing
+    private static final int RETIREMENT_AGE = 70; // Set retirement age for testing, this will override the value from the application.properties
     private static final String DATE_FORMAT = "yyyyMMdd"; // Format used for `patron.birthDate`
     private static final Logger logger = LoggerFactory.getLogger(PatronServiceTest.class);
 

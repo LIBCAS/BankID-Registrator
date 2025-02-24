@@ -3,6 +3,7 @@ package cz.cas.lib.bankid_registrator.configurations;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
@@ -43,6 +44,9 @@ public class AlephServiceConfig {
 
     @NotBlank
     private String itemBarcodePrefix;
+
+    @Nullable
+    private String[] patronidPrefixes;
 
     public String getHost() {
         return host;
@@ -130,5 +134,13 @@ public class AlephServiceConfig {
 
     public void setItemBarcodePrefix(String itemBarcodePrefix) {
         this.itemBarcodePrefix = itemBarcodePrefix;
+    }
+
+    public String[] getPatronidPrefixes() {
+        return patronidPrefixes;
+    }
+
+    public void setPatronidPrefixes(String[] patronidPrefixes) {
+        this.patronidPrefixes = patronidPrefixes;
     }
 }

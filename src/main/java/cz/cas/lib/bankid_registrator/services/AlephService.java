@@ -1442,7 +1442,7 @@ logger.info("AAA doHttpRequest method: {}", method);
         Assert.notNull(email, "\"email\" is required");
 
         // TRUE if email is already in use by any patron except the given one (if any)
-        return this.oracleRepository.isExistingPatronEmail(email, patronId);
+        return this.oracleRepository.isExistingPatronEmail(email, patronId, this.alephServiceConfig.getPatronidPrefixes());
     }
 
     /**

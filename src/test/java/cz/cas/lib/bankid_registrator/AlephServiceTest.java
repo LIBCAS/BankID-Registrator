@@ -1,6 +1,9 @@
 package cz.cas.lib.bankid_registrator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import cz.cas.lib.bankid_registrator.configurations.AlephServiceConfig;
+import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
+import cz.cas.lib.bankid_registrator.dao.oracle.OracleRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.entity.Address;
 import cz.cas.lib.bankid_registrator.entities.entity.AddressType;
@@ -10,17 +13,20 @@ import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
+import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.LocalAlephService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
 import java.util.ArrayList;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
@@ -41,7 +47,32 @@ class AlephServiceTest
     @Autowired
     private PatronDTOValidator patronDTOValidator;
 
+    @Autowired
+    private MainConfiguration mainConfig;
+
+    @Autowired
+    private IdentityService identityService;
+
+    @Autowired
+    private OracleRepository oracleRepository;
+
+    private ResourceLoader resourceLoader;
+
+    private AlephServiceConfig alephServiceConfig;
+
+    private static final String[] ALEPH_PATRONID_PREFIXES = {"LIB1", "LIB2"}; // Set Aleph patron prefixes for testing, this will override the value from the application.properties
+
     private static final Logger logger = LoggerFactory.getLogger(AlephServiceTest.class);
+
+    @BeforeEach
+    void setUp() {
+        this.alephServiceConfig = Mockito.mock(AlephServiceConfig.class);
+        Mockito.when(this.alephServiceConfig.getPatronidPrefixes()).thenReturn(AlephServiceTest.ALEPH_PATRONID_PREFIXES);
+
+        this.alephService = new AlephService(this.mainConfig, this.alephServiceConfig, this.identityService, this.oracleRepository, this.resourceLoader);
+
+        logger.info("For testing, Aleph patron ID prefixes are set to: " + String.join(", ", this.alephServiceConfig.getPatronidPrefixes()));
+    }
 
     /**
      * Test for updating Aleph patron. 
@@ -240,5 +271,68 @@ class AlephServiceTest
             bankIdPatron.isNew(),
             "Patron does not exist in Aleph."
         );
+    }
+
+    /**
+     * Tests if an email is not used in Aleph while searching among all patrons whose patron ID contains of of the prefixes defined in `ALEPH_PATRONID_PREFIXES`.
+     *
+     * <p><b>Usage:</b></p>
+     * <p>Check and modify these variables: `ALEPH_PATRONID_PREFIXES`, `searchEmail`</p>
+     * <p>Then run the test via:</p>
+     * <pre>{@code
+     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_emailOnly_shouldReturnFalse_ifNoEmailFound
+     * }</pre>
+     */
+    @Test
+    void testIsEmailInUse_emailOnly_shouldReturnFalse_ifNoEmailFound() {
+        // Set an non-existing patron email
+        String searchEmail = "non-existing@email.com";
+
+        boolean isEmailInUse = alephService.isEmailInUse(searchEmail, null);
+
+        assertFalse(isEmailInUse, "Expected email to not be in use, but it was used by 1 or more different patrons.");
+    }
+
+    /**
+     * Tests if an email is in use in Aleph while searching among all patrons whose patron ID contains of of the prefixes defined in `ALEPH_PATRONID_PREFIXES`.
+     *
+     * <p><b>Usage:</b></p>
+     * <p>Check and modify these variables: `ALEPH_PATRONID_PREFIXES`, `searchEmail`</p>
+     * <p>Then run the test via:</p>
+     * <pre>{@code
+     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_emailOnly_shouldReturnTrue_ifEmailFound
+     * }</pre>
+     */
+    @Test
+    void testIsEmailInUse_emailOnly_shouldReturnTrue_ifEmailFound() {
+        // Set an existing patron email whose patron has an ID with one of the prefixes defined in `ALEPH_PATRONID_PREFIXES`:
+        String searchEmail = "test@email.com";
+
+        boolean isEmailInUse = alephService.isEmailInUse(searchEmail, null);
+
+        assertTrue(isEmailInUse, "Expected email to be in use, but it was not.");
+    }
+
+    /**
+     * Tests if an email is in use in Aleph while searching among all patrons whose patron ID contains of of the prefixes defined in `ALEPH_PATRONID_PREFIXES` excluding the given patron ID. I.e. this tests if an email is used only by the given patron.
+     *
+     * <p><b>Usage:</b></p>
+     * <p>Check and modify these variables: `ALEPH_PATRONID_PREFIXES`, `searchEmail`, `excludePatronId`</p>
+     * <p>Then run the test via:</p>
+     * <pre>{@code
+     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_excludePatronId_shouldReturnFalse_ifNoEmailFound
+     * }</pre>
+     */
+    @Test
+    void testIsEmailInUse_excludePatronId_shouldReturnFalse_ifNoEmailFound() {
+        // Set an existing patron email whose patron has an ID with one of the prefixes defined in `ALEPH_PATRONID_PREFIXES`:
+        String searchEmail = "test@email.com";
+
+        // Set an ID of a patron who has an email defined in `searchEmail`:
+        String excludePatronId = "LIB10001";
+
+        boolean isEmailInUse = alephService.isEmailInUse(searchEmail, excludePatronId);
+
+        assertFalse(isEmailInUse, "Expected email to be in used only by the patron " + excludePatronId + ", but it was used by 1 or more different patrons as well.");
     }
 }
