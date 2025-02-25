@@ -11,13 +11,17 @@
     import cz.cas.lib.bankid_registrator.services.MediaService;
     import cz.cas.lib.bankid_registrator.util.DateUtils;
     import java.util.Arrays;
+    import java.util.Collections;
+    import java.util.HashSet;
     import java.util.List;
     import java.util.Locale;
     import java.util.Map;
     import java.util.Objects;
     import java.util.Optional;
+    import java.util.Set;
     import java.util.stream.Collectors;
     import org.springframework.context.MessageSource;
+    // import org.springframework.util.StopWatch;
     import org.springframework.data.domain.Page;
     import org.springframework.data.domain.PageImpl;
     import org.springframework.data.domain.PageRequest;
@@ -36,7 +40,7 @@
     @Controller
     public class DashboardController extends AdminControllerAbstract
     {
-        private static final int PAGE_SIZE = 100;
+        private static final int PAGE_SIZE = 50;
 
         private final AlephService alephService;
         private final IdentityActivityService identityActivityService;
@@ -77,7 +81,7 @@
             Model model, 
             Locale locale, 
             @RequestParam(defaultValue = "0") int page, 
-            @RequestParam(defaultValue = "id") String sortField, 
+            @RequestParam(defaultValue = "updatedAt") String sortField, 
             @RequestParam(defaultValue = "asc") String sortDir, 
             @RequestParam(required = false) String searchAlephIdOrBarcode, 
             @RequestParam(required = false) String searchFullname, 
@@ -86,26 +90,36 @@
             @RequestParam(required = false) List<String> filterPaymentStatus,
             @RequestParam(defaultValue = "true") Boolean filterSoftDeleted
         ) {
-            // Filtering and sorting identity data
-            Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
-            PageRequest pageable = PageRequest.of(page, DashboardController.PAGE_SIZE, sort);
-            Page<Identity> identityPage = this.identityService.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted);
+            // StopWatch stopWatch = new StopWatch("Dashboard Performance");
 
-            // Retrieving Aleph patron data to be merged with identity data
-            List<String> patronIds = identityPage.getContent().stream()
+            // stopWatch.start("MySQL Query");
+            Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
+
+            List<Identity> allMatchingIdentities = this.identityService.findAllIdentities(searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted, sort);
+            // stopWatch.stop();
+
+            // logger.info("MySQL query returned {} records", allMatchingIdentities.size());
+
+            // stopWatch.start("Extract Aleph IDs");
+            List<String> patronIds = allMatchingIdentities.stream()
                 .map(Identity::getAlephId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+            // stopWatch.stop();
+
+            // stopWatch.start("Oracle Query");
             Map<String, List<Object[]>> identitiesAlephData = this.alephService.getBulkPatronsData(patronIds);
+            // stopWatch.stop();
 
-            // Filtering final data (= identity data + Aleph patron data)
-            List<Identity> filteredIdentities = identityPage.getContent().stream()
-                .filter(identity -> {
-                    String alephId = identity.getAlephId();
-                    if (!identitiesAlephData.containsKey(alephId)) return true;
+            // logger.info("Oracle query returned data for {} patrons", identitiesAlephData.size());
 
-                    List<Object[]> patronRecords = identitiesAlephData.get(alephId);
+            // stopWatch.start("Apply Oracle Filters");
+            Set<String> matchingAlephIds = new HashSet<>();
 
+            if ((searchFullname != null && !searchFullname.isEmpty()) || 
+                (filterPaymentStatus != null && !filterPaymentStatus.isEmpty())) {
+                
+                identitiesAlephData.forEach((alephId, patronRecords) -> {
                     // Filter by payment status
                     boolean matchesPaymentStatus = filterPaymentStatus != null && !filterPaymentStatus.isEmpty() 
                         ? patronRecords.stream().anyMatch(record -> filterPaymentStatus.contains(String.valueOf(record[1])))
@@ -119,11 +133,49 @@
                         })
                         : true;
 
-                    return matchesPaymentStatus && matchesFullname;
+                    if (matchesPaymentStatus && matchesFullname) {
+                        matchingAlephIds.add(alephId);
+                    }
+                });
+            } else {
+                // If no Oracle filters, all IDs match
+                matchingAlephIds.addAll(patronIds);
+            }
+            // stopWatch.stop();
+
+            // stopWatch.start("Create Intersection");
+            List<Identity> finalFilteredList = allMatchingIdentities.stream()
+                .filter(identity -> {
+                    String alephId = identity.getAlephId();
+                    return alephId == null || matchingAlephIds.contains(alephId);
                 })
                 .collect(Collectors.toList());
+            // stopWatch.stop();
 
-            // Translate payment statuses in the final data
+            // logger.info("After all filtering, {} records remain", finalFilteredList.size());
+
+            // stopWatch.start("Apply Pagination");
+            int start = page * PAGE_SIZE;
+            int end = Math.min(start + PAGE_SIZE, finalFilteredList.size());
+            // stopWatch.stop();
+
+            // Handle case where page is beyond available data
+            if (start >= finalFilteredList.size() && !finalFilteredList.isEmpty()) {
+                page = (finalFilteredList.size() - 1) / PAGE_SIZE;
+                start = page * PAGE_SIZE;
+                end = Math.min(start + PAGE_SIZE, finalFilteredList.size());
+            }
+
+            List<Identity> pageContent = start < end ? 
+                finalFilteredList.subList(start, end) : 
+                Collections.emptyList();
+
+            Page<Identity> finalPage = new PageImpl<>(
+                pageContent, 
+                PageRequest.of(page, PAGE_SIZE, sort), 
+                finalFilteredList.size());
+
+            // Translate payment statuses
             identitiesAlephData.forEach((patronId, rows) -> {
                 for (Object[] row : rows) {
                     String translatedStatus = messageSource.getMessage(
@@ -136,8 +188,6 @@
                     rows.set(rows.indexOf(row), updatedRow);
                 }
             });
-
-            Page<Identity> finalPage = new PageImpl<>(filteredIdentities, pageable, filteredIdentities.size());
 
             model.addAttribute("pageTitle", this.messageSource.getMessage("page.identitiesDashboard.title", null, locale));
             model.addAttribute("identityPage", finalPage);
@@ -159,6 +209,8 @@
                 PatronFineStatus.CANCELLED.getKey(), "bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm",
                 PatronFineStatus.UNKNOWN.getKey(), "bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm"
             ));
+
+            // logger.info(stopWatch.prettyPrint());
 
             return "dashboard";
         }

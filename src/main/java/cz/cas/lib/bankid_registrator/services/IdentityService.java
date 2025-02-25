@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -92,7 +93,7 @@ public class IdentityService extends ServiceAbstract
     }
 
     /**
-     * Find identities by search criteria
+     * Find identities by search criteria with pagination
      * @param pageable
      * @param searchAlephIdOrBarcode
      * @param filterCasEmployee
@@ -102,5 +103,18 @@ public class IdentityService extends ServiceAbstract
      */
     public Page<Identity> findIdentities(Pageable pageable, String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterSoftDeleted) {
         return identityRepository.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted);
+    }
+
+    /**
+     * Find all identities by search criteria without pagination
+     * @param searchAlephIdOrBarcode
+     * @param filterCasEmployee
+     * @param filterCheckedByAdmin
+     * @param filterSoftDeleted
+     * @param sort
+     * @return List of all matching identities
+     */
+    public List<Identity> findAllIdentities(String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterSoftDeleted, Sort sort) {
+        return identityRepository.findAllIdentities(searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted, sort);
     }
 }
