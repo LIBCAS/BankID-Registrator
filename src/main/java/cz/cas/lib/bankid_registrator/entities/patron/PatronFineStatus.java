@@ -8,7 +8,7 @@ public enum PatronFineStatus {
     PAID("C", "paid"),
     NOT_PAID("O", "notpaid"),
     CANCELLED("W", "cancelled"),
-    UNKNOWN("", "unknown");
+    FREE_OR_UNKNOWN("", "freeOrUnknown");
 
     private final String code;
     private final String key;
@@ -28,6 +28,6 @@ public enum PatronFineStatus {
     }
 
     public static PatronFineStatus getByCode(String code) {
-        return CODE_TO_STATUS_MAP.getOrDefault(code, UNKNOWN);
+        return CODE_TO_STATUS_MAP.getOrDefault(code, FREE_OR_UNKNOWN);
     }
 }

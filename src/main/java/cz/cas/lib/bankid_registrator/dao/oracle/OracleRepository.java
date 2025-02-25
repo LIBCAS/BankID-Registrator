@@ -202,34 +202,28 @@ public class OracleRepository
         String feeDescr = "Bank iD";
 
         String sql = 
-            "WITH latest_dates AS (" +
-            "    SELECT " +
-            "        SUBSTR(Z31_REC_KEY, 1, INSTR(Z31_REC_KEY, ' ') - 1) AS patron_id, " +
-            "        MAX(Z31_DATE_X) AS max_date " +
-            "    FROM KNA50.Z31 " +
-            "    WHERE Z31_DESCRIPTION = :feeDescr " +
-            "    AND SUBSTR(Z31_REC_KEY, 1, INSTR(Z31_REC_KEY, ' ') - 1) IN (:patronIds) " +
-            "    GROUP BY SUBSTR(Z31_REC_KEY, 1, INSTR(Z31_REC_KEY, ' ') - 1) " +
-            ") " +
-            "SELECT " +
-            "    TRIM(SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1)) AS patron_id, " +
-            "    Z31.Z31_STATUS AS payment_status, " +
-            "    Z303.Z303_NAME AS fullname, " +
-            "    Z304.Z304_EMAIL_ADDRESS AS email, " +
-            "    Z304.Z304_SMS_NUMBER AS phone, " +
-            "    Z31.Z31_PAYMENT_CATALOGER AS cataloger, " +
-            "    Z31.Z31_UPD_TIME_STAMP AS modified_at " +
-            "FROM KNA50.Z31 Z31 " +
-            "JOIN latest_dates ld ON " +
-            "    SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) = ld.patron_id " +
-            "    AND Z31.Z31_DATE_X = ld.max_date " +
-            "JOIN KNA50.Z304 Z304 ON " +
-            "    SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) = SUBSTR(Z304.Z304_REC_KEY, 1, INSTR(Z304.Z304_REC_KEY, ' ') - 1) " +
-            "JOIN KNA50.Z303 Z303 ON " +
-            "    SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) = SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) " +
-            "WHERE Z31.Z31_DESCRIPTION = :feeDescr " +
-            "AND Z304.Z304_ADDRESS_TYPE = 1 " +
-            "AND SUBSTR(Z304.Z304_REC_KEY, 1, INSTR(Z304.Z304_REC_KEY, ' ') - 1) IN (:patronIds)";
+            "SELECT " + 
+            "    TRIM(SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1)) AS patron_id, " + 
+            "    COALESCE(Z31.Z31_STATUS, 'EXEMPT') AS payment_status, " + 
+            "    Z303.Z303_NAME AS fullname, " + 
+            "    Z304.Z304_EMAIL_ADDRESS AS email, " + 
+            "    Z304.Z304_SMS_NUMBER AS phone, " + 
+            "    Z31.Z31_PAYMENT_CATALOGER AS cataloger, " + 
+            "    Z31.Z31_UPD_TIME_STAMP AS modified_at " + 
+            "FROM KNA50.Z303 Z303 " + 
+            "JOIN KNA50.Z304 Z304 ON " + 
+            "    SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) = SUBSTR(Z304.Z304_REC_KEY, 1, INSTR(Z304.Z304_REC_KEY, ' ') - 1) " + 
+            "LEFT JOIN ( " + 
+            "    SELECT " + 
+            "        Z31.*, " + 
+            "        ROW_NUMBER() OVER (PARTITION BY SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) ORDER BY Z31.Z31_DATE_X DESC) AS rn " + 
+            "    FROM KNA50.Z31 Z31 " + 
+            "    WHERE Z31.Z31_DESCRIPTION = :feeDescr " + 
+            ") Z31 ON " + 
+            "    SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) = SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) " + 
+            "    AND Z31.rn = 1 " + 
+            "WHERE Z304.Z304_ADDRESS_TYPE = 1 " + 
+            "AND SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) IN (:patronIds)";
 
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("feeDescr", feeDescr);
