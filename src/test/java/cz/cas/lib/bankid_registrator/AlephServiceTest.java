@@ -18,8 +18,14 @@ import cz.cas.lib.bankid_registrator.services.LocalAlephService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Properties;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -32,6 +38,33 @@ import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Integration tests for the AlephService class.
+ * 
+ * <p>System properties required:</p>
+ * <ul>
+ *  <li><b>testingPatronId</b>: An ID of the testing Aleph patron - Do not use a production patron, use a testing one.</li>
+ *  <li><b>useCustomAlephServiceConfig</b>: Whether to use custom Aleph service config specified in this test class via alephPatronPrefixes, alephServiceHost, alephServicePort, alephServiceRestApiUri, alephServiceWwwuser, alephServiceWwwPasswd
+ *  
+ * </ul>
+ * 
+ * If you want to use custom Aleph service configuration for this test i.e. if `useCustomAlephServiceConfig` is true, you will need to modify these variables:
+ * - alephPatronPrefixes
+ * - alephServiceHost
+ * - alephServicePort
+ * - alephServiceRestApiUri
+ * - alephServiceWwwuser
+ * - alephServiceWwwPasswd
+ * 
+ * <p>Example usage with `test.properties`:</p>
+ * <pre>{@code
+ *      ./mvnw test -Dtest=AlephServiceTest
+ * }</pre>
+ * or in order to override the properties:
+ * <pre>{@code
+ *      ./mvnw test -Dtest=AlephServiceTest -DtestingPatronId=PREFIX12345 -DuseCustomAlephServiceConfig=false -DpatronNonExistingEmail=non-existing@example.com -patronEmailInUse=used-email@example.com -patronEmailUnique=unique-email@example.com -patronWithUniqueEmail=LIB00001 ...
+ * }</pre>
+ */
 @SpringBootTest
 class AlephServiceTest
 {
@@ -56,22 +89,78 @@ class AlephServiceTest
     @Autowired
     private OracleRepository oracleRepository;
 
+    @Autowired
+    private AlephServiceConfig prodAlephServiceConfig;  // Aleph service config used in production
+
+    @Autowired
     private ResourceLoader resourceLoader;
 
-    private AlephServiceConfig alephServiceConfig;
+    private AlephServiceConfig alephServiceConfig;  // Aleph service config used in this test
 
-    private static final String[] ALEPH_PATRONID_PREFIXES = {"LIB1", "LIB2"}; // Set Aleph patron prefixes for testing, this will override the value from the application.properties
+    private static String testingPatronId;
+    private static String patronNonExistingEmail;
+    private static String patronEmailInUse;
+    private static String patronEmailUnique;
+    private static String patronWithUniqueEmail;
+    private static String test2PatronName;
+    private static String test2PatronGivenName;
+    private static String test2PatronFamilyName;
+    private static String test2PatronMiddleName;
+    private static String test2PatronBirthDate;
+    
+    private static boolean useCustomAlephServiceConfig = false; // By default this test class uses Aleph service config like in production
+
+    private static String[] alephPatronPrefixes = {"LIB1", "LIB2"};
+    private static String alephServiceHost = "https://aleph.test.com";
+    private static String alephServicePort = "443";
+    private static String alephServiceRestApiUri = "http://aleph.test.com:XXXX";
+    private static String alephServiceWwwuser = "AlephNickname";
+    private static String alephServiceWwwPasswd = "AlephPassword";
 
     private static final Logger logger = LoggerFactory.getLogger(AlephServiceTest.class);
 
+    @BeforeAll
+    static void loadProperties() {
+        Properties properties = new Properties();
+
+        try (InputStreamReader reader = new InputStreamReader(new FileInputStream("src/test/resources/tests.properties"), StandardCharsets.UTF_8)) {
+            properties.load(reader);
+        } catch (IOException e) {
+            logger.warn("Failed to load test properties from 'tests.properties'.", e);
+        }
+
+        AlephServiceTest.useCustomAlephServiceConfig = Boolean.parseBoolean(
+            System.getProperty("useCustomAlephServiceConfig", 
+            properties.getProperty("AlephServiceTest.useCustomAlephServiceConfig"))
+        );
+
+        AlephServiceTest.testingPatronId = System.getProperty("testingPatronId", properties.getProperty("AlephServiceTest.testingPatronId"));
+        AlephServiceTest.patronNonExistingEmail = System.getProperty("patronNonExistingEmail", properties.getProperty("AlephServiceTest.patronNonExistingEmail"));
+        AlephServiceTest.patronEmailInUse = System.getProperty("patronEmailInUse", properties.getProperty("AlephServiceTest.patronEmailInUse"));
+        AlephServiceTest.patronEmailUnique = System.getProperty("patronEmailUnique", properties.getProperty("AlephServiceTest.patronEmailUnique"));
+        AlephServiceTest.patronWithUniqueEmail = System.getProperty("patronWithUniqueEmail", properties.getProperty("AlephServiceTest.patronWithUniqueEmail"));
+        AlephServiceTest.test2PatronName = System.getProperty("test2PatronName", properties.getProperty("AlephServiceTest.test2.patronName"));
+        AlephServiceTest.test2PatronGivenName = System.getProperty("test2PatronGivenName", properties.getProperty("AlephServiceTest.test2.patronGivenName"));
+        AlephServiceTest.test2PatronFamilyName = System.getProperty("test2PatronFamilyName", properties.getProperty("AlephServiceTest.test2.patronFamilyName"));
+        AlephServiceTest.test2PatronMiddleName = System.getProperty("test2PatronMiddleName", properties.getProperty("AlephServiceTest.test2.patronMiddleName"));
+        AlephServiceTest.test2PatronBirthDate = System.getProperty("test2PatronBirthDate", properties.getProperty("AlephServiceTest.test2.patronBirthDate"));
+    }
+
     @BeforeEach
     void setUp() {
-        this.alephServiceConfig = Mockito.mock(AlephServiceConfig.class);
-        Mockito.when(this.alephServiceConfig.getPatronidPrefixes()).thenReturn(AlephServiceTest.ALEPH_PATRONID_PREFIXES);
+        if (AlephServiceTest.useCustomAlephServiceConfig) {
+            this.alephServiceConfig = Mockito.mock(AlephServiceConfig.class);
+            Mockito.when(this.alephServiceConfig.getPatronidPrefixes()).thenReturn(AlephServiceTest.alephPatronPrefixes);
+            Mockito.when(this.alephServiceConfig.getHost()).thenReturn(AlephServiceTest.alephServiceHost);
+            Mockito.when(this.alephServiceConfig.getPort()).thenReturn(AlephServiceTest.alephServicePort);
+            Mockito.when(this.alephServiceConfig.getRestApiUri()).thenReturn(AlephServiceTest.alephServiceRestApiUri);
+            Mockito.when(this.alephServiceConfig.getWwwuser()).thenReturn(AlephServiceTest.alephServiceWwwuser);
+            Mockito.when(this.alephServiceConfig.getWwwpasswd()).thenReturn(AlephServiceTest.alephServiceWwwPasswd);
+        } else {
+            this.alephServiceConfig = this.prodAlephServiceConfig;
+        }
 
         this.alephService = new AlephService(this.mainConfig, this.alephServiceConfig, this.identityService, this.oracleRepository, this.resourceLoader);
-
-        logger.info("For testing, Aleph patron ID prefixes are set to: " + String.join(", ", this.alephServiceConfig.getPatronidPrefixes()));
     }
 
     /**
@@ -83,19 +172,32 @@ class AlephServiceTest
      * 
      * <p>System properties required:</p>
      * <ul>
-     *   <li><b>patron</b>: The Aleph ID of the patron to be updated.</li>
+     *  <li><b>testingPatronId</b>: An ID of the testing Aleph patron - Do not use a production patron, use a testing one.</li>
+     *  <li><b>useCustomAlephServiceConfig</b>: Whether to use custom Aleph service config specified in this test class via alephPatronPrefixes, alephServiceHost, alephServicePort, alephServiceRestApiUri, alephServiceWwwuser, alephServiceWwwPasswd
      * </ul>
+     * 
+     * If you want to use custom Aleph service configuration for this test i.e. if `useCustomAlephServiceConfig` is true, you will need to modify these variables:
+     * - alephPatronPrefixes
+     * - alephServiceHost
+     * - alephServicePort
+     * - alephServiceRestApiUri
+     * - alephServiceWwwuser
+     * - alephServiceWwwPasswd
      *
-     * <p>Example usage:</p>
+     * <p>Example usage with `test.properties`:</p>
      * <pre>{@code
-     * ./mvnw -Dtest=AlephServiceTest#testUpdatePatron -Dpatron=PREFIX12345 test
+     *      ./mvnw test -Dtest=AlephServiceTest#testUpdatePatron
+     * }</pre>
+     * or in order to override the properties:
+     * <pre>{@code
+     *      ./mvnw test -Dtest=AlephServiceTest#testUpdatePatron -DtestingPatronId=PREFIX12345 -DuseCustomAlephServiceConfig=false
      * }</pre>
      */
     @Test
     void testUpdatePatron()
     {
-        String patronAlephId = System.getProperty("patron");
-        assertNotNull(patronAlephId, "The system property 'patron' must be set.");
+        String patronAlephId = AlephServiceTest.testingPatronId;
+        assertNotNull(patronAlephId, "The system property 'testingPatronId' must be set.");
 
         String dtNow = DateUtils.getDateTime("yyMMddHHmmss");
 
@@ -166,23 +268,45 @@ class AlephServiceTest
     }
 
     /**
-     * Test Aleph patron existence check by name and birth date even if Bank iD service returns user profile with uppercase name (`family_name`, `middle_name`, `given_name`).
-     * 
+     * Test for retrieving an Aleph patron using Bank iD profile data even when the names are provided in uppercase.
+     *
+     * <p>This test ensures that Aleph can correctly find an existing patron even if the Bank iD profile returns uppercase names
+     * (e.g. `family_name`, `middle_name`, `given_name`).</p>
+     *
+     * <p>System properties required:</p>
+     * <ul>
+     *     <li><b>test2PatronName</b>: Full name of the patron</li>
+     *     <li><b>test2PatronGivenName</b>: Given name</li>
+     *     <li><b>test2PatronFamilyName</b>: Family name</li>
+     *     <li><b>test2PatronMiddleName</b>: Middle name</li>
+     *     <li><b>test2PatronBirthDate</b>: Birth date in format yyyy-MM-dd</li>
+     * </ul>
+     *
      * <p>Example usage:</p>
-     * First modify the `customName`, `customGiveName`, `customFamilyName`, `customMiddleName`, `customBirthDate` variables in this test method - fill them with some existing Aleph patron's data but in uppercase. After that run the test:
      * <pre>{@code
-     * ./mvnw test -Dtest=AlephServiceTest#testGetAlephPatronIdByNameAndBirth_shouldNotBeEmpty_ifBankidProfileNamesUppercase
+     * ./mvnw test -Dtest=AlephServiceTest#testGetAlephPatronIdByNameAndBirth_shouldNotBeEmpty_ifBankidProfileNamesUppercase \
+     *             -Dtest2PatronName=PHD. JOHN DOE \
+     *             -Dtest2PatronGivenName=JOHN \
+     *             -Dtest2PatronFamilyName=DOE \
+     *             -Dtest2PatronMiddleName=JAMES \
+     *             -Dtest2PatronBirthDate=2000-02-20
      * }</pre>
      */
     @Test
     void testGetAlephPatronIdByNameAndBirth_shouldNotBeEmpty_ifBankidProfileNamesUppercase()
     {
         // Setup custom user profile data which would normally be provided by Bank iD service when the user verifies their identity
-        String customName = "MGR. JOE DOE";
-        String customGiveName = "JOE";
-        String customFamilyName = "DOE";
-        String customMiddleName = "";
-        String customBirthDate = "2003-06-09";  // yyyy-MM-dd
+        String customName = AlephServiceTest.test2PatronName;
+        String customGivenName = AlephServiceTest.test2PatronGivenName;
+        String customFamilyName = AlephServiceTest.test2PatronFamilyName;
+        String customMiddleName = AlephServiceTest.test2PatronMiddleName;
+        String customBirthDate = AlephServiceTest.test2PatronBirthDate; // yyyy-MM-dd
+
+        assertNotNull(customName, "The system property 'test2PatronName' must be set.");
+        assertNotNull(customGivenName, "The system property 'test2PatronGivenName' must be set.");
+        assertNotNull(customFamilyName, "The system property 'test2PatronFamilyName' must be set.");
+        assertNotNull(customMiddleName, "The system property 'test2PatronMiddleName' must be set.");
+        assertNotNull(customBirthDate, "The system property 'test2PatronBirthDate' must be set.");
 
         // The `localAlephService.generateTestingMname` method generates a random middle name but we want to use a custom one defined above
         LocalAlephService spyLocalAlephService = Mockito.spy(localAlephService);
@@ -190,7 +314,7 @@ class AlephServiceTest
 
         Connect userInfo = new Connect(
             customName,
-            customGiveName,
+            customGivenName,
             customFamilyName,
             null,
             "Johnny",
@@ -227,7 +351,7 @@ class AlephServiceTest
         Identify userProfile = new Identify(
             null,
             null,
-            customGiveName,
+            customGivenName,
             customFamilyName,
             null,
             "+420123456789",
@@ -274,19 +398,27 @@ class AlephServiceTest
     }
 
     /**
-     * Tests if an email is not used in Aleph while searching among all patrons whose patron ID contains of of the prefixes defined in `ALEPH_PATRONID_PREFIXES`.
+     * Test for verifying that an unused email is not found among Aleph patrons.
      *
-     * <p><b>Usage:</b></p>
-     * <p>Check and modify these variables: `ALEPH_PATRONID_PREFIXES`, `searchEmail`</p>
-     * <p>Then run the test via:</p>
+     * <p>This test checks if an email address, which is known to be unused, is not found when querying Aleph patrons
+     * whose patron ID contains one of the prefixes defined in {@code AlephServiceTest.alephPatronPrefixes}.</p>
+     *
+     * <p>System properties required:</p>
+     * <ul>
+     *     <li><b>patronNonExistingEmail</b>: Email address that is expected to not be used by any patron</li>
+     * </ul>
+     *
+     * <p>Example usage:</p>
      * <pre>{@code
-     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_emailOnly_shouldReturnFalse_ifNoEmailFound
+     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_emailOnly_shouldReturnFalse_ifNoEmailFound \
+     *             -DpatronNonExistingEmail=nonexistent@example.com
      * }</pre>
      */
     @Test
     void testIsEmailInUse_emailOnly_shouldReturnFalse_ifNoEmailFound() {
-        // Set an non-existing patron email
-        String searchEmail = "non-existing@email.com";
+        // A non-existing patron email
+        String searchEmail = AlephServiceTest.patronNonExistingEmail;
+        assertNotNull(searchEmail, "The system property 'patronNonExistingEmail' must be set.");        
 
         boolean isEmailInUse = alephService.isEmailInUse(searchEmail, null);
 
@@ -294,19 +426,27 @@ class AlephServiceTest
     }
 
     /**
-     * Tests if an email is in use in Aleph while searching among all patrons whose patron ID contains of of the prefixes defined in `ALEPH_PATRONID_PREFIXES`.
+     * Test for verifying that an existing email is correctly found among Aleph patrons.
      *
-     * <p><b>Usage:</b></p>
-     * <p>Check and modify these variables: `ALEPH_PATRONID_PREFIXES`, `searchEmail`</p>
-     * <p>Then run the test via:</p>
+     * <p>This test checks if a known existing email is correctly found among Aleph patrons whose patron ID contains
+     * one of the prefixes defined in {@code AlephServiceTest.alephPatronPrefixes}.</p>
+     *
+     * <p>System properties required:</p>
+     * <ul>
+     *     <li><b>patronEmailInUse</b>: Email address that is expected to be used by at least one patron</li>
+     * </ul>
+     *
+     * <p>Example usage:</p>
      * <pre>{@code
-     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_emailOnly_shouldReturnTrue_ifEmailFound
+     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_emailOnly_shouldReturnTrue_ifEmailFound \
+     *             -DpatronEmailInUse=used@example.com
      * }</pre>
      */
     @Test
     void testIsEmailInUse_emailOnly_shouldReturnTrue_ifEmailFound() {
-        // Set an existing patron email whose patron has an ID with one of the prefixes defined in `ALEPH_PATRONID_PREFIXES`:
-        String searchEmail = "test@email.com";
+        // An existing patron email whose patron has an ID with one of the prefixes defined in `AlephServiceTest.alephPatronPrefixes`:
+        String searchEmail = AlephServiceTest.patronEmailInUse;
+        assertNotNull(searchEmail, "The system property 'patronEmailInUse' must be set.");    
 
         boolean isEmailInUse = alephService.isEmailInUse(searchEmail, null);
 
@@ -314,22 +454,34 @@ class AlephServiceTest
     }
 
     /**
-     * Tests if an email is in use in Aleph while searching among all patrons whose patron ID contains of of the prefixes defined in `ALEPH_PATRONID_PREFIXES` excluding the given patron ID. I.e. this tests if an email is used only by the given patron.
+     * Test for checking if an email is only used by a specific patron and not by others.
      *
-     * <p><b>Usage:</b></p>
-     * <p>Check and modify these variables: `ALEPH_PATRONID_PREFIXES`, `searchEmail`, `excludePatronId`</p>
-     * <p>Then run the test via:</p>
+     * <p>This test verifies that an email address is in use but exclusively by the patron specified by ID,
+     * and that no other patrons share the same email address. The search is done among Aleph patrons whose
+     * patron ID contains one of the prefixes defined in {@code AlephServiceTest.alephPatronPrefixes}.</p>
+     *
+     * <p>System properties required:</p>
+     * <ul>
+     *     <li><b>patronEmailUnique</b>: Email address used by a single patron</li>
+     *     <li><b>patronWithUniqueEmail</b>: Patron ID of the patron using the above email</li>
+     * </ul>
+     *
+     * <p>Example usage:</p>
      * <pre>{@code
-     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_excludePatronId_shouldReturnFalse_ifNoEmailFound
+     * ./mvnw test -Dtest=AlephServiceTest#testIsEmailInUse_excludePatronId_shouldReturnFalse_ifNoEmailFound \
+     *             -DpatronEmailUnique=unique@example.com \
+     *             -DpatronWithUniqueEmail=LIB00001
      * }</pre>
      */
     @Test
     void testIsEmailInUse_excludePatronId_shouldReturnFalse_ifNoEmailFound() {
-        // Set an existing patron email whose patron has an ID with one of the prefixes defined in `ALEPH_PATRONID_PREFIXES`:
-        String searchEmail = "test@email.com";
+        // An existing patron email whose patron has an ID with one of the prefixes defined in `AlephServiceTest.alephPatronPrefixes`:
+        String searchEmail = AlephServiceTest.patronEmailUnique;
+        assertNotNull(searchEmail, "The system property 'patronEmailUnique' must be set."); 
 
-        // Set an ID of a patron who has an email defined in `searchEmail`:
-        String excludePatronId = "LIB10001";
+        // An ID of a patron who has an email defined in `searchEmail`:
+        String excludePatronId = AlephServiceTest.patronWithUniqueEmail;
+        assertNotNull(excludePatronId, "The system property 'patronWithUniqueEmail' must be set."); 
 
         boolean isEmailInUse = alephService.isEmailInUse(searchEmail, excludePatronId);
 

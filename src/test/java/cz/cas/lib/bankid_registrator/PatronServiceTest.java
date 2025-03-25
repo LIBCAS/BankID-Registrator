@@ -42,8 +42,6 @@ class PatronServiceTest
         this.appConfig = Mockito.mock(AppConfig.class);
         Mockito.when(this.appConfig.getRetirementAge()).thenReturn(PatronServiceTest.RETIREMENT_AGE);
         this.patronService = new PatronService(this.appConfig, null, null);
-
-        logger.info("For testing, retirement age set to: " + this.appConfig.getRetirementAge());
     }
 
     /**
@@ -111,23 +109,53 @@ class PatronServiceTest
     }
 
     /**
-     * Test determinePatronStatus for a patron renewing membership before expiry (future expiry date used for age check)
+     * Test determinePatronStatus for a patron renewing membership before expiry (future expiry date used for age check), calculated on the last day before patron reaches retirement age, patron reaches the retirement age after the midnight of that day.
      * 
      * <p><b>Usage:</b></p>
      * <pre>{@code
-     * ./mvnw test -Dtest=PatronServiceTest#testDeterminePatronStatus_ActiveMembershipRenewal
+     * ./mvnw test -Dtest=PatronServiceTest#testDeterminePatronStatus_ActiveMembershipRenewal_LastDayBeforeRetirement
      * }</pre>
      */
     @Test
-    void testDeterminePatronStatus_ActiveMembershipRenewal() {
+    void testDeterminePatronStatus_ActiveMembershipRenewal_LastDayBeforeRetirement() {
         Patron patron = new Patron();
         patron.setIsCasEmployee(false);
         patron.setBirthDate(getBirthDateForAge(RETIREMENT_AGE - 5)); // Patron is 5 years younger than retirement
-        patron.setExpiryDate(DateUtils.addYearsToToday(5, "dd/MM/yyyy")); // Expiry in 5 years
+        patron.setExpiryDate(DateUtils.addYearsToToday(5, "dd/MM/yyyy")); // Expiry in 5 years, on the last day before retirement
+
+        logger.info("LastDayBeforeRetirement patron.getBirthDate() " + patron.getBirthDate());
+        logger.info("LastDayBeforeRetirement patron.getExpiryDate() " + patron.getExpiryDate());
 
         PatronStatus status = this.patronService.determinePatronStatus(patron);
 
-        assertEquals(PatronStatus.STATUS_10, status, "Since the patron will be retired when the new membership starts, they should get STATUS_10.");
+        assertEquals(PatronStatus.STATUS_16, status, "Since the patron will have 1 day to retirement when the new membership starts, they should still get STATUS_16.");
+    }
+
+    /**
+     * Test determinePatronStatus for a patron renewing membership before expiry (future expiry date used for age check), calculated on the first day of patron's retirement.
+     * 
+     * <p><b>Usage:</b></p>
+     * <pre>{@code
+     * ./mvnw test -Dtest=PatronServiceTest#testDeterminePatronStatus_ActiveMembershipRenewal_FirstDayOfRetirement
+     * }</pre>
+     */
+    @Test
+    void testDeterminePatronStatus_ActiveMembershipRenewal_FirstDayOfRetirement() {
+        Patron patron = new Patron();
+        patron.setIsCasEmployee(false);
+        patron.setBirthDate(getBirthDateForAge(RETIREMENT_AGE - 5)); // Patron is 5 years younger than retirement
+
+        String lastDayBeforeRetirement = DateUtils.addYearsToToday(5, "dd/MM/yyyy");
+        String firstDayOfRetirement = DateUtils.addDaysToDateString(lastDayBeforeRetirement, 1, "dd/MM/yyyy", "dd/MM/yyyy");
+
+        patron.setExpiryDate(firstDayOfRetirement); // Expiry in 5 years + 1 day, on patron's very first retirement day
+
+        logger.info("FirstDayOfRetirement patron.getBirthDate() " + patron.getBirthDate());
+        logger.info("FirstDayOfRetirement patron.getExpiryDate() " + patron.getExpiryDate());
+
+        PatronStatus status = this.patronService.determinePatronStatus(patron);
+
+        assertEquals(PatronStatus.STATUS_10, status, "Since the patron has just reached retirement age when the new membership starts, they should get STATUS_10.");
     }
 
     /**

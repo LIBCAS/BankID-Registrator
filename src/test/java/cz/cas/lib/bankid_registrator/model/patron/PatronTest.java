@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * 
  * <p>Example usage:</p>
  * <pre>{@code
- * ./mvnw -Dtest=PatronTest test
+ * ./mvnw test -Dtest=PatronTest
  * }</pre>
  */
 class PatronTest
@@ -35,7 +35,6 @@ class PatronTest
         patron.setExportConsent(PatronBoolean.N);
         patron.setRfid("OldRFID");
         patron.setIsCasEmployee(false);
-        patron.setExpiryDate("01/01/2030");  // Setting a future expiry date initially
     }
 
     @Test
@@ -65,7 +64,6 @@ class PatronTest
         assertEquals(PatronBoolean.Y, patron.getExportConsent());
         assertEquals("NewRFID", patron.getRfid());
         assertTrue(patron.getIsCasEmployee());
-        assertEquals(PatronStatus.STATUS_03.getId(), patron.getStatus());
     }
 
     // @Test

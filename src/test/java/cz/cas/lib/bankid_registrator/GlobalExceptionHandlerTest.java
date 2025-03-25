@@ -22,7 +22,7 @@ import static org.mockito.ArgumentMatchers.eq;
  * 
  * <p>Example usage:</p>
  * <pre>{@code
- * ./mvnw -Dtest=GlobalExceptionHandlerTest test
+ * ./mvnw test -Dtest=GlobalExceptionHandlerTest
  * }</pre> 
  */
 public class GlobalExceptionHandlerTest

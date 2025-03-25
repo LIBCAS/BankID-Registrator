@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * 
  * <p>Example usage:</p>
  * <pre>{@code
- * ./mvnw -Dtest=EmailServiceTest test
+ * ./mvnw test -Dtest=EmailServiceTest
  * }</pre> */
 @SpringBootTest
 public class EmailServiceTest
