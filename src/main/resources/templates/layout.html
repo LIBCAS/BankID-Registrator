@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head th:replace="fragments/head :: head"></head>
+
+<body>
+    <header th:replace="fragments/header :: header"></header>
+
+    <aside th:replace="fragments/page-loader :: page-loader"></aside>
+    <aside layout:fragment="progres-loader"></aside>
+
+    <main layout:fragment="content"></main>
+
+    <aside id="modal-wrapper"></aside>
+    <aside id="alert-wrapper" class="fixed top-[100px] left-0 w-full z-[100] flex flex-col items-center lg:items-end px-4 md:px-12"></aside>
+
+    <footer th:replace="fragments/footer :: footer"></footer>
+
+    <div th:replace="fragments/body-bottom :: body-bottom"></div>
+</body>
+
+</html>

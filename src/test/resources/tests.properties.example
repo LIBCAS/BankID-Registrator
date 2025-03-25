@@ -1,0 +1,18 @@
+ldapUsername=
+ldapPassword=
+invalidLdapUsername=invalidUsername
+invalidLdapPassword=invalidPassword
+
+AlephServiceTest.testingPatronId=
+AlephServiceTest.useCustomAlephServiceConfig=
+AlephServiceTest.patronNonExistingEmail=non-existing@example.com
+AlephServiceTest.patronEmailInUse=
+AlephServiceTest.patronEmailUnique=
+AlephServiceTest.patronWithUniqueEmail=
+AlephServiceTest.test2.patronName=PHD. JOE DOE
+AlephServiceTest.test2.patronGivenName=JOE
+AlephServiceTest.test2.patronFamilyName=DOE
+AlephServiceTest.test2.patronMiddleName=
+AlephServiceTest.test2.patronBirthDate=YYYY-MM-DD
+
+CallbackRegistrationNewTest.patronId=

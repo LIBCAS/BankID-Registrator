@@ -1,19 +1,3 @@
-/*
- * Copyright (C) 2022 Academy of Sciences Library
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
 package cz.cas.lib.bankid_registrator.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -55,25 +39,34 @@ import cz.cas.lib.bankid_registrator.valueobjs.TokenContainer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.PostConstruct;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-/**
- *
- * @author iok
- */
 @Service
-public class MainService extends MainServiceAbstract {
-
+public class MainService extends MainServiceAbstract
+{
     @Autowired
     MainConfiguration mainConfig;
 
+    private static URI INTROSPECTION_ENDPOINT;  // Bank iD's token introspection URL
+    private static URI LOGOUT_ENDPOINT;  // Bank iD's logout URL
+
     public MainService() {
         super();
-        init();
+    }
+
+    @PostConstruct
+    protected void init() {
+        String issuerUrl = mainConfig.getIssuer_url();
+        INTROSPECTION_ENDPOINT = URI.create(issuerUrl + "/token-info");
+        LOGOUT_ENDPOINT = URI.create(issuerUrl + "/logout");
     }
 
     /**
@@ -128,7 +121,7 @@ public class MainService extends MainServiceAbstract {
 
         ClientID clientID = new ClientID(this.mainConfig.getClient_id());
 
-        List<ACR> acrList = new ArrayList();
+        List<ACR> acrList = new ArrayList<>();
         acrList.add(new ACR("loa2"));
 
         AuthenticationRequest authRequest = null;
@@ -164,11 +157,13 @@ public class MainService extends MainServiceAbstract {
 
             authRequest = authBuilder.build();
 
+            return authRequest.toQueryString();
+
         } catch (URISyntaxException ex) {
             getLogger().error(MainService.class.getName(), ex);
         }
 
-       return authRequest.toQueryString(); 
+        return null;
     }
 
     /**
@@ -207,10 +202,11 @@ public class MainService extends MainServiceAbstract {
     /**
      * 
      * @param code
+     * @throws Exception
      * @return 
      */
     @Override
-    public TokenContainer getTokenExchange(String code) {
+    public TokenContainer getTokenExchange(String code) throws Exception {
 
         Assert.notNull(code, "\"code\" is required");
 
@@ -258,12 +254,13 @@ public class MainService extends MainServiceAbstract {
                 tokenContainer.setIdToken(successResponse.getTokens().toOIDCTokens().getIDTokenString());
 
             } else {
-                // TODO resolve error
                 getLogger().error("Token endpoint failed: {}", tokenResponse.toErrorResponse().toJSONObject());
+                throw new Exception("Token endpoint failed: " + tokenResponse.toErrorResponse().toJSONObject());
             }
 
         } catch (URISyntaxException | IOException | ParseException | NullPointerException ex) {
             getLogger().error(MainService.class.getName(), ex);
+            throw new Exception(ex);
         }
 
        return tokenContainer;
@@ -304,15 +301,15 @@ public class MainService extends MainServiceAbstract {
 
     /**
      * 
-     * @param access_token
+     * @param accessToken
      * @return 
      */
     @Override
-    public Connect getUserInfo(String access_token) {
+    public Connect getUserInfo(String accessToken) {
 
-        Assert.notNull(access_token, "\"access_token\" is required");
+        Assert.notNull(accessToken, "\"accessToken\" is required");
 
-        if (!access_token.startsWith("Bearer")) {
+        if (!accessToken.startsWith("Bearer")) {
             // TODO resolve error
         }
 
@@ -322,7 +319,7 @@ public class MainService extends MainServiceAbstract {
 
         try {
 
-            BearerAccessToken token = BearerAccessToken.parse(access_token);
+            BearerAccessToken token = BearerAccessToken.parse(accessToken);
 
             HTTPResponse dataResponse = new UserInfoRequest(userInfoEndpoint, token)
                     .toHTTPRequest()
@@ -337,7 +334,10 @@ public class MainService extends MainServiceAbstract {
 //                    .addModule(new JSONPModule()).build();
 
             userInfo = mapper.convertValue(dataResponse.getContentAsJSONObject(), Connect.class);
-
+            getLogger().debug("QQQ SUB: {}", userInfo.getSub());
+            JSONObject jsonObject = new JSONObject(dataResponse.getContentAsJSONObject().toJSONString());
+            String sub = jsonObject.getString("sub");
+            getLogger().debug("WWW SUB: {}", sub);
         } catch (ParseException | IOException ex) {
             getLogger().error(MainService.class.getName(), ex);
         }
@@ -364,15 +364,15 @@ public class MainService extends MainServiceAbstract {
 
     /**
      * 
-     * @param access_token
+     * @param accessToken
      * @return 
      */
     @Override
-    public Identify getProfile(String access_token) {
+    public Identify getProfile(String accessToken) {
 
-        Assert.notNull(access_token, "\"access_token\" is required");
+        Assert.notNull(accessToken, "\"accessToken\" is required");
 
-        if (!access_token.startsWith("Bearer")) {
+        if (!accessToken.startsWith("Bearer")) {
             // TODO resolve error
         }
 
@@ -382,7 +382,7 @@ public class MainService extends MainServiceAbstract {
 
         try {
 
-            BearerAccessToken token = BearerAccessToken.parse(access_token);
+            BearerAccessToken token = BearerAccessToken.parse(accessToken);
 
             HTTPResponse dataResponse = new UserInfoRequest(endpoint, token)
                     .toHTTPRequest()
@@ -405,4 +405,63 @@ public class MainService extends MainServiceAbstract {
         return userProfile;
     }
 
+    /**
+     * Log out from Bank iD
+     * @param idToken
+     */
+    public void logout (String idToken)
+    {
+        try {
+            HTTPRequest logoutRequest = new HTTPRequest(HTTPRequest.Method.POST, LOGOUT_ENDPOINT);
+            logoutRequest.setContentType("application/x-www-form-urlencoded");
+            logoutRequest.setQuery("id_token_hint=" + idToken);
+
+            HTTPResponse response = logoutRequest.send();
+
+            if (response.getStatusCode() == HTTPResponse.SC_OK) {
+                getLogger().debug("Logged out from Bank iD");
+            } else {
+                getLogger().error("Failed to log out from Bank iD: HTTP " + response.getStatusCode());
+            }
+        } catch (Exception e) {
+            getLogger().error("Failed to log out from Bank iD", e);
+        }
+    }
+
+    /**
+     * Check if the access token is valid
+     * @param bearerAccessToken
+     * @return
+     */
+    public boolean isTokenValid(String bearerAccessToken)
+    {
+        try {
+            BearerAccessToken accessToken = BearerAccessToken.parse(bearerAccessToken);
+
+            HTTPRequest request = new HTTPRequest(HTTPRequest.Method.POST, INTROSPECTION_ENDPOINT);
+            request.setContentType("application/x-www-form-urlencoded");
+
+            String credentials = this.mainConfig.getClient_id() + ":" + this.mainConfig.getClient_secret();
+            String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+            request.setAuthorization("Basic " + encodedCredentials);
+
+            request.setQuery("token=" + accessToken + "&token_type_hint=access_token");
+
+            HTTPResponse response = request.send();
+
+            if (response.getStatusCode() == HTTPResponse.SC_OK) {
+                net.minidev.json.JSONObject jsonResponse = response.getContentAsJSONObject();
+                return jsonResponse.getAsString("active").equals("true");
+            } else {
+                getLogger().error("Failed to validate token: HTTP " + response.getStatusCode());
+                return false;
+            }
+        } catch (ParseException e) {
+            getLogger().error("Error parsing token validation response", e);
+            return false;
+        } catch (IOException e) {
+            getLogger().error("Error checking token validity", e);
+            return false;
+        }
+    }
 }

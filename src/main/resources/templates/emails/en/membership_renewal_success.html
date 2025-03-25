@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{emails/en/layout}">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <table>
+        <tr>
+            <td layout:fragment="content">
+                <h1 th:if="${!isEmployee}">Request for renewal has been sent successfully</h1>
+                <h1 th:if="${isEmployee}">Registration has been successfully renewed</h1>
+
+                <p>The login details do not change by renewing the registration.</p>
+
+                <p>Your username: <b th:text="${alephPatronBarcode}"></b></p>
+                <p><a href="https://lib.cas.cz/zapomenute-heslo/en/" target="_blank">Forgotten password</a></p>
+                <p><a href="https://katalog.lib.cas.cz/knav/MyResearch/ChangePassword" target="_blank">Change password</a></p>
+
+                <p>
+                    To log-on to the WiFi in our study room, continue to use the username:<br>
+                    <a th:href="'mailto:' + ${alephPatronBarcode} + '@study.lib.cas.cz'">
+                        <b th:text="${alephPatronBarcode} + '@study.lib.cas.cz'"></b>
+                    </a>
+                </p>
+                <p>
+                    Network: <b>KNAV_STUDY</b>
+                </p>
+
+                <p th:if="${!isEmployee}">
+                    To complete your registration renewal please pay the registration <a href="https://katalog.lib.cas.cz/knav/MyResearch/Fines" target="_blank">fee through your user account</a> (payable within 14 days). <b>Use of our services is temporarily suspended until payment is made.</b>
+                </p>
+
+                <br>
+                <h2>USER ACCOUNT</h2>
+                <p>
+                    Your registration is valid until <b th:text="${membershipExpiryDate}"></b>. Your <a href="http://katalog.lib.cas.cz/KNAV/MyResearch/Home" target="_blank">user account</a> allows you to manage your contact details, monitor your book requests, loan periods, extensions, and to book individual study rooms. If you want to be able to check your loan history, you need to give us your consent to process it.
+                </p>
+
+                <p th:if="${!isEmployee}">
+                    Your library registration can be renewed no sooner than one month before and no later than three years after it has expired. If we have your email, we will send you a notice 30 days and 15 days in advance of your registration expiry date. The library registration renewal through Bank ID is done in the same way as the registration itself. You can also do it in person at the registration desk in the library. If you terminate your employment relationship with the CAS, the right to receive preferential conditions will cease, so please notify us immediately if this happens.
+                </p>
+                <p th:if="${isEmployee}">
+                    Your library registration can be renewed no sooner than one month before and no later than three years after it has expired. If we have your email, we will send you a notice 30 days and 15 days in advance of your registration expiry date. The library registration renewal through Bank ID is done in the same way as the registration itself. You can also do it in person at the registration desk in the library. If you terminate your employment relationship with the CAS, the right to receive preferential conditions will cease, so please notify us immediately if this happens.
+                </p>
+
+                <br>
+                <h2>LIBRARY CARD</h2>
+                <p>
+                    Your registered card remains valid even after the renewal of the registration. If you have added an identifier for a different card  in the registration renewal form, use this newly registered card in the library from now on.
+                </p>
+                <p>
+                    n case you do not have any card registered with us yet, please register your valid bank card with chip and contactless technology as a library card during your first visit, alternatively you can use a chip card with a name and a photo, e.g.: ISIC card, Lítačka, Inkarta Czech Railways etc. If you do not own such a card or do not want to use it, you can have a <a href="https://lib.cas.cz/en/about-the-library/knihovni-rad/#5-1-registration-library-card" target="_blank">LCAS library card issued</a> by the registration desk staff.
+                </p>
+
+                <br>
+                <h2>ELECTRONIC INFORMATION RESOURCES</h2>
+                <p>
+                    Use the links “Remote access Shibboleth” or “Remote access EZProxy” from this <a href="https://lib.cas.cz/en/eir/" target="_blank">overview</a> to access individual EIR; do not log on directly on the webpages of the individual databases.
+                </p>
+                <p>
+                    We do not offer full access to every resource the databases have. You can find detailed information about the possibilities of their use in the overview given for each electronic information resource (the link “more information”). You can also choose whether you want to display full-text, bibliographic or citation databases and select further parameters using the search filters.
+                </p>
+                <p>
+                    The <a href="https://lib.cas.cz/en/databases-and-catalogues/digital-library-of-the-cas/" target="_blank">Digital Library of the Czech Academy of Sciences</a> provides access to digitised journals and books produced largely by the Czech Academy of Sciences and its precursors.
+                </p>
+
+                <br>
+                <h2>SEARCHING EIR</h2>
+                <h3>
+                    1. Literature on a particular topic
+                </h3>
+                <p>
+                    To determine the availability of literature on a particular topic either set your search in our <a href="https://katalog.lib.cas.cz/KNAV/" target="_blank">catalogue</a> to include EIR and restrict the results to full texts or enter the <a href="https://katalog.lib.cas.cz/KNAV/EDS/FULLTEXT" target="_blank">catalogue with the pre-set filters</a>. Then use the SFX tool (the section “Full Text”) or the attached external link to access the selected resource.
+                </p>
+                <h3>
+                    2. Specific electronic titles
+                </h3>
+                <p>
+                    You can easily check the availability of a specific title in our EIR on the <a href="https://msfx-lib-cas-cz.ezproxy.lib.cas.cz/sfxlcl3/az/KNAV" target="_blank">Library portal of e-journals and books</a> and gain access to the full text of pre-paid or purchased titles using the SFX tool (the section “Full Text”).
+                </p>
+                <h3>
+                    3. Out-of-commerce work (<a href="https://dnnt.cz/" target="_blank">DNNT</a>)
+                </h3>
+                <p>
+                    To find out about the availability of digitised works, use the <a href="https://www.knihovny.cz/Search/Results?lng=en" target="_blank">Knihovny.cz</a> portal. When the results of your query are displayed, select the option "DNNT: available for registered" in the third filter (Online Availability) on the left. After opening the record of the selected title, select the second tab "E-version" in the table at the bottom of the page and then the link “Digitalizovaný dokument” or “Online verze”.
+                </p>
+                <p>
+                    Before viewing the full text, first reconcile the terms of use and choose "Přihlásit knihovním účtem/eduID". Then select the login account of the institution "Knihovna AV ČR, v. v. i." and log in with your data.
+                </p>
+                <p>
+                    These works are made available for online reading only under a licence agreement. It is forbidden to make both digital and print copies.
+                </p>
+
+                <br>
+                <h2>REQUEST PHYSICAL DOCUMENTS</h2>
+                <p>
+                    You can request documents from our physical library collection. We will handle your requests no later than the following opening day (we will prepare documents from the main building within 30 minutes, from the external depository no later than the next opening day at 3 a.m.). You can track the status of your requests in your <a href="https://katalog.lib.cas.cz/KNAV/Holds/List" target="_blank">user account</a>. If we have your email, we will send a message when the requested document is ready to be picked up.
+                </p>
+                <p>
+                    Titles that can be lent out of the library will be put under the selfcheck device. You can find it in the central reading room directly behind the information desk. Your requests are labelled with a code consisting of the first three letters of your last name followed by the first three letters of your first name (Example John Smith -> SMIJOH). If you want to take a requested book home please use the selfcheck device to add the loan to your library account.
+                </p>
+                <p>
+                    You cannot enter requests for titles available in the free selection part of the library collection. You can find those titles right in the study room. Books with a white label on their spine with a black-printed call sign can be lent out of the library. If you want to take a book home please use the selfcheck device to add the loan to your library account.
+                </p>
+                <p>
+                    To borrow a book on the selfcheck device:
+                    <ul>
+                        <li>select the "loan" menu,</li>
+                        <li>leave your library card inserted or placed on the RFID reader (next to the selfcheck device monitor on the right),</li>
+                        <li>place individual books in the space under the monitor,</li>
+                        <li>when all books are added to your account, select the "end" menu,</li>
+                        <li>choose whether you want to print a receipt with a return date,</li>
+                        <li>take your library card.</li>
+                    </ul>
+                </p>
+                <p>
+                    Books that are only available for study within the library study room are lent out after the request has been processed against your library card at the registration desk. In the free selection, they are marked with a black label with a white call sign, or they are without a label on the spine. All magazines are only available for study within the library study room.
+                </p>
+                <p>
+                    Should you have any questions regarding the services provided, please contact us at <a href="mailto:infoknav@knav.cz">infoknav@knav.cz</a> or <a href="mailto:servis@knav.cz">servis@knav.cz</a>.
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

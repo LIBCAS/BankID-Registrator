@@ -1,29 +1,10 @@
 <!DOCTYPE html>
-<!--
-Copyright (C) 2022 Academy of Sciences Library
+<html xmlns:th="http://www.thymeleaf.org" th:replace="layout :: content">
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
--->
-<html>
-    <head>
-        <title>index</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="refresh" content="0; url=/bankid-registrator/welcome"/>
-        <link rel="shortcut icon" href="/bankid-registrator/img/favicon.ico" />
-    </head>
-    <body>
+<body>
+    <div th:fragment="content">
         <p>Redirecting to&nbsp;<a href="/bankid-registrator/welcome">Welcome page</a>&nbsp;...</p>
-    </body>
+    </div>
+</body>
+
 </html>

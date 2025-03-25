@@ -16,14 +16,16 @@
  */
 package cz.cas.lib.bankid_registrator.controllers;
 
+import java.util.Locale;
+
 /**
  *
  * @author iok
  */
 public interface ControllerIface {
 
-    public String RootEntry();
+    public String RootEntry(Locale locale);
 
-    public String IndexEntry();
+    public String IndexEntry(Locale locale);
 
 }

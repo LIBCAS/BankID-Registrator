@@ -1,26 +1,237 @@
-/*
- * Copyright (C) 2022 Academy of Sciences Library
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+/**
+ * Repository for the Aleph Oracle database.
  */
 package cz.cas.lib.bankid_registrator.dao.oracle;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
-/**
- *
- * @author iok
- */
-public interface OracleRepository extends JpaRepository<Object, Long> {
+@Repository
+@Transactional(transactionManager = "oracleTransactionManager")
+public class OracleRepository
+{
+    @PersistenceContext(unitName = "oracleEntityManager")
+    private EntityManager entityManager;
+
+    private static final Logger logger = LoggerFactory.getLogger(OracleRepository.class);
+
+    /**
+     * Search for an Aleph patron based on the given name and birth date.
+     * @param name The patron's name.
+     * @param birthDate The patron's birth date.
+     * @return An Optional containing the Aleph patron's ID if found, or empty if not.
+     */
+    public Optional<String> getPatronIdByNameAndBirth(String name, String birthDate) {
+        String sql = "SELECT A.Z303_REC_KEY AS patron_id " +
+                    "FROM KNA50.Z303 A, KNA50.Z305 B, KNA50.Z308 C " +
+                    "WHERE A.Z303_REC_KEY = SUBSTR(B.Z305_REC_KEY, 1, 12) " +
+                    "AND A.Z303_REC_KEY = C.Z308_ID " +
+                    "AND A.Z303_BIRTH_DATE = :birthDate " +
+                    "AND A.Z303_NAME = :name " +
+                    "AND (C.Z308_REC_KEY LIKE '00KNAV%' OR C.Z308_REC_KEY LIKE '00KNBD%') " +
+                    "AND ROWNUM <= 1";
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("name", name);
+        query.setParameter("birthDate", birthDate);
+
+        try {
+            String patronId = ((String) query.getSingleResult()).trim();
+            return Optional.of(patronId);
+        } catch (NoResultException e) {
+            return Optional.empty();
+        }
+    }
+
+     /**
+     * Gets the number of matches with the given name and birth date.
+     * @param name
+     * @param birthDate
+     * @return Number of matches.
+     */
+    public int getPatronRowsCount(String name, String birthDate)
+    {
+        String sql = "SELECT COUNT(*) AS count " +
+                     "FROM KNA50.Z303 A, KNA50.Z305 B, KNA50.Z308 C " +
+                     "WHERE A.Z303_REC_KEY = SUBSTR(B.Z305_REC_KEY, 1, 12) " +
+                     "AND A.Z303_REC_KEY = C.Z308_ID " +
+                     "AND A.Z303_BIRTH_DATE = :birthDate " +
+                     "AND A.Z303_NAME = :name " +
+                     "AND C.Z308_REC_KEY LIKE '00KNAV%'";
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("name", name);
+        query.setParameter("birthDate", birthDate);
+        return ((Number) query.getSingleResult()).intValue();
+    }
+
+    /**
+     * Checks if a RFID is already in use by any patron except the given one (if any).
+     * @param rfid
+     * @param patronId
+     * @return Number of matches.
+     */
+    public int getRFIDRowsCount(String rfid, @Nullable String patronId)
+    {
+        String sanitizedRfid = rfid.replace("%", "\\%").replace("_", "\\_");
+        String sanitizedPatronId = (patronId != null) ? patronId.replace("%", "\\%").replace("_", "\\_") : null;
+    
+        String sql = "SELECT COUNT(*) AS count " +
+                     "FROM KNA50.Z308 " +
+                     "WHERE Z308_REC_KEY LIKE :rfid ESCAPE '\\'";
+    
+        if (sanitizedPatronId != null) {
+            sql += " AND Z308_ID NOT LIKE :patronId ESCAPE '\\'";
+        }
+    
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("rfid", "03" + sanitizedRfid + " %");
+    
+        if (sanitizedPatronId != null) {
+            query.setParameter("patronId", sanitizedPatronId + " %");
+        }
+    
+        return ((Number) query.getSingleResult()).intValue();
+    }
+
+    /**
+     * Checks if the given email is already in use by any patron except the given one (if any).
+     * @param email The email address to check.
+     * @param patronId The patron ID to exclude from the check.
+     * @param limitPatronPrefixes Array of patron ID prefixes to limit the query to.
+     * @return true if the email exists, false otherwise.
+     */
+    public boolean isExistingPatronEmail(String email, @Nullable String patronId, @Nullable String[] limitPatronPrefixes)
+    {
+        String sanitizedPatronId = (patronId != null) ? patronId.replace("%", "\\%").replace("_", "\\_") : null;
+
+        String sql = "SELECT COUNT(*) AS count " +
+                    "FROM KNA50.Z304 " +
+                    "WHERE LOWER(Z304_EMAIL_ADDRESS) = LOWER(:email)";
+
+        if (sanitizedPatronId != null) {
+            sql += " AND Z304_REC_KEY NOT LIKE :patronId ESCAPE '\\'";
+        }
+
+        if (limitPatronPrefixes != null && limitPatronPrefixes.length > 0) {
+            sql += " AND (" + 
+                Arrays.stream(limitPatronPrefixes)
+                    .map(prefix -> "Z304_REC_KEY LIKE :prefix_" + prefix.replaceAll("[^a-zA-Z0-9]", ""))
+                    .collect(Collectors.joining(" OR ")) +
+               ")";
+        }
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("email", email);
+
+        if (sanitizedPatronId != null) {
+            query.setParameter("patronId", sanitizedPatronId + " %");
+        }
+
+        if (limitPatronPrefixes != null && limitPatronPrefixes.length > 0) {
+            for (String prefix : limitPatronPrefixes) {
+                String safePrefix = prefix.replaceAll("[^a-zA-Z0-9]", "");
+                query.setParameter("prefix_" + safePrefix, prefix + "%");
+            }
+        }
+
+        int count = ((Number) query.getSingleResult()).intValue();
+
+        logger.info("Check email occurrence: email={}, patronId={}, limitPatronPrefixes={}, count={}", email, patronId, limitPatronPrefixes, count);
+
+        return count > 0;
+    }
+
+    /**
+     * Gets the maximum number from the Z303_REC_KEY column of rows
+     * where Z303_REC_KEY starts with 'KNBD' followed by numeric characters.
+     * @return Maximum number.
+     */
+    public Long getMaxBankIdZ303RecKey()
+    {
+        String sql = "SELECT MAX(TO_NUMBER(TRIM(SUBSTR(Z303_REC_KEY, 5)))) " +
+                     "FROM KNA50.Z303 " +
+                     "WHERE REGEXP_LIKE(TRIM(Z303_REC_KEY), '^KNBD[0-9]+$')";
+
+        Query query = entityManager.createNativeQuery(sql);
+        Object result = query.getSingleResult();
+
+        return (result != null) ? ((Number) result).longValue() : 0L;
+    }
+
+    /**
+     * Deletes a record of 07 type from the z308 table for a specific patron.
+     *
+     * @param patronId The ID of the record to delete.
+     *
+     * @return The number of rows affected by the DELETE operation.
+     */
+    public int deleteZ308RecordType07(String patronId)
+    {
+        String sql = "DELETE FROM KNA50.Z308 WHERE Z308_ID LIKE :patronId AND Z308_REC_KEY LIKE '07%'";
+        
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("patronId", patronId + " %");
+
+        return ((Number) query.executeUpdate()).intValue();
+    }
+
+    /**
+     * Retrieves data of multiple Aleph patrons at once
+     * @param patronIds
+     * @return
+     */
+    public List<Object[]> getBulkPatronsData(List<String> patronIds)
+    {
+        if (patronIds == null || patronIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String feeDescr = "Bank iD";
+
+        String sql = 
+            "SELECT " + 
+            "    TRIM(SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1)) AS patron_id, " + 
+            "    COALESCE(Z31.Z31_STATUS, 'EXEMPT') AS payment_status, " + 
+            "    Z303.Z303_NAME AS fullname, " + 
+            "    Z304.Z304_EMAIL_ADDRESS AS email, " + 
+            "    Z304.Z304_SMS_NUMBER AS phone, " + 
+            "    Z31.Z31_PAYMENT_CATALOGER AS cataloger, " + 
+            "    Z31.Z31_UPD_TIME_STAMP AS modified_at " + 
+            "FROM KNA50.Z303 Z303 " + 
+            "JOIN KNA50.Z304 Z304 ON " + 
+            "    SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) = SUBSTR(Z304.Z304_REC_KEY, 1, INSTR(Z304.Z304_REC_KEY, ' ') - 1) " + 
+            "LEFT JOIN ( " + 
+            "    SELECT " + 
+            "        Z31.*, " + 
+            "        ROW_NUMBER() OVER (PARTITION BY SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) ORDER BY Z31.Z31_DATE_X DESC) AS rn " + 
+            "    FROM KNA50.Z31 Z31 " + 
+            "    WHERE Z31.Z31_DESCRIPTION = :feeDescr " + 
+            ") Z31 ON " + 
+            "    SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) = SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) " + 
+            "    AND Z31.rn = 1 " + 
+            "WHERE Z304.Z304_ADDRESS_TYPE = 1 " + 
+            "AND SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) IN (:patronIds)";
+
+        Query query = entityManager.createNativeQuery(sql);
+        query.setParameter("feeDescr", feeDescr);
+        query.setParameter("patronIds", patronIds);
+
+        @SuppressWarnings("unchecked")
+        List<Object[]> result = query.getResultList();
+
+        return result;
+    }
 }

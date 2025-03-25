@@ -16,12 +16,15 @@
  */
 package cz.cas.lib.bankid_registrator.configurations;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import cz.cas.lib.bankid_registrator.util.DateUtils;
 import java.util.List;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -30,10 +33,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @ConfigurationProperties("bankid-registrator")
-public class MainConfiguration extends ConfigurationAbstract {
-
-    private final String propertyPrefix = "bankid-registrator";
-
+public class MainConfiguration extends ConfigurationAbstract
+{
     @NotBlank
     private String client_id;
 
@@ -71,6 +72,18 @@ public class MainConfiguration extends ConfigurationAbstract {
     @Pattern(regexp="^[0-9]{1,}$")
     private String length_of_registration;
 
+    /**
+     * The path to the directory where uploaded files will be stored.
+     * This path can be absolute or relative to the application's working directory.
+     */
+    @NotBlank
+    private String storage_path;
+
+     @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
+
     public MainConfiguration() {
         super();
         init();
@@ -82,7 +95,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setClient_id(String client_id) {
         this.client_id = client_id;
-        getLogger().debug("Set {}.client_id={}", this.propertyPrefix, this.client_id);
     }
 
     /**
@@ -99,7 +111,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setClient_secret(String client_secret) {
         this.client_secret = client_secret;
-        getLogger().debug("Set {}.client_secret={}", this.propertyPrefix, this.client_secret);
     }
 
     /**
@@ -116,7 +127,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setClient_scopes(List<String> client_scopes) {
         this.client_scopes = client_scopes;
-        getLogger().debug("Set {}.client_scopes={}", this.propertyPrefix, this.client_scopes.toString());
     }
 
     /**
@@ -133,7 +143,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setIssuer_url(String issuer_url) {
         this.issuer_url = issuer_url;
-        getLogger().debug("Set {}.issuer_url={}", this.propertyPrefix, this.issuer_url);
     }
 
     /**
@@ -150,7 +159,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setProfile_endpoint(String profile_endpoint) {
         this.profile_endpoint = profile_endpoint;
-        getLogger().debug("Set {}.profile_endpoint={}", this.propertyPrefix, this.profile_endpoint);
     }
 
     /**
@@ -167,7 +175,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setRedirect_url(String redirect_url) {
         this.redirect_url = redirect_url;
-        getLogger().debug("Set {}.redirect_url={}", this.propertyPrefix, this.redirect_url);
     }
 
     /**
@@ -184,7 +191,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setUse_refresh_token(boolean use_refresh_token) {
         this.use_refresh_token = use_refresh_token;
-        getLogger().debug("Set {}.use_refresh_token={}", this.propertyPrefix, this.use_refresh_token);
     }
 
     /**
@@ -201,7 +207,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setRewrite_aleph_batch_xml_header(boolean rewrite_aleph_batch_xml_header) {
         this.rewrite_aleph_batch_xml_header = rewrite_aleph_batch_xml_header;
-        getLogger().debug("Set {}.rewrite_aleph_batch_xml_header={}", this.propertyPrefix, this.rewrite_aleph_batch_xml_header);
     }
 
     /**
@@ -218,7 +223,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setId_prefix(String id_prefix) {
         this.id_prefix = id_prefix;
-        getLogger().debug("Set {}.id_prefix={}", this.propertyPrefix, this.id_prefix);
     }
 
     /**
@@ -235,7 +239,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setBarcode_prefix(String barcode_prefix) {
         this.barcode_prefix = barcode_prefix;
-        getLogger().debug("Set {}.barcode_prefix={}", this.propertyPrefix, this.barcode_prefix);
     }
 
     /**
@@ -252,7 +255,6 @@ public class MainConfiguration extends ConfigurationAbstract {
      */
     public synchronized void setLength_of_registration(String length_of_registration) {
         this.length_of_registration = length_of_registration;
-        getLogger().debug("Set {}.length_of_registration={}", this.propertyPrefix, this.length_of_registration);
     }
 
     /**
@@ -263,4 +265,24 @@ public class MainConfiguration extends ConfigurationAbstract {
         return this.length_of_registration;
     }
 
+    /**
+     * 
+     * @param storage_path 
+     */
+    public synchronized void setStorage_path(String storage_path) {
+        this.storage_path = storage_path;
+    }
+
+    /**
+     * 
+     * @return 
+     */
+    public synchronized String getStorage_path() {
+        return this.storage_path;
+    }
+
+    @Bean
+    public DateUtils dateUtils() {
+        return new DateUtils();
+    }
 }

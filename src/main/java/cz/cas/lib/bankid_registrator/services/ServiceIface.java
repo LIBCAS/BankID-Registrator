@@ -16,6 +16,8 @@
  */
 package cz.cas.lib.bankid_registrator.services;
 
+import org.slf4j.Logger;
+
 /**
  *
  * @author iok

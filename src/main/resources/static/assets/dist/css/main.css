@@ -1,0 +1,161 @@
+body > main {
+    margin-top: 5em;
+    padding: 2em 0;
+}
+
+.page-callback main a, nav span a, main a {
+    color: #0172b6;
+    text-decoration: underline;
+}
+
+.page-callback main a:hover, nav span a:hover, main a:hover {
+    color: #000000;
+}
+
+.no-link {
+    text-decoration: none !important;
+}
+
+.no-link:hover {
+    text-decoration: none !important;
+    color: inherit !important;
+}
+
+a.disabled {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
+#files-control {
+    display: none;
+}
+
+#files {
+    display: block;
+    width: 100%;
+}
+
+.filepond--drop-label {
+    color: #4c4e53;
+}
+
+.filepond--label-action {
+    text-decoration-color: #babdc0;
+}
+
+.filepond--panel-root {
+    border-radius: 2em;
+    background-color: #edf0f4;
+    height: 1em;
+}
+
+.filepond--item-panel {
+    background-color: #595e68;
+}
+
+.filepond--drip-blob {
+    background-color: #7f8a9a;
+}
+
+.filepond--credits {
+    display: none;
+}
+
+/* Progress loader */
+.progress-loader {
+    min-width: 200px;
+    text-align: center;
+    margin: 10rem auto 5rem;
+}
+
+.progress-loader__circle {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    margin: 0 auto;
+}
+
+.progress-loader__circle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(#0172B6 var(--progress, 0%), #f0f0f0 0);
+    mask: radial-gradient(farthest-side, transparent calc(100% - 16px), #000 calc(100% - 15px));
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 16px), #000 calc(100% - 15px));
+}
+
+.progress-loader__circle-inner {
+    width: calc(100% - 30px);
+    height: calc(100% - 30px);
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.progress-loader__circle-number {
+    font-size: 2.8em;
+    font-weight: bold;
+}
+
+.progress-loader__text {
+    text-align: center;
+    margin-top: 20px;
+    line-height: 1.7;
+}
+
+/* Address autocomplete */
+@media only screen and (max-width: 600px) {
+    .autoComplete_wrapper > input {
+        width: 100% !important;
+    }
+}
+
+.page--minh70vh main {
+    min-height: 70vh;
+}
+
+.page--minh80vh main {
+    min-height: 80vh;
+}
+
+@media (min-width: 640px) {
+
+    /* SM */
+    body > main {
+        margin-top: 11em;
+    }
+}
+
+@media (min-width: 768px) {
+
+    /* MD */
+    body > main {
+        margin-top: 7em;
+    }
+}
+
+@media print {
+
+    .no-print {
+        display: none !important;
+    }
+
+    .print-flex {
+        display: flex !important;
+    }
+
+    .print-block {
+        display: block !important;
+    }
+
+    .page--minh70vh main {
+        min-height: unset;
+    }
+}  

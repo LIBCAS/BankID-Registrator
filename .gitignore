@@ -5,6 +5,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+src/test/resources/tests.properties
 
 ### STS ###
 .apt_generated
@@ -36,8 +37,15 @@ build/
 
 
 /logs/
+/storage/
 
 .m2/
 .svn/
 
 Procfile
+
+.local
+.bash_history
+.pki
+.cache
+.config

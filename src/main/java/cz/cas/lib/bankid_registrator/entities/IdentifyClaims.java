@@ -147,7 +147,7 @@ public class IdentifyClaims implements Claims {
     public String getMiddle_name() { return this.middle_name; }
     public String getPhone_number() { return this.phone_number; }
     public String getEmail() { return this.email; }
-    public List<Address> getAddresses() { return this.addresses; }
+    public ArrayList<Address> getAddresses() { return this.addresses; }
     public String getBirthdate() { return this.birthdate; }
     public int getAge() { return this.age; }
     public String getDate_of_death() { return this.date_of_death; }

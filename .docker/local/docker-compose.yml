@@ -1,23 +1,58 @@
-version: '3.1'
-
 services:
   app:
+    container_name: bankid-app
     build:
       context: .
       dockerfile: Dockerfile
     env_file: .env
+    shm_size: '2gb'
     environment:
       LOG_PATH: /app/logs
+      STORAGE_PATH: /app/storage
       DATASOURCE_JDBC_URL: jdbc:mariadb://database:${MYSQL_PORT}/${MYSQL_DATABASE}
-      DATASOURCE_USERNAME: ${MYSQL_USER}
+      DATASOURCE_USERNAME: ${MYSQL_USERNAME}
       DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      ORACLE_DATASOURCE_JDBC_URL: jdbc:oracle:thin:@//${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_SERVICE_NAME}
+      ORACLE_DATASOURCE_USERNAME: ${ORACLE_USERNAME}
+      ORACLE_DATASOURCE_PASSWORD: ${ORACLE_PASSWORD}
       BANKID_CLIENT_ID: ${BANKID_CLIENT_ID}
       BANKID_CLIENT_SECRET: ${BANKID_CLIENT_SECRET}
       BANKID_REDIRECT_URI: ${BANKID_REDIRECT_URI}
+      BANKID_REDIRECT_ISSUER_URL: ${BANKID_REDIRECT_ISSUER_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ALEPH_SERVICE_HOST: ${ALEPH_SERVICE_HOST}
+      ALEPH_SERVICE_PORT: ${ALEPH_SERVICE_PORT}
+      ALEPH_SERVICE_REST_API_URI: ${ALEPH_SERVICE_REST_API_URI}
+      ALEPH_SERVICE_WWWUSER: ${ALEPH_SERVICE_WWWUSER}
+      ALEPH_SERVICE_WWWPASSWD: ${ALEPH_SERVICE_WWWPASSWD}
+      ALEPH_HOME_LIBRARY: ${ALEPH_HOME_LIBRARY}
+      ALEPH_ADM_LIBRARY: ${ALEPH_ADM_LIBRARY}
+      ALEPH_BIB_LIBRARY: ${ALEPH_BIB_LIBRARY}
+      ALEPH_LIBRARIES: ${ALEPH_LIBRARIES}
+      ALEPH_SYSNO: ${ALEPH_SYSNO}
+      ALEPH_ITEM_BARCODE_PREFIX: ${ALEPH_ITEM_BARCODE_PREFIX}
+      ALEPH_PATRONID_PREFIXES: ${ALEPH_PATRONID_PREFIXES}
+      LDAP_SERVICE_URL: ${LDAP_SERVICE_URL}
+      LDAP_SERVICE_BASE_DN: ${LDAP_SERVICE_BASE_DN}
+      LDAP_SERVICE_USER_DN: ${LDAP_SERVICE_USER_DN}
+      LDAP_SERVICE_PASSWORD: ${LDAP_SERVICE_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS}
+      API_MAPYCZ_KEY: ${API_MAPYCZ_KEY}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      TZ: Europe/Prague
     volumes:
       - ./../../:/app
       - ./../../.m2:/root/.m2
-      - ./../../logs:/app/logs
+      - ./../../storage:/app/storage
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
     working_dir: /app
     command: sh ./.docker/local/run.sh
     ports:
@@ -27,9 +62,10 @@ services:
     depends_on:
       - database
     networks:
-      - spring-network
+      - bankid-network
 
   database:
+    container_name: bankid-database
     image: mariadb:10.6.4-focal
     restart: unless-stopped
     ports:
@@ -38,14 +74,15 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
       MYSQL_DATABASE: '${MYSQL_DATABASE}'
-      MYSQL_USER: '${MYSQL_USER}'
+      MYSQL_USER: '${MYSQL_USERNAME}'
       MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
     volumes:
       - db-data:/var/lib/mysql
     networks:
-      - spring-network
+      - bankid-network
 
   phpmyadmin:
+    container_name: bankid-phpmyadmin
     depends_on:
       - database
     image: phpmyadmin/phpmyadmin
@@ -57,11 +94,22 @@ services:
       PMA_HOST: database
       MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
     networks:
-      - spring-network
+      - bankid-network
+
+  mailhog:
+    container_name: bankid-mailhog
+    image: mailhog/mailhog
+    restart: unless-stopped
+    ports:
+      - ${MAILHOG_PORT_HOST}:${MAILHOG_PORT}
+      - ${MAILHOG_WEB_PORT_HOST}:${MAILHOG_WEB_PORT}
+    env_file: .env
+    networks:
+      - bankid-network
 
 volumes:
   db-data:
 
 networks:
-  spring-network:
+  bankid-network:
     driver: bridge
