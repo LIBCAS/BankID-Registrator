@@ -28,6 +28,12 @@ public class OracleRepository
     private static final Logger logger = LoggerFactory.getLogger(OracleRepository.class);
 
     /**
+     * Oracle limits IN clauses to 1000 elements (ORA-01795).
+     * This constant defines the maximum batch size for IN clause parameters.
+     */
+    private static final int ORACLE_IN_CLAUSE_LIMIT = 1000;
+
+    /**
      * Search for an Aleph patron based on the given name and birth date.
      * @param name The patron's name.
      * @param birthDate The patron's birth date.
@@ -189,7 +195,8 @@ public class OracleRepository
     }
 
     /**
-     * Retrieves data of multiple Aleph patrons at once
+     * Retrieves data of multiple Aleph patrons at once.
+     * Automatically batches the patron IDs to avoid Oracle's 1000-element IN clause limit (ORA-01795).
      * @param patronIds
      * @return
      */
@@ -225,12 +232,19 @@ public class OracleRepository
             "WHERE Z304.Z304_ADDRESS_TYPE = 1 " + 
             "AND SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1) IN (:patronIds)";
 
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("feeDescr", feeDescr);
-        query.setParameter("patronIds", patronIds);
+        List<Object[]> result = new java.util.ArrayList<>();
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> result = query.getResultList();
+        for (int i = 0; i < patronIds.size(); i += ORACLE_IN_CLAUSE_LIMIT) {
+            List<String> batch = patronIds.subList(i, Math.min(i + ORACLE_IN_CLAUSE_LIMIT, patronIds.size()));
+
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("feeDescr", feeDescr);
+            query.setParameter("patronIds", batch);
+
+            @SuppressWarnings("unchecked")
+            List<Object[]> batchResult = query.getResultList();
+            result.addAll(batchResult);
+        }
 
         return result;
     }
