@@ -1,0 +1,165 @@
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+
+    <head></head>
+
+    <body class="page-dashboard page-vouchers-create">
+        <main layout:fragment="content" class="mb-10 px-10 text-center mx-auto">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="${pageTitle}"></h1>
+
+            <!-- Success / error messages -->
+            <div th:if="${successMessage}" class="mb-4 p-4 text-sm text-green-800 bg-green-100 rounded-lg">
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="mb-4 p-4 text-sm text-red-800 bg-red-100 rounded-lg">
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <!-- Generated codes display -->
+            <div th:if="${generatedCodes}" class="mb-4 p-4 text-sm text-blue-800 bg-blue-100 rounded-lg text-left">
+                <p class="font-bold mb-2" th:text="#{voucher.admin.generatedCodes}"></p>
+                <code class="block break-all" th:text="${generatedCodes}"></code>
+            </div>
+
+            <!-- Create / Bulk Generate section -->
+            <div class="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Create single voucher -->
+                <div class="bg-white shadow-md rounded-lg p-6 text-left">
+                    <h2 class="text-xl font-bold mb-4" th:text="#{voucher.admin.createSingle}"></h2>
+                    <form th:action="@{/dashboard/vouchers/create}" method="POST" class="space-y-4">
+                        <div>
+                            <label for="create-code" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.code}"></label>
+                            <input id="create-code" type="text" name="code" maxlength="50"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" 
+                                th:placeholder="#{voucher.admin.codePlaceholder}" />
+                        </div>
+                        <div>
+                            <label for="create-type" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.type}"></label>
+                            <select id="create-type" name="type" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                <option th:each="vt : ${voucherTypes}" th:value="${vt}" th:text="#{${'voucher.type.' + vt}}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="create-recipientType" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.recipientType}"></label>
+                            <select id="create-recipientType" name="recipientType" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                <option value="" th:text="#{voucher.recipientType.STANDARD}"></option>
+                                <option th:each="vrt : ${voucherRecipientTypes}" th:value="${vrt}" th:text="#{${'voucher.recipientType.' + vrt}}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="create-discountType" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.discountType}"></label>
+                            <select id="create-discountType" name="discountType" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                <option th:each="dt : ${discountTypes}" th:value="${dt}" th:text="#{${'voucher.discountType.' + dt}}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="create-discountValue" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.discountValue}"></label>
+                            <input id="create-discountValue" type="number" name="discountValue" required min="0.01" step="0.01"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label for="create-maxUses" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.maxUses}"></label>
+                            <input id="create-maxUses" type="number" name="maxUses" value="1" min="0"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                            <p class="text-xs text-gray-500 mt-1" th:text="#{voucher.admin.maxUsesHint}"></p>
+                        </div>
+                        <div>
+                            <label for="create-expiresAt" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.expiresAt}"></label>
+                            <input id="create-expiresAt" type="datetime-local" name="expiresAt"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label for="create-note" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.note}"></label>
+                            <textarea id="create-note" name="note" rows="2" maxlength="500"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                        </div>
+                        <div>
+                            <label for="create-buyer" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.buyer}"></label>
+                            <textarea id="create-buyer" name="buyer" rows="1" maxlength="500"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                        </div>
+                        <div>
+                            <label for="create-paymentMethod" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.paymentMethod}"></label>
+                            <textarea id="create-paymentMethod" name="paymentMethod" rows="1" maxlength="500"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                        </div>
+                        <div>
+                            <label for="create-invoice" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.invoice}"></label>
+                            <textarea id="create-invoice" name="invoice" rows="1" maxlength="500"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                        </div>
+                        <button type="submit" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600" th:text="#{voucher.admin.createBtn}"></button>
+                    </form>
+                </div>
+
+                <!-- Bulk generate -->
+                <div class="bg-white shadow-md rounded-lg p-6 text-left">
+                    <h2 class="text-xl font-bold mb-4" th:text="#{voucher.admin.bulkGenerate}"></h2>
+                    <form th:action="@{/dashboard/vouchers/bulk-generate}" method="POST" class="space-y-4">
+                        <div>
+                            <label for="bulk-count" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.count}"></label>
+                            <input id="bulk-count" type="number" name="count" required min="1" max="500" value="10"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label for="bulk-type" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.type}"></label>
+                            <select id="bulk-type" name="type" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                <option th:each="vt : ${voucherTypes}" th:value="${vt}" th:text="#{${'voucher.type.' + vt}}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="bulk-recipientType" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.recipientType}"></label>
+                            <select id="bulk-recipientType" name="recipientType" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                <option value="" th:text="#{voucher.recipientType.STANDARD}"></option>
+                                <option th:each="vrt : ${voucherRecipientTypes}" th:value="${vrt}" th:text="#{${'voucher.recipientType.' + vrt}}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="bulk-discountType" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.discountType}"></label>
+                            <select id="bulk-discountType" name="discountType" required class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm">
+                                <option th:each="dt : ${discountTypes}" th:value="${dt}" th:text="#{${'voucher.discountType.' + dt}}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="bulk-discountValue" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.discountValue}"></label>
+                            <input id="bulk-discountValue" type="number" name="discountValue" required min="0.01" step="0.01"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label for="bulk-maxUses" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.maxUses}"></label>
+                            <input id="bulk-maxUses" type="number" name="maxUses" value="1" min="0"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                            <p class="text-xs text-gray-500 mt-1" th:text="#{voucher.admin.maxUsesHint}"></p>
+                        </div>
+                        <div>
+                            <label for="bulk-expiresAt" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.expiresAt}"></label>
+                            <input id="bulk-expiresAt" type="datetime-local" name="expiresAt"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label for="bulk-note" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.note}"></label>
+                            <textarea id="bulk-note" name="note" rows="2" maxlength="500"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                        </div>
+                        <div>
+                            <label for="bulk-buyer" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.buyer}"></label>
+                            <textarea id="bulk-buyer" name="buyer" rows="1" maxlength="500"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                        </div>
+                        <div>
+                            <label for="bulk-paymentMethod" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.paymentMethod}"></label>
+                            <textarea id="bulk-paymentMethod" name="paymentMethod" rows="1" maxlength="500"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                        </div>
+                        <div>
+                            <label for="bulk-invoice" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.invoice}"></label>
+                            <textarea id="bulk-invoice" name="invoice" rows="1" maxlength="500"
+                                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"></textarea>
+                        </div>
+                        <button type="submit" class="bg-green-500 text-white p-2 rounded hover:bg-green-600" th:text="#{voucher.admin.bulkGenerateBtn}"></button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </body>
+
+</html>

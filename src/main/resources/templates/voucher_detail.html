@@ -1,0 +1,159 @@
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+
+    <head></head>
+
+    <body class="page-dashboard page-voucher-detail">
+        <main layout:fragment="content" class="mb-10 px-10 text-center mx-auto">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="${pageTitle}"></h1>
+
+            <!-- Navigation -->
+            <div class="mb-6 flex items-center justify-center gap-4">
+                <a th:href="@{/dashboard/vouchers}" class="bg-gray-500 text-white p-2 rounded no-underline hover:bg-gray-600" th:text="#{voucher.admin.backToList}"></a>
+            </div>
+
+            <!-- Success / error messages -->
+            <div th:if="${successMessage}" class="mb-4 p-4 text-sm text-green-800 bg-green-100 rounded-lg">
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="mb-4 p-4 text-sm text-red-800 bg-red-100 rounded-lg">
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <!-- Voucher details -->
+            <div class="mb-8 max-w-2xl mx-auto bg-white shadow-md rounded-lg p-6 text-left">
+                <h2 class="text-xl font-bold mb-4" th:text="#{voucher.admin.detail.info}"></h2>
+                <dl class="grid grid-cols-2 gap-4">
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.code}"></dt>
+                    <dd class="font-mono text-lg font-bold" th:text="${voucher.code}"></dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.type}"></dt>
+                    <dd th:text="#{${'voucher.type.' + voucher.type}}"></dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.recipientType}"></dt>
+                    <dd>
+                        <span th:if="${voucher.recipientType == null}" th:text="#{voucher.recipientType.STANDARD}"></span>
+                        <span th:if="${voucher.recipientType != null}" th:text="#{${'voucher.recipientType.' + voucher.recipientType}}"></span>
+                    </dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.discountType}"></dt>
+                    <dd th:text="#{${'voucher.discountType.' + voucher.discountType}}"></dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.discountValue}"></dt>
+                    <dd>
+                        <span th:text="${voucher.discountValue}"></span>
+                        <span th:if="${voucher.discountType.name() == 'PERCENTAGE'}">%</span>
+                        <span th:if="${voucher.discountType.name() == 'FIXED_CZK'}" th:text="#{message.czk}"></span>
+                    </dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.usesColumn}"></dt>
+                    <dd>
+                        <span th:text="${voucher.currentUses}"></span> / <span th:text="${voucher.maxUses == 0} ? '∞' : ${voucher.maxUses}"></span>
+                    </dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.expiresAt}"></dt>
+                    <dd th:text="${voucher.expiresAt != null} ? ${dateUtils.convertDateTimeFormat(voucher.expiresAt)} : '-'"></dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.status}"></dt>
+                    <dd>
+                        <span th:if="${voucher.status.name() == 'ACTIVE'}" class="text-green-600 font-bold" th:text="#{voucher.status.ACTIVE}"></span>
+                        <span th:if="${voucher.status.name() == 'INACTIVE'}" class="text-red-600 font-bold" th:text="#{voucher.status.INACTIVE}"></span>
+                        <span th:if="${voucher.status.name() == 'EXPIRED'}" class="text-orange-600 font-bold" th:text="#{voucher.status.EXPIRED}"></span>
+                        <span th:if="${voucher.status.name() == 'APPLIED'}" class="text-blue-600 font-bold" th:text="#{voucher.status.APPLIED}"></span>
+                    </dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.patronIds}"></dt>
+                    <dd th:text="${voucher.patronIds ?: '-'}"></dd>
+
+                    <dt class="font-medium text-gray-700" th:text="#{voucher.admin.firstUsedAt}"></dt>
+                    <dd th:text="${voucher.firstUsedAt != null} ? ${dateUtils.convertDateTimeFormat(voucher.firstUsedAt)} : '-'"></dd>
+                
+                    <dt class="font-medium text-gray-700" th:text="#{message.createdAt}"></dt>
+                    <dd th:text="${dateUtils.convertDateTimeFormat(voucher.createdAt)}"></dd>
+                </dl>
+
+                <!-- Editable fields -->
+                <form th:action="@{/dashboard/vouchers/{id}/update(id=${voucher.id})}" method="POST" class="mt-6">
+                    <dl class="grid grid-cols-2 gap-4">
+                        <dt class="font-medium text-gray-700" th:text="#{voucher.admin.note}"></dt>
+                        <dd>
+                            <textarea name="note" rows="2" maxlength="500" class="w-full p-1 border border-gray-300 rounded-md text-sm" th:text="${voucher.note}"></textarea>
+                        </dd>
+
+                        <dt class="font-medium text-gray-700" th:text="#{voucher.admin.recipientType}"></dt>
+                        <dd>
+                            <select name="recipientType" class="w-full p-1 border border-gray-300 rounded-md text-sm">
+                                <option value="" th:selected="${voucher.recipientType == null}" th:text="#{voucher.recipientType.STANDARD}"></option>
+                                <option th:each="vrt : ${voucherRecipientTypes}" th:value="${vrt}" th:selected="${voucher.recipientType != null and voucher.recipientType.name() == vrt.name()}" th:text="#{${'voucher.recipientType.' + vrt}}"></option>
+                            </select>
+                        </dd>
+
+                        <dt class="font-medium text-gray-700" th:text="#{voucher.admin.buyer}"></dt>
+                        <dd>
+                            <textarea name="buyer" rows="1" maxlength="500" class="w-full p-1 border border-gray-300 rounded-md text-sm" th:text="${voucher.buyer}"></textarea>
+                        </dd>
+
+                        <dt class="font-medium text-gray-700" th:text="#{voucher.admin.paymentMethod}"></dt>
+                        <dd>
+                            <textarea name="paymentMethod" rows="1" maxlength="500" class="w-full p-1 border border-gray-300 rounded-md text-sm" th:text="${voucher.paymentMethod}"></textarea>
+                        </dd>
+
+                        <dt class="font-medium text-gray-700" th:text="#{voucher.admin.invoice}"></dt>
+                        <dd>
+                            <textarea name="invoice" rows="1" maxlength="500" class="w-full p-1 border border-gray-300 rounded-md text-sm" th:text="${voucher.invoice}"></textarea>
+                        </dd>
+                    </dl>
+                    <div class="mt-4">
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" th:text="#{message.save}"></button>
+                    </div>
+                </form>
+
+                <!-- Action buttons -->
+                <div class="mt-6 flex gap-4">
+                    <a th:if="${voucher.status.name() == 'ACTIVE'}" th:href="@{/dashboard/vouchers/{id}/deactivate(id=${voucher.id})}"
+                       class="bg-red-500 text-white p-2 rounded no-underline hover:bg-red-600"
+                       th:text="#{voucher.admin.deactivate}"
+                       onclick="return confirm(/*[[#{voucher.admin.deactivateConfirm}]]*/ 'Deactivate?');"></a>
+                    <a th:if="${voucher.status.name() == 'INACTIVE'}" th:href="@{/dashboard/vouchers/{id}/activate(id=${voucher.id})}"
+                       class="bg-green-500 text-white p-2 rounded no-underline hover:bg-green-600"
+                       th:text="#{voucher.admin.activate}"></a>
+                </div>
+            </div>
+
+            <!-- Usage history -->
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-xl font-bold mb-4 text-left" th:text="#{voucher.admin.detail.usageHistory}"></h2>
+                <div th:if="${#lists.isEmpty(usages)}" class="text-gray-500 text-left" th:text="#{voucher.admin.detail.noUsages}"></div>
+                <div th:if="${!#lists.isEmpty(usages)}" class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.detail.patronId}"></th>
+                                <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.detail.identityId}"></th>
+                                <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.detail.discountApplied}"></th>
+                                <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.detail.confirmed}"></th>
+                                <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.detail.usedAt}"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="usage : ${usages}" class="bg-white border-b hover:bg-gray-100">
+                                <td class="px-6 py-4" th:text="${usage.patronAlephId}"></td>
+                                <td class="px-6 py-4">
+                                    <a th:href="@{/dashboard/identity/{id}(id=${usage.identity.id})}" th:text="${usage.identity.id}" class="underline"></a>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span th:text="${usage.discountApplied}"></span> <span th:text="#{message.czk}"></span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span th:if="${usage.confirmed}" class="text-green-600" th:text="#{message.yes}"></span>
+                                    <span th:if="${!usage.confirmed}" class="text-orange-500" th:text="#{voucher.admin.detail.pending}"></span>
+                                </td>
+                                <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(usage.usedAt)}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </body>
+
+</html>
