@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+
+    <head></head>
+
+    <body class="page-bankid-cb-error">
+        <main layout:fragment="content" class="mb-10 container mx-auto p-5">
+            <div class="mx-auto flex max-w-3xl flex-col gap-6 text-center">
+                <h1 class="text-3xl font-extrabold text-gray-900" th:text="${bankidCbErrorTitle}"></h1>
+
+                <p class="text-lg text-gray-700" th:text="${bankidCbErrorDescription}"></p>
+
+                <p th:if="${bankidCbErrorPrimarySupportEmail != null}"
+                   class="text-base text-gray-700"
+                   th:utext="#{page.bankidCbError.supportHelp(${bankidCbErrorPrimarySupportEmail}, ${bankidCbErrorSupportTicketId})}"></p>
+
+                <div class="mt-4 flex flex-col items-center gap-4">
+                    <a th:href="${loginEndpoint}" class="block" th:insert="~{fragments/svg/btn-bankid :: btn-bankid}" th:title="#{a11y.verifyViaBankid}" th:aria-label="#{a11y.verifyViaBankid}"></a>
+                    <a th:href="@{/welcome}" class="inline-flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-white focus:outline-none focus:shadow-outline hover:text-white no-underline" th:text="#{message.goToHomepage}"></a>
+                </div>
+            </div>
+        </main>
+    </body>
+
+</html>

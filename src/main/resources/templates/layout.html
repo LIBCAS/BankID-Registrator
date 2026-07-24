@@ -1,15 +1,19 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" th:lang="${lang}">
+    
 
 <head th:replace="fragments/head :: head"></head>
 
 <body>
+    <!--/* A11Y - skip to main content */-->
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-700 focus:text-white focus:font-bold focus:rounded-lg focus:outline-none focus:ring-4 focus:ring-yellow-400" th:text="#{a11y.skipToContent}" tabindex="0"></a>
+
     <header th:replace="fragments/header :: header"></header>
 
     <aside th:replace="fragments/page-loader :: page-loader"></aside>
     <aside layout:fragment="progres-loader"></aside>
 
-    <main layout:fragment="content"></main>
+    <main layout:fragment="content" id="main" tabindex="-1"></main>
 
     <aside id="modal-wrapper"></aside>
     <aside id="alert-wrapper" class="fixed top-[100px] left-0 w-full z-[100] flex flex-col items-center lg:items-end px-4 md:px-12"></aside>

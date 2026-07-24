@@ -4,12 +4,33 @@
 <head th:fragment="head">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : ''}"/>
     <title th:text="${appName} + ' - ' + ${pageTitle}"></title>
     <link rel="shortcut icon" href="/bankid-registrator/img/favicon.ico" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 
     <!-- TailwindCSS, Flowbite -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'c-footer': '#212121',
+                    },
+                    fontFamily: {
+                        sans: ["Montserrat", "ui-sans-serif", "system-ui", "sans-serif"],
+                    },
+                },
+            },
+        }
+    </script>
 
     <!-- Filepond stylesheets -->
     <link rel="stylesheet"

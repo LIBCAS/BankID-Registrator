@@ -2,68 +2,138 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <body>
-    <header th:fragment="header"
-        class="flex justify-center bg-white fixed w-full z-20 top-0 start-0 border-b border-gray-200 print:hidden no-print">
-        <nav class="flex flex-wrap md:flex-nowrap items-center container">
-            <a th:href="@{/welcome}" class="flex justify-start w-70% md:w-auto p-5 order-1">
-                <img th:if="${lang == 'cs'}" class="w-36 lg:mx-auto lg:w-48" src="https://lib.cas.cz/registrace/public/logo-knav-cs.png" />
-                <img th:if="${lang == 'en'}" class="w-36 lg:mx-auto lg:w-48" src="https://lib.cas.cz/registrace/public/logo-knav-en.png" />
-                <img th:if="${lang == 'sk'}" class="w-36 lg:mx-auto lg:w-48" src="https://lib.cas.cz/registrace/public/logo-knav-cs.png" />
-            </a>
-            <div class="flex flex-1 justify-end w-30% md:w-auto px-5 py-2 order-2 md:order-3">
-                <div class="flex flex-col items-center gap-1 sm:flex-row sm:gap-3">
-                    <div>
-                        <button type="button" data-dropdown-toggle="language-dropdown-menu"
-                            class="inline-flex items-center font-medium justify-center px-4 py-2 text-sm text-gray-900 rounded-lg cursor-pointer hover:bg-gray-100">
-                            <svg th:if="${lang == 'cs'}" th:insert="~{fragments/svg/flag-cze :: flag-cze}" class="w-5 h-5 rounded-full me-2"></svg>
-                            <svg th:if="${lang == 'en'}" th:insert="~{fragments/svg/flag-gbr :: flag-gbr}" class="w-5 h-5 rounded-full me-2"></svg>
-                            <svg th:if="${lang == 'sk'}" th:insert="~{fragments/svg/flag-skv :: flag-skv}" class="w-5 h-5 rounded-full me-2"></svg>
-                            <span th:if="${lang == 'cs'}">Česky</span>
-                            <span th:if="${lang == 'en'}">English</span>
-                            <span th:if="${lang == 'sk'}">Slovensky</span>
-                        </button>
-                        <div class="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow"
-                            id="language-dropdown-menu">
-                            <ul class="py-2 font-medium" role="none">
-                                <li>
-                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=cs|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'cs'} ? 'disabled'" role="menuitem">
-                                        <div class="inline-flex items-center">
-                                            <svg th:insert="~{fragments/svg/flag-cze :: flag-cze}" class="w-5 h-5 rounded-full me-2"></svg>
-                                            Česky
-                                        </div>
-                                    </a>
-                                </li>
-                                <li>
-                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=en|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'en'} ? 'disabled'" role="menuitem">
-                                        <div class="inline-flex items-center">
-                                            <svg th:insert="~{fragments/svg/flag-gbr :: flag-gbr}" class="w-5 h-5 rounded-full me-2"></svg>
-                                            English
-                                        </div>
-                                    </a>
-                                </li>
-                                <!-- <li>
-                                    <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=sk|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'sk'} ? 'disabled'" role="menuitem">
-                                        <div class="inline-flex items-center">
-                                            <svg th:insert="~{fragments/svg/flag-skv :: flag-skv}" class="w-5 h-5 rounded-full me-2"></svg>
-                                            Slovensky
-                                        </div>
-                                    </a>
-                                </li> -->
-                            </ul>
+    <header th:fragment="header" class="fixed w-full z-20 top-0 start-0 border-b border-gray-200 bg-white print:hidden no-print">
+        <nav class="bg-white w-full border-b border-gray-200" th:aria-label="#{message.mainNavigation}">
+            <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto px-4 py-4 xl:py-1">
+                <a th:href="@{/welcome}" class="flex items-center space-x-3 rtl:space-x-reverse" th:aria-label="#{message.goToHomepage}" tabindex="0">
+                    <img th:if="${lang == 'cs'}" height="42" style="height: 42px; width: auto; max-height: 42px;" src="https://lib.cas.cz/registrace/public/logo-knav-cs.png" th:alt="#{message.libcasLogo}" />
+                    <img th:if="${lang == 'en'}" height="42" style="height: 42px; width: auto; max-height: 42px;" src="https://lib.cas.cz/registrace/public/logo-knav-en.png" th:alt="#{message.libcasLogo}" />
+                    <img th:if="${lang == 'sk'}" height="42" style="height: 42px; width: auto; max-height: 42px;" src="https://lib.cas.cz/registrace/public/logo-knav-cs.png" th:alt="#{message.libcasLogo}" />
+                </a>
+
+                <!--/* Header Actions */-->
+                <div class="header-actions flex items-center xl:order-2 space-x-3 xl:space-x-4 rtl:space-x-reverse justify-end xl:justify-center" th:classappend="${isIdentityLoggedIn} ? ' header-actions--loggedin'">
+                    <div id="header-actions-desktop-slot" class="flex items-center space-x-3 lg:space-x-4 rtl:space-x-reverse">
+                        <!--/* Language Switcher */-->
+                        <div id="language-switcher" class="relative">
+                            <button type="button" data-dropdown-toggle="language-dropdown-menu" aria-haspopup="true" aria-expanded="false" th:aria-label="#{message.language}" th:title="#{message.selectLanguage}" tabindex="0" class="inline-flex items-center font-medium justify-center px-4 py-2 text-sm text-gray-900 rounded-lg cursor-pointer hover:bg-gray-100">
+                                <svg th:if="${lang == 'cs'}" th:insert="~{fragments/svg/flag-cze :: flag-cze}" class="w-5 h-5 rounded-full" aria-hidden="true"></svg>
+                                <svg th:if="${lang == 'en'}" th:insert="~{fragments/svg/flag-gbr :: flag-gbr}" class="w-5 h-5 rounded-full" aria-hidden="true"></svg>
+                                <svg th:if="${lang == 'sk'}" th:insert="~{fragments/svg/flag-skv :: flag-skv}" class="w-5 h-5 rounded-full" aria-hidden="true"></svg>
+                                <span class="sr-only" th:text="#{message.selectLanguage}"></span>
+                            </button>
+                            <div class="z-50 hidden my-4 text-base list-none bg-white divide-y divide-gray-100 rounded-lg shadow"
+                                id="language-dropdown-menu">
+                                <ul class="py-2 font-medium" role="menu">
+                                    <li class="text-xs font-bold uppercase" role="none">
+                                        <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=cs|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'cs'} ? 'pointer-events-none opacity-50'" role="menuitem" lang="cs" tabindex="0">
+                                            <div class="inline-flex items-center">
+                                                <svg th:insert="~{fragments/svg/flag-cze :: flag-cze}" class="w-5 h-5 rounded-full me-2" aria-hidden="true"></svg>
+                                                <span th:text="#{message.inCzech}"></span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <li class="text-xs font-bold uppercase" role="none">
+                                        <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=en|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'en'} ? 'pointer-events-none opacity-50'" role="menuitem" lang="en" tabindex="0">
+                                            <div class="inline-flex items-center">
+                                                <svg th:insert="~{fragments/svg/flag-gbr :: flag-gbr}" class="w-5 h-5 rounded-full me-2" aria-hidden="true"></svg>
+                                                <span th:text="#{message.inEnglish}"></span>
+                                            </div>
+                                        </a>
+                                    </li>
+                                    <!--/* 
+                                    <li class="text-xs font-bold uppercase" role="none">
+                                        <a th:href="@{|${currentUrl}${currentUrlParamsConnector}lang=sk|}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" th:classappend="${lang == 'sk'} ? 'pointer-events-none opacity-50'" role="menuitem" lang="sk" tabindex="0">
+                                            <div class="inline-flex items-center">
+                                                <svg th:insert="~{fragments/svg/flag-skv :: flag-skv}" class="w-5 h-5 rounded-full me-2" aria-hidden="true"></svg>
+                                                <span th:text="#{message.inSlovak}"></span>
+                                            </div>
+                                        </a>
+                                    </li> 
+                                    */-->
+                                </ul>
+                            </div>
                         </div>
+
+                        <!--/* Logout Button (Only if identity user is logged in) */-->
+                        <a th:if="${isIdentityLoggedIn}" th:href="@{/identity/logout-redirect}" id="identity-logout" class="flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-white focus:outline-none focus:shadow-outline" th:text="#{message.logout}" tabindex="0"></a>
+                        <!--/* Logout Button (Only if admin is logged in) */-->
+                        <a th:if="${isAdminPage}" th:href="@{/user/logout}" id="admin-logout" class="flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-white focus:outline-none focus:shadow-outline" th:text="#{message.logout}" tabindex="0"></a>
                     </div>
-                    <a th:if="${isIdentityLoggedIn}" th:href="@{/identity/logout-redirect}" class="rounded-lg cursor-pointer bg-gray-100 px-4 py-2 text-sm" th:text="#{message.logout}"></a>
+
+                    <!--/* Hamburger Button (Mobile Only) */-->
+                    <button data-collapse-toggle="navbar-sticky" type="button" class="inline-flex items-center p-2 w-10 h-10 justify-center text-sm text-gray-500 rounded-lg xl:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200" aria-controls="navbar-sticky" aria-expanded="false" tabindex="0">
+                        <span class="sr-only" th:text="#{message.openMainMenu}"></span>
+                        <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 17 14">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 1h15M1 7h15M1 13h15"/>
+                        </svg>
+                    </button>
                 </div>
-            </div>
-            <div class="hidden sm:flex flex-col p-5 pt-0 w-full order-3 md:w-auto md:pt-5 md:order-2">
-                <span th:text="#{message.libcas.institution}"></span>
-                <span th:text="#{message.libcas.address}"></span>
-                <span th:with="libcasWeb=#{message.libcas.web}">
-                    <a th:with="fullUrl='https://' + ${libcasWeb}" th:href="${fullUrl}" th:text="${libcasWeb}" target="_blank"></a>
-                </span>
+
+                <!--/* Menu Navigation Links (Collapsible) */-->
+                <div class="items-center justify-between hidden w-full xl:flex xl:w-auto xl:order-1" id="navbar-sticky">
+                    <div id="header-actions-mobile-slot" class="md:hidden px-0 py-3 flex flex-row justify-end gap-x-3"></div>
+
+                    <!--/* Admin Navigation (only on admin/dashboard pages) */-->
+                    <ul th:if="${isAdminPage}" class="flex flex-col p-4 font-medium border border-gray-100 rounded-lg bg-gray-50 md:mt-4 xl:space-x-3 rtl:space-x-reverse xl:flex-row xl:mt-0 xl:border-0 xl:bg-white">
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="@{/dashboard}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" tabindex="0">
+                                <span th:text="#{menu.admin.dashboard}"></span>
+                            </a>
+                        </li>
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="@{/dashboard/vouchers}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" tabindex="0">
+                                <span th:text="#{menu.admin.vouchers}"></span>
+                            </a>
+                        </li>
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="@{/dashboard/vouchers/new}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" tabindex="0">
+                                <span th:text="#{menu.admin.newVoucher}"></span>
+                            </a>
+                        </li>
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="@{/dashboard/settings}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" tabindex="0">
+                                <span th:text="#{menu.admin.settings}"></span>
+                            </a>
+                        </li>
+                    </ul>
+
+                    <!--/* Public Navigation (for regular users / visitors) */-->
+                    <ul th:unless="${isAdminPage}" class="flex flex-col p-4 font-medium border border-gray-100 rounded-lg bg-gray-50 md:mt-4 xl:space-x-3 rtl:space-x-reverse xl:flex-row xl:mt-0 xl:border-0 xl:bg-white">
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="#{menu.libraryRegulations.url}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{menu.libraryRegulations}"></span>
+                                <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                            </a>
+                        </li>
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="#{menu.pricing.url}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{menu.pricing}"></span>
+                                <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                            </a>
+                        </li>
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="#{menu.privacyPolicy.url}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{menu.privacyPolicy}"></span>
+                                <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                            </a>
+                        </li>
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="#{menu.employmentConfirmation.url}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{menu.employmentConfirmation}"></span>
+                                <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                            </a>
+                        </li>
+                        <li class="text-xs font-bold uppercase">
+                            <a th:href="#{menu.registration.url}" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 lg:hover:bg-transparent lg:hover:text-blue-700" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{menu.registration}"></span>
+                                <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </nav>
     </header>
 </body>
-
 </html>
