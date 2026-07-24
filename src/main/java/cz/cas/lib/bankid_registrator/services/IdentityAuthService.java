@@ -1,11 +1,10 @@
 package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.exceptions.IdentityAuthException;
+import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import cz.cas.lib.bankid_registrator.valueobjs.TokenContainer;
-
 import java.util.Locale;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import org.springframework.context.MessageSource;
@@ -19,15 +18,21 @@ public class IdentityAuthService extends ServiceAbstract
 {
     private final AccessTokenContainer accessTokenContainer;
     private final MainService mainService;
+    private final IdentityService identityService;
+    private final IdentityActivityService identityActivityService;
 
     public IdentityAuthService(
         MessageSource messageSource,
         AccessTokenContainer accessTokenContainer,
-        MainService mainService
+        MainService mainService,
+        IdentityService identityService,
+        IdentityActivityService identityActivityService
     ) {
         super(messageSource);
         this.accessTokenContainer = accessTokenContainer;
         this.mainService = mainService;
+        this.identityService = identityService;
+        this.identityActivityService = identityActivityService;
     }
 
     /**
@@ -73,6 +78,7 @@ public class IdentityAuthService extends ServiceAbstract
             session.setAttribute("idToken", idToken);
             session.setAttribute("userIp", userIp);
             session.setAttribute("userAgent", userAgent);
+            session.setAttribute("loginTimestamp", System.currentTimeMillis());
         } catch (Exception e) {
             throw new IdentityAuthException(
                 this.messageSource.getMessage("error.identity.auth.login", null, null, locale), 
@@ -93,6 +99,12 @@ public class IdentityAuthService extends ServiceAbstract
         if (session != null) {
             String code = (String) session.getAttribute("code");
             String idToken = (String) session.getAttribute("idToken");
+            Long identityId = (Long) session.getAttribute("identity");
+
+            Identity identity = null;
+            if (identityId != null) {
+                identity = this.identityService.findById(identityId).orElse(null);
+            }
 
             if (code != null) {
                 this.accessTokenContainer.getCodeTokenMap().remove(code);
@@ -101,9 +113,47 @@ public class IdentityAuthService extends ServiceAbstract
             if (idToken != null) {
                 this.mainService.logout(idToken);
             }
-    
+
+            if (identity != null) {
+                this.identityActivityService.logAppExit(identity);
+                getLogger().info("Identity with ID " + identityId + " logged out.");
+            } else {
+                getLogger().info("Unknown identity logged out.");
+            }
+
             session.invalidate();
         }
+    }
+
+    /**
+     * Get the ID of the currently authenticated identity
+     * @param request
+     * @return Long - identity ID, or null if not logged in or no identity in session
+     */
+    public Long getAuthenticatedIdentityId(HttpServletRequest request)
+    {
+        if (!isLoggedin(request)) {
+            return null;
+        }
+
+        HttpSession session = this.getCurrentSession(request);
+        return (Long) session.getAttribute("identity");
+    }
+
+    /**
+     * Check if the currently authenticated user is the given identity
+     * @param request
+     * @param identityId - the identity ID to check against
+     * @return boolean - true if logged in and matches the given identity ID
+     */
+    public boolean isAuthenticatedAs(HttpServletRequest request, Long identityId)
+    {
+        if (identityId == null) {
+            return false;
+        }
+
+        Long authenticatedIdentityId = getAuthenticatedIdentityId(request);
+        return authenticatedIdentityId != null && authenticatedIdentityId.equals(identityId);
     }
 
     /**
