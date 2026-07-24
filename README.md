@@ -1,7 +1,7 @@
 # BankID Registrator
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-38%7-orange)
+![Coverage](https://img.shields.io/badge/coverage-38.70-orange)
 ![Java](https://img.shields.io/badge/java-11-blue.svg)
 ![Backend](https://img.shields.io/badge/backend-Spring%20Boot-blue)
 ![Frontend](https://img.shields.io/badge/frontend-Thymeleaf-blue)
