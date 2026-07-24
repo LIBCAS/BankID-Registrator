@@ -1,10 +1,12 @@
 package cz.cas.lib.bankid_registrator.services;
 
 import cz.cas.lib.bankid_registrator.configurations.EmailConfig;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import javax.annotation.Nullable;
 import javax.mail.internet.MimeMessage;
-
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.MessageSource;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -19,20 +21,20 @@ public class EmailService extends ServiceAbstract
     private final EmailConfig emailConfig;
     private final JavaMailSender mailSender;
     private final SpringTemplateEngine templateEngine;
-    private final IdentityActivityService identityActivityService;
+    private final ObjectProvider<TestSettingsService> testSettingsServiceProvider;
 
     public EmailService(
         MessageSource messageSource,
         EmailConfig emailConfig,
         JavaMailSender mailSender,
         SpringTemplateEngine templateEngine, 
-        IdentityActivityService identityActivityService
+        ObjectProvider<TestSettingsService> testSettingsServiceProvider
     ) {
         super(messageSource);
         this.emailConfig = emailConfig;
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
-        this.identityActivityService = identityActivityService;
+        this.testSettingsServiceProvider = testSettingsServiceProvider;
     }
 
     /**
@@ -61,12 +63,58 @@ public class EmailService extends ServiceAbstract
 
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
+        List<String> bccRecipients = getExtraTesterRecipients(to);
 
         helper.setFrom(from);
         helper.setTo(to);
+        if (!bccRecipients.isEmpty()) {
+            helper.setBcc(bccRecipients.toArray(new String[0]));
+        }
         helper.setSubject(subject);
         helper.setText(body, true);
         mailSender.send(message);
+    }
+
+    /**
+     * Send a raw plain-text email to one or more recipients.
+     */
+    public void sendPlainTextEmail(List<String> to, String subject, String body) throws Exception
+    {
+        if (to == null || to.isEmpty()) {
+            return;
+        }
+
+        String from = String.format("\"%s\" <%s>", emailConfig.getFromName(), emailConfig.getFrom());
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, false);
+
+        helper.setFrom(from);
+        helper.setTo(to.toArray(new String[0]));
+        helper.setSubject(subject);
+        helper.setText(body, false);
+        mailSender.send(message);
+    }
+
+    private List<String> getExtraTesterRecipients(String primaryRecipient)
+    {
+        List<String> recipients = new ArrayList<>();
+        TestSettingsService testSettingsService = this.testSettingsServiceProvider.getIfAvailable();
+        if (testSettingsService == null) {
+            return recipients;
+        }
+
+        String testerEmail = testSettingsService.getTesterEmail();
+        if (testerEmail == null) {
+            return recipients;
+        }
+
+        String trimmedTesterEmail = testerEmail.trim();
+        if (trimmedTesterEmail.isEmpty() || trimmedTesterEmail.equalsIgnoreCase(primaryRecipient)) {
+            return recipients;
+        }
+
+        recipients.add(trimmedTesterEmail);
+        return recipients;
     }
 
     /**

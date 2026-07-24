@@ -1,10 +1,14 @@
 package cz.cas.lib.bankid_registrator.util;
 
+import java.security.SecureRandom;
 import java.util.Random;
 import org.apache.commons.lang3.RandomStringUtils;
 
 public class StringUtils
 {
+    private static final String SUPPORT_TICKET_ID_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private static final int SUPPORT_TICKET_ID_LENGTH = 8;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     /**
      * Generates a random alphanumeric string of given length
      * @param length
@@ -50,6 +54,18 @@ public class StringUtils
             }
         }
         return true;
+    }
+
+    /**
+     * Generate a short customer-facing support ticket identifier.
+     * Ambiguous characters such as I/1 and O/0 are intentionally excluded.
+     */
+    public static String generateSupportTicketId() {
+        StringBuilder sb = new StringBuilder(SUPPORT_TICKET_ID_LENGTH);
+        for (int i = 0; i < SUPPORT_TICKET_ID_LENGTH; i++) {
+            sb.append(SUPPORT_TICKET_ID_CHARS.charAt(SECURE_RANDOM.nextInt(SUPPORT_TICKET_ID_CHARS.length())));
+        }
+        return sb.toString();
     }
 
     /**
