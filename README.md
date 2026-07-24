@@ -1,7 +1,7 @@
 # BankID Registrator
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-37%25-orange)
+![Coverage](https://img.shields.io/badge/coverage-38%7-orange)
 ![Java](https://img.shields.io/badge/java-11-blue.svg)
 ![Backend](https://img.shields.io/badge/backend-Spring%20Boot-blue)
 ![Frontend](https://img.shields.io/badge/frontend-Thymeleaf-blue)
@@ -32,8 +32,10 @@ Features:
 
 ### 🧪 Running Tests in Local Environment
 
+#### Java / Spring integration tests
+
 1. Make sure `src/test/resources/tests.properties` exists.
-   - If not, create it by copying from `src/test/resources/tests.properties.example`.
+   - If missing, create it by copying from `src/test/resources/tests.properties.example`.
    - Fill in the required test credentials (e.g., for LDAP).
 2. Run the app container:
    ```sh
@@ -43,6 +45,41 @@ Features:
    ```sh
    ./mvnw test
    ```
+
+#### Playwright E2E tests
+
+The Playwright suite in `e2e/` covers complete registration and membership-renewal journeys, including Bank iD verification, employee registrations, vouchers, Comgate payments, payment failures and retries, and admin-dashboard checks.
+
+1. Make sure the application is running in a configured local or testing environment.
+2. Install the E2E dependencies and Chromium:
+   ```sh
+   cd e2e
+   npm install
+   npx playwright install chromium
+   ```
+3. Create the E2E environment file and fill in the required application, admin, Bank iD sandbox, patron, and employee-test values:
+   ```sh
+   cp .env.example .env
+   ```
+4. Run the complete suite from the `e2e/` directory:
+   ```sh
+   npm test
+   ```
+
+Useful commands:
+
+```sh
+# Run one specification
+npx playwright test tests/registration/normal-no-discount.spec.ts
+
+# Run with a visible browser
+npm run test:headed
+
+# Open the latest HTML report
+npm run report
+```
+
+Tests run sequentially because customer journeys modify shared Aleph state. Fine-dependent renewal scenarios require patrons with manually prepared fines; their optional environment blocks and bootstrap workflow are documented in `e2e/.env.example`.
 
 ---
 
