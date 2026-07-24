@@ -30,9 +30,12 @@ import org.springframework.util.Assert;
 @Profile("testing")
 public class TestingAlephService extends AlephService implements AlephServiceIface
 {
-    public TestingAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository, ResourceLoader resourceLoader)
+    private final TestSettingsService testSettingsService;
+
+    public TestingAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository, ResourceLoader resourceLoader, TestSettingsService testSettingsService)
     {
         super(mainConfig, alephServiceConfig, identityService, oracleRepository, resourceLoader);
+        this.testSettingsService = testSettingsService;
 
         this.borXOpsNoSuccessMsg = new String[] {
             PatronBorXOp.BOR_INFO.getValue(),
@@ -62,7 +65,7 @@ public class TestingAlephService extends AlephService implements AlephServiceIfa
         // String lname = userInfo.getFamily_name();     // Rowling
 
         String fname = StringUtils.capitalizeIfUppercase(userInfo.getGiven_name());      // Joanne
-        String mname = StringUtils.capitalizeIfUppercase(this.generateTestingMname());     // Kathleen
+        String mname = StringUtils.capitalizeIfUppercase(this.testSettingsService.getMiddleName()); // Dynamically set via Tester's Toolkit
         String lname = StringUtils.capitalizeIfUppercase(userInfo.getFamily_name());     // Rowling
 
         patron.setLastname(lname);
@@ -218,9 +221,17 @@ public class TestingAlephService extends AlephService implements AlephServiceIfa
         patron.setBankIdSub(userInfo.getSub());
 
         // New registration or registration renewal
-        boolean isNewAlephPatron = this.isNewAlephPatron(patron);logger.info("isNewAlephPatron: {}", isNewAlephPatron);
-        patron.isNew = isNewAlephPatron;
-        patron.setAction(isNewAlephPatron ? PatronAction.I : PatronAction.A); logger.info("patron.getAction(): {}", patron.getAction());
+        Optional<String> existingAlephPatronIdOpt = this.getAlephPatronIdByNameAndBirth(patron);
+        if (existingAlephPatronIdOpt.isPresent()) {
+            String existingAlephPatronId = existingAlephPatronIdOpt.get();
+            patron.setPatronId(existingAlephPatronId);
+            patron.setAction(PatronAction.A);
+            patron.isNew = false;
+        } else {
+            patron.setAction(PatronAction.I);
+            patron.isNew = true;
+        }
+        logger.info("patron.isNew: {}", patron.isNew);
 
         result.put("patron", patron);
 
