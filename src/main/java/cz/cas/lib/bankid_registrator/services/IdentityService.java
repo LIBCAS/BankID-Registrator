@@ -101,8 +101,8 @@ public class IdentityService extends ServiceAbstract
      * @param filterSoftDeleted
      * @return
      */
-    public Page<Identity> findIdentities(Pageable pageable, String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterSoftDeleted) {
-        return identityRepository.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted);
+    public Page<Identity> findIdentities(Pageable pageable, String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterPasswordSet, Boolean filterSoftDeleted) {
+        return identityRepository.findIdentities(pageable, searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterPasswordSet, filterSoftDeleted);
     }
 
     /**
@@ -114,7 +114,7 @@ public class IdentityService extends ServiceAbstract
      * @param sort
      * @return List of all matching identities
      */
-    public List<Identity> findAllIdentities(String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterSoftDeleted, Sort sort) {
-        return identityRepository.findAllIdentities(searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted, sort);
+    public List<Identity> findAllIdentities(String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterPasswordSet, Boolean filterSoftDeleted, Sort sort) {
+        return identityRepository.findAllIdentities(searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterPasswordSet, filterSoftDeleted, sort);
     }
 }

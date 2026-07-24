@@ -46,6 +46,15 @@ public class Identity
     @Column(name="checked_by_admin", nullable = true)
     private Boolean checkedByAdmin;
 
+    /**
+     * Whether the identity has completed the initial password-setting step.
+     * null = unknown (backward compat for pre-existing identities, treated as already set)
+     * false = has NOT set their password yet (new registration in progress)
+     * true = has set their password
+     */
+    @Column(name = "password_set", nullable = true)
+    private Boolean passwordSet;
+
     @Column(name = "deleted", nullable = false)
     private boolean deleted = false;
 

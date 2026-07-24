@@ -41,10 +41,11 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
         "COALESCE(i.alephBarcode, '') LIKE %:searchAlephIdOrBarcode%) AND " +
         "(:filterCasEmployee IS NULL OR i.isCasEmployee = :filterCasEmployee) AND " +
         "(:filterCheckedByAdmin IS NULL OR i.checkedByAdmin = :filterCheckedByAdmin) AND " +
+        "(:filterPasswordSet IS NULL OR i.passwordSet = :filterPasswordSet) AND " +
         "(ia.activityEvent = cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent.MEMBERSHIP_RENEWAL_SUCCESS OR " +
         "ia.activityEvent = cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent.NEW_REGISTRATION_SUCCESS)"
     )
-    Page<Identity> findIdentities(Pageable pageable, String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterSoftDeleted);
+    Page<Identity> findIdentities(Pageable pageable, String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterPasswordSet, Boolean filterSoftDeleted);
 
     @Query(
         "SELECT DISTINCT i FROM Identity i " +
@@ -56,8 +57,9 @@ public interface IdentityRepository extends JpaRepository<Identity, Long>
         "COALESCE(i.alephBarcode, '') LIKE %:searchAlephIdOrBarcode%) AND " +
         "(:filterCasEmployee IS NULL OR i.isCasEmployee = :filterCasEmployee) AND " +
         "(:filterCheckedByAdmin IS NULL OR i.checkedByAdmin = :filterCheckedByAdmin) AND " +
+        "(:filterPasswordSet IS NULL OR i.passwordSet = :filterPasswordSet) AND " +
         "(ia.activityEvent = cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent.MEMBERSHIP_RENEWAL_SUCCESS OR " +
         "ia.activityEvent = cz.cas.lib.bankid_registrator.entities.activity.ActivityEvent.NEW_REGISTRATION_SUCCESS)"
     )
-    List<Identity> findAllIdentities(String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterSoftDeleted, Sort sort);
+    List<Identity> findAllIdentities(String searchAlephIdOrBarcode, Boolean filterCasEmployee, Boolean filterCheckedByAdmin, Boolean filterPasswordSet, Boolean filterSoftDeleted, Sort sort);
 }
