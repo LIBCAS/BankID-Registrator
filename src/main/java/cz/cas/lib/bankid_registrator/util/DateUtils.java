@@ -3,6 +3,7 @@ package cz.cas.lib.bankid_registrator.util;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
@@ -282,7 +283,7 @@ public class DateUtils
             LocalDate birthLocalDate = LocalDate.parse(birthDate, birthFormatter);
             LocalDate calculationDate = (onDate != null && !onDate.isEmpty()) ? LocalDate.parse(onDate, onFormatter) : LocalDate.now();
 
-            return calculationDate.getYear() - birthLocalDate.getYear() - (calculationDate.getDayOfYear() < birthLocalDate.getDayOfYear() ? 1 : 0);
+            return Period.between(birthLocalDate, calculationDate).getYears();
         } catch (Exception e) {
             e.printStackTrace();
             return -1;

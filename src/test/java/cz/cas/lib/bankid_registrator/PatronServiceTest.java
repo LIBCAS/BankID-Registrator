@@ -120,8 +120,13 @@ class PatronServiceTest
     void testDeterminePatronStatus_ActiveMembershipRenewal_LastDayBeforeRetirement() {
         Patron patron = new Patron();
         patron.setIsCasEmployee(false);
-        patron.setBirthDate(getBirthDateForAge(RETIREMENT_AGE - 5)); // Patron is 5 years younger than retirement
-        patron.setExpiryDate(DateUtils.addYearsToToday(5, "dd/MM/yyyy")); // Expiry in 5 years, on the last day before retirement
+
+        LocalDate retirementDate = LocalDate.now().plusYears(5);
+        LocalDate birthDate = retirementDate.minusYears(RETIREMENT_AGE);
+        LocalDate lastDayBeforeRetirement = retirementDate.minusDays(1);
+
+        patron.setBirthDate(birthDate.format(DateTimeFormatter.ofPattern(DATE_FORMAT)));
+        patron.setExpiryDate(lastDayBeforeRetirement.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
 
         logger.info("LastDayBeforeRetirement patron.getBirthDate() " + patron.getBirthDate());
         logger.info("LastDayBeforeRetirement patron.getExpiryDate() " + patron.getExpiryDate());
@@ -143,12 +148,12 @@ class PatronServiceTest
     void testDeterminePatronStatus_ActiveMembershipRenewal_FirstDayOfRetirement() {
         Patron patron = new Patron();
         patron.setIsCasEmployee(false);
-        patron.setBirthDate(getBirthDateForAge(RETIREMENT_AGE - 5)); // Patron is 5 years younger than retirement
 
-        String lastDayBeforeRetirement = DateUtils.addYearsToToday(5, "dd/MM/yyyy");
-        String firstDayOfRetirement = DateUtils.addDaysToDateString(lastDayBeforeRetirement, 1, "dd/MM/yyyy", "dd/MM/yyyy");
+        LocalDate retirementDate = LocalDate.now().plusYears(5);
+        LocalDate birthDate = retirementDate.minusYears(RETIREMENT_AGE);
 
-        patron.setExpiryDate(firstDayOfRetirement); // Expiry in 5 years + 1 day, on patron's very first retirement day
+        patron.setBirthDate(birthDate.format(DateTimeFormatter.ofPattern(DATE_FORMAT)));
+        patron.setExpiryDate(retirementDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")));
 
         logger.info("FirstDayOfRetirement patron.getBirthDate() " + patron.getBirthDate());
         logger.info("FirstDayOfRetirement patron.getExpiryDate() " + patron.getExpiryDate());
