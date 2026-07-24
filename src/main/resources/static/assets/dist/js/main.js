@@ -2,10 +2,34 @@ import { Modal } from "https://esm.sh/flowbite";  // In order to control the Flo
 const apiUrl = "/bankid-registrator/api";
 
 const mainElm = document.querySelector("main");
-const footerElm = document.querySelector("footer");
+const headerElm = document.querySelector("header");
+const logoutBtnElm = document.getElementById("identity-logout");
+const langSwitcherElm = document.getElementById("language-switcher");
+const headerActionsDesktopElm = document.getElementById("header-actions-desktop-slot");
+const headerActionsMobileElm = document.getElementById("header-actions-mobile-slot");
+const goToServiceBtnElms = document.querySelectorAll(".js-gotoservice-btn");
+const apiTokenElm = document.getElementById("api-token");
+const autoLogoutOnLoadElm = document.getElementById("auto-logout-on-load");
+
+const getApiToken = () => apiTokenElm?.getAttribute("data-value") || null;
 
 /**
  * Progress loader
+ * Options:
+ * - checkFunctionData: Data to be passed to the check function
+ * - loaderElm: The loader element
+ * - mainElm: The main content element
+ * - progressCircle: The progress circle element
+ * - progressNumber: The progress number element
+ * - progressTextElm: The progress text element
+ * - progressStep: The progress step percentage
+ * - checkFunction: The function to check the progress
+ * - interval: The interval in milliseconds to call the check function
+ * - maxSteps: The maximum number of steps
+ * - progressTexts: An array of texts to display at each step
+ * - afterCompleteFunction: A function to call after the loader is complete
+ * - initContentElm: The initial content element
+ * - finalContentElm: The final content element
  */
 class ProgressLoader {
     constructor(options) {
@@ -23,6 +47,8 @@ class ProgressLoader {
         this.intervalId = null;
         this.progressTexts = options.progressTexts || [];
         this.afterCompleteFunction = options.afterCompleteFunction;
+        this.initContentElm = options.initContentElm || null;
+        this.finalContentElm = options.finalContentElm || null;
     }
 
     updateProgressCircle(progress) {
@@ -58,7 +84,7 @@ class ProgressLoader {
         if (data.result === true || (data.error === true && this.counter === this.maxSteps - 1) || this.counter >= this.maxSteps + 3) {
             this.complete();
             if (this.afterCompleteFunction) {
-                await this.afterCompleteFunction();
+                await this.afterCompleteFunction(this.checkFunctionData);
             }
         }
     }
@@ -71,8 +97,15 @@ class ProgressLoader {
           this.progressTextElm.innerHTML = this.progressTexts[this.progressTexts.length - 1];
         }
         setTimeout(() => {
-            this.loaderElm.classList.add("hidden");
-            this.mainElm.classList.remove("hidden");
+            const isLoaderInsideMain = this.mainElm.contains(this.loaderElm);
+
+            if (isLoaderInsideMain && this.initContentElm && this.finalContentElm) {
+                this.initContentElm.classList.add("hidden");
+                this.finalContentElm.classList.remove("hidden");
+            } else {
+                this.loaderElm.classList.add("hidden");
+                this.mainElm.classList.remove("hidden");
+            }
         }, 2000);
     }
 
@@ -105,6 +138,21 @@ class PageLoader {
     hide() {
         this.loaderElm.classList.add("hidden");
     }
+}
+
+/**
+ * Move an element to a target slot if it's not already there
+ * @param elm - The element to move
+ * @param targetSlot - The target slot element
+ * @returns
+ */
+function moveElmIfNeeded(elm, targetSlot) {
+    if (!elm || !targetSlot) return;
+
+    // If the element is already in the target slot, do nothing
+    if (elm.parentElement === targetSlot) return;
+
+    targetSlot.appendChild(elm);
 }
 
 /**
@@ -252,7 +300,7 @@ const checkLdapAccount = async (params) => {
 }
 
 const appLogout = async (params) => {
-    const { apiToken } = params;
+    const { apiToken, silent = false } = params;
 
     const response = await fetch(`${apiUrl}/identity/logout?token=${apiToken}`, {
         method: "GET",
@@ -268,7 +316,35 @@ const appLogout = async (params) => {
     }
 
     const data = await response.json();
+
+    if (logoutBtnElm) {
+        logoutBtnElm.remove();
+    }
+
+    const logoutBtn = document.getElementById("identity-logout");
+    if (logoutBtn) {
+        logoutBtn.remove();
+    }
+
+    if (!silent) {
+        showAlert(window.translations["alert.identityLoggedOut"], "info", 8000);
+    }
+
     return data;
+}
+
+const autoLogoutOnLoad = async () => {
+    if (!autoLogoutOnLoadElm) {
+        return;
+    }
+
+    const apiToken = getApiToken();
+
+    if (!apiToken) {
+        return;
+    }
+
+    await appLogout({ apiToken });
 }
 
 const showAlert = (message, type = "info", duration = 6000, wrapperElmId = "alert-wrapper") => {
@@ -281,25 +357,25 @@ const showAlert = (message, type = "info", duration = 6000, wrapperElmId = "aler
     switch (type) {
         case "info":
             alertColor = "blue";
-            alertSvgIcon = `<svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+            alertSvgIcon = `<svg class="w-6 h-6 text-blue-800 dark:text-blue-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11h2v5m-2 0h4m-2.592-8.5h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
             </svg>`;
             break;
         case "success":
             alertColor = "green";
-            alertSvgIcon = `<svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+            alertSvgIcon = `<svg class="w-6 h-6 text-green-800 dark:text-green-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 11h2v5m-2 0h4m-2.592-8.5h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
             </svg>`;
             break;
         case "warning":
             alertColor = "yellow";
-            alertSvgIcon = `<svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+            alertSvgIcon = `<svg class="w-6 h-6 text-yellow-800 dark:text-yellow-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
             </svg>`;
             break;
         case "danger":
             alertColor = "red";
-            alertSvgIcon = `<svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+            alertSvgIcon = `<svg class="w-6 h-6 text-red-800 dark:text-red-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
             </svg>`;
             break;
@@ -321,10 +397,14 @@ const showAlert = (message, type = "info", duration = 6000, wrapperElmId = "aler
 
     alertWrapperElm.innerHTML += alertHtml;
 
-    setTimeout(() => {
-        document.getElementById(alertElmId).remove();
-    }, duration);
+    if (duration > 0) {
+        setTimeout(() => {
+            document.getElementById(alertElmId).remove();
+        }, duration);
+    }
 };
+
+window.showAlert = showAlert;   // Globally available
 
 const createModal = (options) => {
     const modalWrapperElm = options.custom.modalWrapperElmId ? document.getElementById(options.custom.modalWrapperElmId) : document.getElementById("modal-wrapper");
@@ -388,31 +468,32 @@ const createModal = (options) => {
     return new Modal(document.getElementById(modalElmId), options);
 };
 
-const checkFooterPosition = () => {
-    if (mainElm && footerElm) {
-        const mainHeight = mainElm.offsetHeight;
-        const viewportHeight = window.innerHeight;
+/**
+ * Responsive header adjustments
+ */
+function respoHeader() {
+    const isMdScreenUp = window.matchMedia("(min-width: 768px)").matches;
 
-        if (mainHeight > viewportHeight) {
-            footerElm.classList.remove("fixed");
+    if (headerElm) {
+        if (isMdScreenUp) {
+            moveElmIfNeeded(langSwitcherElm, headerActionsDesktopElm);
+            moveElmIfNeeded(logoutBtnElm, headerActionsDesktopElm);
         } else {
-            footerElm.classList.add("fixed");
+            moveElmIfNeeded(langSwitcherElm, headerActionsMobileElm);
+            moveElmIfNeeded(logoutBtnElm, headerActionsMobileElm);
         }
     }
 }
 
-// PAGE: NEW REGISTRATION - PASSWORD SETTING SUCCESSFUL
+// PAGE: NEW REGISTRATION FOR EMPLOYEES - PASSWORD SETTING SUCCESSFUL
 if (document.querySelector(".page-identity-set-password-success")) {
     const mainElm = document.getElementById("main");
 
     if (document.getElementById("progress-loader")) {
-        mainElm.classList.add("hidden");
-        mainElm.style.removeProperty("display");
-
         const loader = new ProgressLoader({
             checkFunctionData: {
                 username: document.getElementById("patron-username").getAttribute("data-value"),
-                apiToken: document.getElementById("api-token").getAttribute("data-value"),
+                apiToken: getApiToken(),
             },
             loaderElm: document.getElementById("progress-loader"),
             mainElm: mainElm,
@@ -421,7 +502,7 @@ if (document.querySelector(".page-identity-set-password-success")) {
             progressNumber: document.querySelector("#progress-loader .progress-loader__circle-number"),
             progressStep: 12,
             checkFunction: checkLdapAccount,
-            interval: 5000,
+            interval: 5000, // !IMPORTANT: Keep this 1000 ms only for testing, in production it should 5000 ms
             maxSteps: 8,
             progressTexts: [
                 window.translations["loader.newRegistration.validatingData"],
@@ -430,6 +511,42 @@ if (document.querySelector(".page-identity-set-password-success")) {
                 window.translations["loader.newRegistration.done"],
             ],
             afterCompleteFunction: appLogout,
+            initContentElm: document.getElementById("employee-initial-content"),
+            finalContentElm: document.getElementById("employee-final-content"),
+        });
+
+        loader.start();
+    }
+}
+
+// PAGE: NEW REGISTRATION FOR NORMIES - FEE PAYMENT
+if (document.querySelector(".page-fee-payment")) {
+    const mainElm = document.getElementById("main");
+
+    if (document.getElementById("progress-loader")) {
+        const loader = new ProgressLoader({
+            checkFunctionData: {
+                username: document.getElementById("patron-username").getAttribute("data-value"),
+                apiToken: getApiToken(),
+            },
+            loaderElm: document.getElementById("progress-loader"),
+            mainElm: mainElm,
+            progressTextElm: document.querySelector("#progress-loader .progress-loader__text"),
+            progressCircle: document.querySelector("#progress-loader .progress-loader__circle"),
+            progressNumber: document.querySelector("#progress-loader .progress-loader__circle-number"),
+            progressStep: 12,
+            checkFunction: checkLdapAccount,
+            interval: 5000, // !IMPORTANT: Keep this 1000 ms only for testing, in production it should 5000 ms
+            maxSteps: 8,
+            progressTexts: [
+                window.translations["loader.newRegistration.validatingData"],
+                window.translations["loader.newRegistration.creatingIdentity"],
+                window.translations["loader.newRegistration.savingData"],
+                window.translations["loader.newRegistration.done"],
+            ],
+            afterCompleteFunction: appLogout,
+            initContentElm: document.getElementById("payment-initial-content"),
+            finalContentElm: document.getElementById("payment-final-content"),
         });
 
         loader.start();
@@ -437,344 +554,542 @@ if (document.querySelector(".page-identity-set-password-success")) {
 }
 
 // PAGES: NEW REGISTRATION, MEMBERSHIP RENEWAL
-if (document.querySelector(".page-new-registration, .page-membership-renewal")) {
-    const formState = {
-        rfid: {
-            elm: document.getElementById("rfid"),
-            error: false,
-        },
-        email: {
-            elm: document.getElementById("email"),
-            error: false,
-        },
-    };
-    const filesElm = document.getElementById("files");
-    const filesInputElm = document.querySelector('[name="media"]');
-    const emailInputElm = document.querySelector('[name="email"]');
-    const clearBtnElms = document.querySelectorAll(".js-clear-input");
-    const clearableInputElms = Array.from(clearBtnElms).map(elm => document.querySelector(elm.getAttribute("data-target")));
-    const filesWrapper = document.getElementById("files-control");
-    const declaration4Wrapper = document.getElementById("declaration4-control");
-    const { csrfToken, csrfHeader } = getCsrfTokenAndHeader();
-    const loaderAfterSubmit = new PageLoader({
-        loaderElm: document.getElementById("page-loader"),
-        loaderTextElm: document.querySelector(".page-loader__text"),
-        text: window.translations["loader.submittingData"],
-    });
-
-    loaderAfterSubmit.init();
-
-    function handleCasEmployeeChange(ev) {
-        const casEmployeeValue = ev ? ev.target.checked : document.getElementById("isCasEmployee").checked;
-        const declaration4InputElm = document.getElementById("declaration4");
-    
-        if (casEmployeeValue) {
-            filesWrapper.style.display = "block";
-            declaration4Wrapper.style.display = "none";
-            declaration4InputElm.required = false;
-        } else {
-            filesWrapper.style.display = "none";
-            declaration4Wrapper.style.display = "block";
-            declaration4InputElm.required = true;
-        }
+function initClearableInputs() {
+    const clearBtnElms = Array.from(document.querySelectorAll(".js-clear-input"));
+    if (clearBtnElms.length === 0) {
+        return;
     }
 
-    FilePond.registerPlugin(
-        FilePondPluginFileValidateSize,
-        FilePondPluginImageExifOrientation,
-        FilePondPluginFileValidateType,
-        FilePondPluginImagePreview
-    );
+    const clearablePairs = clearBtnElms
+        .map((btnElm) => {
+            const targetSelector = btnElm.getAttribute("data-target");
+            const inputElm = targetSelector ? document.querySelector(targetSelector) : null;
+            return inputElm ? { btnElm, inputElm } : null;
+        })
+        .filter(Boolean);
 
-    const pond = FilePond.create(filesElm);
-
-    FilePond.setOptions({
-        storeAsFile: true,
-        allowFileTypeValidation: true,
-        allowFileSizeValidation: true,
-        allowImagePreview: true,
-        acceptedFileTypes: ["image/png", "image/jpeg", "application/pdf"],
-        maxFileSize: "20MB",
-        labelIdle: window.translations["filepond.labelIdle"],
-        labelMaxFileSizeExceeded: window.translations["filepond.maxFileSizeExceeded"],
-        labelMaxFileSize: window.translations["filepond.maxFileSize"],
-        labelFileTypeNotAllowed: window.translations["filepond.invalidFileType"],
-        fileValidateTypeLabelExpectedTypes: window.translations["filepond.allowedFileTypes"],
-    });
-
-    handleCasEmployeeChange();
-
-    document.getElementById("rfid").addEventListener("change", (ev) => {
-        const rfidElm = ev.target;
-        const rfid = rfidElm.value;
-        let patronId = document.querySelector('input[name="patronId"]').value;
-
-        if (rfid.trim().length === 0) {
-            return;
-        }
-
-        if (patronId.trim().length === 0) {
-            patronId = null;
-        }
-
-        checkRfid(rfid, patronId, csrfToken)
-            .then(data => {
-                if (data.result === true) {
-                    const errorMsg = window.translations["alert.rfidAlreadyInUse"];
-                    formState.rfid.error = errorMsg;
-                    showAlert(errorMsg, "danger");
-                } else {
-                    formState.rfid.error = false;
-                    showAlert(window.translations["alert.rfidIsAvailable"], "success");
-                }
-            })
-            .catch(error => {
-                const errorMsg = window.translations["alert.rfidCheckFailed"];
-                formState.rfid.error = errorMsg;
-                showAlert(window.translations["alert.rfidCheckFailed"], "danger");
-            });
-    });
-
-    document.getElementById("email").addEventListener("change", (ev) => {
-        const emailElm = ev.target;
-        const email = emailElm.value;
-        let patronId = document.querySelector('input[name="patronId"]').value;
-
-        if (email.trim().length === 0) {
-            return;
-        }
-
-        if (patronId.trim().length === 0) {
-            patronId = null;
-        }
-
-        checkEmail(email, patronId, csrfToken)
-            .then(data => {
-                if (data.result === true) {
-                    const errorMsg = window.translations["alert.emailAlreadyInUse"];
-                    formState.email.error = errorMsg;
-                    showAlert(window.translations["alert.emailAlreadyInUse"], "danger");
-                } else {
-                    formState.email.error = false;
-                    showAlert(window.translations["alert.emailIsAvailable"], "success");
-                }
-            })
-            .catch(error => {
-                const errorMsg = window.translations["alert.emailCheckFailed"];
-                formState.email.error = errorMsg;
-                showAlert(window.translations["alert.emailCheckFailed"], "danger");
-            });
-    });
-
-    document.getElementById("isCasEmployee").addEventListener("change", handleCasEmployeeChange);
-
-    document.getElementById("useContactAddress").addEventListener("change", (ev) => {
-        const contactAddressFields = document.getElementById("contactAddressFields");
-        if (ev.target.checked) {
-            contactAddressFields.classList.remove("hidden");
-        } else {
-            contactAddressFields.classList.add("hidden");
-        }
-    });
-
-    document.querySelector("form").addEventListener("submit", (event) => {
-        const casEmployeeChecked = document.getElementById("isCasEmployee").checked;
-        const validFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.IDLE);
-        const nowLoadingFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.INIT || file.status === FilePond.FileStatus.LOADING);
-        const invalidFiles = pond.getFiles().filter(file => file.status !== FilePond.FileStatus.IDLE && file.status !== FilePond.FileStatus.INIT && file.status !== FilePond.FileStatus.LOADING);
-
-        for (let formField in formState) {
-            if (formState[formField].error) {
-                event.preventDefault();
-                alert(formState[formField].error);
-                formState[formField].elm.scrollIntoView({ behavior: "smooth" });
-                return;
-            }
-        }
-
-        if (nowLoadingFiles.length > 0) {
-            event.preventDefault();
-            showAlert(window.translations["alert.attachedFilesStillLoading"], "danger");
-            return;
-        }
-
-        if (invalidFiles.length > 0) {
-            event.preventDefault();
-            showAlert(window.translations["alert.attachedFilesInvalid"], "danger");
-            return;
-        }
-
-        if (casEmployeeChecked && validFiles.length === 0 && emailInputElm.value.trim().length === 0) {
-            event.preventDefault();
-            showAlert(window.translations["alert.casEmployeesFormRequirements"], "danger");
-        } else {
-            const totalSize = validFiles.reduce((sum, file) => sum + file.fileSize, 0);
-            const maxTotalSize = 60 * 1024 * 1024; // 60 MB in bytes
-    
-            if (totalSize > maxTotalSize) {
-                event.preventDefault();
-                showAlert(window.translations["alert.totalFileSizeExceeded"], "danger");
+    const updateClearButtonVisibility = () => {
+        clearablePairs.forEach(({ btnElm, inputElm }) => {
+            if ((inputElm.value || "").length > 0) {
+                btnElm.classList.remove("hidden");
             } else {
-                loaderAfterSubmit.show();
-            }
-        }
-    });
-
-    const handleClearableInputChange = (ev) => {
-        clearableInputElms.forEach(elm => {
-            const clearBtnElm = document.querySelector(`.js-clear-input[data-target="#${elm.id}"]`);
-            if (elm.value.length > 0) {
-                clearBtnElm.classList.remove("hidden");
-            } else {
-                clearBtnElm.classList.add("hidden");
+                btnElm.classList.add("hidden");
             }
         });
     };
-    clearBtnElms.forEach(elm => {
-        elm.addEventListener("click", function() {
-            const inputElm = document.querySelector(this.getAttribute("data-target"));
-            inputElm.value = "";
-            handleClearableInputChange();
+
+    clearablePairs.forEach(({ btnElm, inputElm }) => {
+        if (btnElm.dataset.clearInputBound !== "true") {
+            btnElm.dataset.clearInputBound = "true";
+            btnElm.addEventListener("click", () => {
+                inputElm.value = "";
+                inputElm.dispatchEvent(new Event("input", { bubbles: true }));
+                inputElm.dispatchEvent(new Event("change", { bubbles: true }));
+                updateClearButtonVisibility();
+                inputElm.focus();
+            });
+        }
+
+        if (inputElm.dataset.clearInputObserved !== "true") {
+            inputElm.dataset.clearInputObserved = "true";
+            inputElm.addEventListener("input", updateClearButtonVisibility);
+            inputElm.addEventListener("change", updateClearButtonVisibility);
+        }
+    });
+
+    updateClearButtonVisibility();
+}
+
+initClearableInputs();
+
+if (document.querySelector(".page-new-registration, .page-membership-renewal")) {
+    const canContinue = document.querySelector(".page-membership-renewal-impossible") ? false : true;
+
+    if (canContinue) {
+        const formState = {
+            rfid: {
+                elm: document.getElementById("rfid"),
+                error: false,
+            },
+            email: {
+                elm: document.getElementById("email"),
+                error: false,
+            },
+        };
+        const filesElm = document.getElementById("files");
+        const filesInputElm = document.querySelector('[name="media"]');
+        const emailInputElm = document.querySelector('[name="email"]');
+        const filesWrapper = document.getElementById("files-control");
+        const declaration4Wrapper = document.getElementById("declaration4-control");
+        const { csrfToken, csrfHeader } = getCsrfTokenAndHeader();
+        const loaderAfterSubmit = new PageLoader({
+            loaderElm: document.getElementById("page-loader"),
+            loaderTextElm: document.querySelector(".page-loader__text"),
+            text: window.translations["loader.submittingData"],
         });
-    });
-    clearableInputElms.forEach(elm => {
-        elm.addEventListener("change", handleClearableInputChange);
-    });
-    handleClearableInputChange();
+        const isRenewalPage = document.body.classList.contains("page-membership-renewal");
+        const renewalActionInputElm = document.getElementById("renewalAction");
+        const renewalVoucherSection = document.getElementById("renewal-voucher-section");
+        const renewalPaymentRecapElm = document.getElementById("renewal-payment-recap");
+        const renewalSubmitButtonElm = document.getElementById("renewal-submit-button");
+        const renewalSubmitAndPayButtonElm = document.getElementById("renewal-submit-and-pay-button");
+        const renewalOptionalNoteElm = document.getElementById("renewal-payment-optional-note");
+        const renewalFeeAmountElm = document.getElementById("renewal-fee-amount");
+        const renewalEmployeeWaiverRowElm = document.getElementById("renewal-employee-waiver-row");
+        const renewalEmployeeWaiverAmountElm = document.getElementById("renewal-employee-waiver-amount");
+        const renewalVoucherDiscountRowElm = document.getElementById("renewal-voucher-discount-row");
+        const renewalVoucherDiscountAmountElm = document.getElementById("renewal-voucher-discount-amount");
+        const renewalOutstandingFinesRowElm = document.getElementById("renewal-outstanding-fines-row");
+        const renewalOutstandingFinesAmountElm = document.getElementById("renewal-outstanding-fines-amount");
+        const renewalTotalAmountElm = document.getElementById("renewal-total-amount");
+        const renewalVoucherInputElm = document.getElementById("voucherCode");
+        const renewalVoucherResultElm = document.getElementById("voucher-result");
+        const renewalUiState = {
+            voucherValidated: false,
+            discountAmount: 0,
+            amountToPayAfterVoucher: null,
+        };
 
-    const addressAutofillElms = document.querySelectorAll(".js-autocomplete-address");
-    for (let i = 0; i < addressAutofillElms.length; i++) {
-        (function(inputElm) {
-            const autoCompleteJS = new autoComplete({
-                selector: () => inputElm,
-                placeHolder: "",
-                searchEngine: (query, record) => `<mark>${record}</mark>`,
-                data: {
-                    keys: ["value"],
-                    src: async(query) => {
-                        try {
-                            const fetchData = await fetch(`${apiUrl}/suggest-address/${query}`);
-                            const jsonData = await fetchData.json();
+        loaderAfterSubmit.init();
 
-                            if (jsonData.items) {
-                                return jsonData.items.map(item => ({
-                                    value: item.name,
-                                    data: item,
-                                }));
+        function parseAmount(value) {
+            const parsed = parseFloat(value || "0");
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+
+        function formatAmount(value) {
+            const currencyLabel = renewalPaymentRecapElm?.dataset.currencyLabel || "Kč";
+            const documentLanguage = document.documentElement.lang || "cs";
+            const localizedAmount = new Intl.NumberFormat(documentLanguage, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(value);
+            return `${localizedAmount} ${currencyLabel}`;
+        }
+
+        function setElementDisplay(element, shouldShow, displayValue = "flex") {
+            if (!element) {
+                return;
+            }
+
+            element.style.display = shouldShow ? displayValue : "none";
+        }
+
+        function resetRenewalVoucherState() {
+            renewalUiState.voucherValidated = false;
+            renewalUiState.discountAmount = 0;
+            renewalUiState.amountToPayAfterVoucher = null;
+
+            if (renewalVoucherInputElm) {
+                renewalVoucherInputElm.value = "";
+            }
+
+            if (renewalVoucherResultElm) {
+                renewalVoucherResultElm.classList.add("hidden");
+                renewalVoucherResultElm.className = renewalVoucherResultElm.className.replace(/bg-\S+/g, "").replace(/text-\S+/g, "");
+                renewalVoucherResultElm.dataset.valid = "false";
+                renewalVoucherResultElm.dataset.code = "";
+                renewalVoucherResultElm.dataset.discountAmount = "0";
+                renewalVoucherResultElm.dataset.amountToPay = "0";
+                renewalVoucherResultElm.dataset.feeAmount = "0";
+            }
+        }
+
+        function updateRenewalPaymentUI() {
+            if (!isRenewalPage || !renewalPaymentRecapElm || !renewalActionInputElm) {
+                return;
+            }
+
+            const casEmployeeValue = document.getElementById("isCasEmployee").checked;
+            const declaration4InputElm = document.getElementById("declaration4");
+            const standardRenewalFeeAmount = parseAmount(renewalPaymentRecapElm.dataset.standardRenewalFee);
+            const outstandingFinesAmount = parseAmount(renewalPaymentRecapElm.dataset.outstandingFines);
+            const voucherDiscountAmount = !casEmployeeValue && renewalUiState.voucherValidated
+                ? renewalUiState.discountAmount
+                : 0;
+            const employeeWaiverAmount = casEmployeeValue ? standardRenewalFeeAmount : 0;
+            const renewalFeeAmountToPay = Math.max(
+                standardRenewalFeeAmount - employeeWaiverAmount - voucherDiscountAmount,
+                0
+            );
+            const totalAmountToPay = renewalFeeAmountToPay + outstandingFinesAmount;
+            const feeFullyCovered = !casEmployeeValue
+                && renewalUiState.voucherValidated
+                && renewalUiState.amountToPayAfterVoucher === 0;
+            const requiresPaymentToCompleteRenewal = !casEmployeeValue && !feeFullyCovered;
+            const showSubmitOnlyButton = casEmployeeValue || feeFullyCovered;
+            const showSubmitAndPayButton = totalAmountToPay > 0;
+
+            renewalFeeAmountElm.textContent = formatAmount(standardRenewalFeeAmount);
+            renewalTotalAmountElm.textContent = formatAmount(totalAmountToPay);
+
+            setElementDisplay(renewalEmployeeWaiverRowElm, employeeWaiverAmount > 0);
+            if (renewalEmployeeWaiverAmountElm) {
+                renewalEmployeeWaiverAmountElm.textContent = `-${formatAmount(employeeWaiverAmount)}`;
+            }
+
+            setElementDisplay(renewalVoucherDiscountRowElm, voucherDiscountAmount > 0);
+            if (renewalVoucherDiscountAmountElm) {
+                renewalVoucherDiscountAmountElm.textContent = `-${formatAmount(voucherDiscountAmount)}`;
+            }
+
+            setElementDisplay(renewalOutstandingFinesRowElm, outstandingFinesAmount > 0);
+            if (renewalOutstandingFinesAmountElm) {
+                renewalOutstandingFinesAmountElm.textContent = formatAmount(outstandingFinesAmount);
+            }
+
+            if (renewalVoucherSection) {
+                renewalVoucherSection.style.display = casEmployeeValue ? "none" : "block";
+            }
+
+            if (declaration4Wrapper && declaration4InputElm) {
+                declaration4Wrapper.style.display = requiresPaymentToCompleteRenewal ? "block" : "none";
+                declaration4InputElm.required = requiresPaymentToCompleteRenewal;
+            }
+
+            setElementDisplay(renewalSubmitButtonElm, showSubmitOnlyButton, "inline-flex");
+            setElementDisplay(renewalSubmitAndPayButtonElm, showSubmitAndPayButton, "inline-flex");
+            setElementDisplay(renewalOptionalNoteElm, showSubmitOnlyButton && showSubmitAndPayButton, "block");
+
+            renewalActionInputElm.value = showSubmitAndPayButton && !showSubmitOnlyButton
+                ? "submitAndPay"
+                : "submit";
+        }
+
+        function handleCasEmployeeChange(ev) {
+            const casEmployeeValue = ev ? ev.target.checked : document.getElementById("isCasEmployee").checked;
+            const declaration4InputElm = document.getElementById("declaration4");
+
+            if (casEmployeeValue) {
+                resetRenewalVoucherState();
+                filesWrapper.style.display = "block";
+                declaration4Wrapper.style.display = "none";
+                declaration4InputElm.required = false;
+            } else {
+                filesWrapper.style.display = "none";
+                declaration4Wrapper.style.display = "block";
+                declaration4InputElm.required = true;
+            }
+
+            updateRenewalPaymentUI();
+        }
+
+        FilePond.registerPlugin(
+            FilePondPluginFileValidateSize,
+            FilePondPluginImageExifOrientation,
+            FilePondPluginFileValidateType,
+            FilePondPluginImagePreview
+        );
+
+        const pond = FilePond.create(filesElm);
+
+        FilePond.setOptions({
+            storeAsFile: true,
+            allowFileTypeValidation: true,
+            allowFileSizeValidation: true,
+            allowImagePreview: true,
+            acceptedFileTypes: ["image/png", "image/jpeg", "application/pdf"],
+            maxFileSize: "20MB",
+            labelIdle: window.translations["filepond.labelIdle"],
+            labelMaxFileSizeExceeded: window.translations["filepond.maxFileSizeExceeded"],
+            labelMaxFileSize: window.translations["filepond.maxFileSize"],
+            labelFileTypeNotAllowed: window.translations["filepond.invalidFileType"],
+            fileValidateTypeLabelExpectedTypes: window.translations["filepond.allowedFileTypes"],
+        });
+
+        handleCasEmployeeChange();
+
+        document.getElementById("rfid").addEventListener("change", (ev) => {
+            const rfidElm = ev.target;
+            const rfid = rfidElm.value;
+            let patronId = document.querySelector('input[name="patronId"]').value;
+
+            if (rfid.trim().length === 0) {
+                return;
+            }
+
+            if (patronId.trim().length === 0) {
+                patronId = null;
+            }
+
+            checkRfid(rfid, patronId, csrfToken)
+                .then(data => {
+                    if (data.result === true) {
+                        const errorMsg = window.translations["alert.rfidAlreadyInUse"];
+                        formState.rfid.error = errorMsg;
+                        showAlert(errorMsg, "danger");
+                    } else {
+                        formState.rfid.error = false;
+                        showAlert(window.translations["alert.rfidIsAvailable"], "success");
+                    }
+                })
+                .catch(error => {
+                    const errorMsg = window.translations["alert.rfidCheckFailed"];
+                    formState.rfid.error = errorMsg;
+                    showAlert(window.translations["alert.rfidCheckFailed"], "danger");
+                });
+        });
+
+        document.getElementById("email").addEventListener("change", (ev) => {
+            const emailElm = ev.target;
+            const email = emailElm.value;
+            let patronId = document.querySelector('input[name="patronId"]').value;
+
+            if (email.trim().length === 0) {
+                return;
+            }
+
+            if (patronId.trim().length === 0) {
+                patronId = null;
+            }
+
+            checkEmail(email, patronId, csrfToken)
+                .then(data => {
+                    if (data.result === true) {
+                        const errorMsg = window.translations["alert.emailAlreadyInUse"];
+                        formState.email.error = errorMsg;
+                        showAlert(window.translations["alert.emailAlreadyInUse"], "danger");
+                    } else {
+                        formState.email.error = false;
+                        showAlert(window.translations["alert.emailIsAvailable"], "success");
+                    }
+                })
+                .catch(error => {
+                    const errorMsg = window.translations["alert.emailCheckFailed"];
+                    formState.email.error = errorMsg;
+                    showAlert(window.translations["alert.emailCheckFailed"], "danger");
+                });
+        });
+
+        document.getElementById("isCasEmployee").addEventListener("change", handleCasEmployeeChange);
+
+        document.getElementById("useContactAddress").addEventListener("change", (ev) => {
+            const contactAddressFields = document.getElementById("contactAddressFields");
+            if (ev.target.checked) {
+                contactAddressFields.classList.remove("hidden");
+            } else {
+                contactAddressFields.classList.add("hidden");
+            }
+        });
+
+        document.querySelector("form").addEventListener("submit", (event) => {
+            const casEmployeeChecked = document.getElementById("isCasEmployee").checked;
+            const validFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.IDLE);
+            const nowLoadingFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.INIT || file.status === FilePond.FileStatus.LOADING);
+            const invalidFiles = pond.getFiles().filter(file => file.status !== FilePond.FileStatus.IDLE && file.status !== FilePond.FileStatus.INIT && file.status !== FilePond.FileStatus.LOADING);
+
+            if (renewalActionInputElm && event.submitter && event.submitter.dataset.renewalAction) {
+                renewalActionInputElm.value = event.submitter.dataset.renewalAction;
+            }
+
+            for (let formField in formState) {
+                if (formState[formField].error) {
+                    event.preventDefault();
+                    alert(formState[formField].error);
+                    formState[formField].elm.scrollIntoView({ behavior: "smooth" });
+                    return;
+                }
+            }
+
+            if (nowLoadingFiles.length > 0) {
+                event.preventDefault();
+                showAlert(window.translations["alert.attachedFilesStillLoading"], "danger");
+                return;
+            }
+
+            if (invalidFiles.length > 0) {
+                event.preventDefault();
+                showAlert(window.translations["alert.attachedFilesInvalid"], "danger");
+                return;
+            }
+
+            if (casEmployeeChecked && validFiles.length === 0 && emailInputElm.value.trim().length === 0) {
+                event.preventDefault();
+                showAlert(window.translations["alert.casEmployeesFormRequirements"], "danger");
+            } else {
+                const totalSize = validFiles.reduce((sum, file) => sum + file.fileSize, 0);
+                const maxTotalSize = 60 * 1024 * 1024; // 60 MB in bytes
+
+                if (totalSize > maxTotalSize) {
+                    event.preventDefault();
+                    showAlert(window.translations["alert.totalFileSizeExceeded"], "danger");
+                } else {
+                    loaderAfterSubmit.show();
+                }
+            }
+        });
+
+        updateRenewalPaymentUI();
+
+        if (isRenewalPage) {
+            document.addEventListener("voucher:validation", (event) => {
+                const detail = event.detail || {};
+                renewalUiState.voucherValidated = detail.valid === true;
+                renewalUiState.discountAmount = detail.valid === true ? parseAmount(detail.discountAmount) : 0;
+                renewalUiState.amountToPayAfterVoucher = detail.valid === true
+                    ? parseAmount(detail.amountToPay)
+                    : null;
+                updateRenewalPaymentUI();
+            });
+        }
+
+        const addressAutofillElms = document.querySelectorAll(".js-autocomplete-address");
+        for (let i = 0; i < addressAutofillElms.length; i++) {
+            (function(inputElm) {
+                const autoCompleteJS = new autoComplete({
+                    selector: () => inputElm,
+                    placeHolder: "",
+                    searchEngine: (query, record) => `<mark>${record}</mark>`,
+                    data: {
+                        keys: ["value"],
+                        src: async(query) => {
+                            try {
+                                const fetchData = await fetch(`${apiUrl}/suggest-address/${query}`);
+                                const jsonData = await fetchData.json();
+
+                                if (jsonData.items) {
+                                    return jsonData.items.map(item => ({
+                                        value: item.name,
+                                        data: item,
+                                    }));
+                                }
+                            } catch (exc) {
+                                console.log(exc);
+
+                                return [];
                             }
-                        } catch (exc) {
-                            console.log(exc);
-
-                            return [];
-                        }
+                        },
+                        cache: false,
                     },
-                    cache: false,
-                },
-                resultItem: {
-                    element: (item, data) => {
-                        const itemData = data.value.data;
-                        let desc = document.createElement("div");
+                    resultItem: {
+                        element: (item, data) => {
+                            const itemData = data.value.data;
+                            let desc = document.createElement("div");
 
-                        desc.style = "overflow: hidden; white-space: nowrap; text-overflow: ellipsis;";
-                        desc.innerHTML = `${itemData.label}, ${itemData.location}`;
-                        item.append(
-                            desc,
-                        );
+                            desc.style = "overflow: hidden; white-space: nowrap; text-overflow: ellipsis;";
+                            desc.innerHTML = `${itemData.label}, ${itemData.location}`;
+                            item.append(
+                                desc,
+                            );
+                        },
+                        highlight: true
                     },
-                    highlight: true
-                },
-                resultsList: {
-                    element: (list, data) => {
-                        list.style.maxHeight = "max-content";
-                        list.style.overflow = "hidden";
+                    resultsList: {
+                        element: (list, data) => {
+                            list.style.maxHeight = "max-content";
+                            list.style.overflow = "hidden";
 
-                        if (!data.results.length) {
-                            let message = document.createElement("div");
+                            if (!data.results.length) {
+                                let message = document.createElement("div");
 
-                            message.setAttribute("class", "no_result");
-                            message.style = "padding: 5px";
-                            message.innerHTML = `<span>Žádné výsledky pro "${data.query}"</span>`;
-                            list.prepend(message);
-                        } else {
-                            let logoHolder = document.createElement("div");
-                            let text = document.createElement("span");
-                            const img = new Image();
+                                message.setAttribute("class", "no_result");
+                                message.style = "padding: 5px";
+                                message.innerHTML = `<span>Žádné výsledky pro "${data.query}"</span>`;
+                                list.prepend(message);
+                            } else {
+                                let logoHolder = document.createElement("div");
+                                let text = document.createElement("span");
+                                const img = new Image();
 
-                            logoHolder.style = "padding: 5px; display: flex; align-items: center; justify-content: end; gap: 5px; font-size: 12px;";
-                            text.textContent = "Powered by";
-                            img.src = "https://api.mapy.cz/img/api/logo-small.svg";
-                            img.style = "width: 60px";
-                            logoHolder.append(text, img);
-                            list.append(logoHolder);
-                        }
+                                logoHolder.style = "padding: 5px; display: flex; align-items: center; justify-content: end; gap: 5px; font-size: 12px;";
+                                text.textContent = "Powered by";
+                                img.src = "https://api.mapy.cz/img/api/logo-small.svg";
+                                img.style = "width: 60px";
+                                logoHolder.append(text, img);
+                                list.append(logoHolder);
+                            }
+                        },
+                        noResults: true,
                     },
-                    noResults: true,
-                },
-            });
+                });
 
-            inputElm.addEventListener("selection", event => {
-                const origData = event.detail.selection.value.data;
+                inputElm.addEventListener("selection", event => {
+                    const origData = event.detail.selection.value.data;
 
-                if (!origData.regionalStructure) {
-                    return false;
-                }
+                    if (!origData.regionalStructure) {
+                        return false;
+                    }
 
-                const regionalStructure = origData.regionalStructure;
-                let streetElm, cityElm, zipElm;
+                    const regionalStructure = origData.regionalStructure;
+                    let streetElm, cityElm, zipElm;
 
-                switch (inputElm.id) {
-                    case "address1":
-                        streetElm = document.getElementById("address1");
-                        cityElm = document.getElementById("address2");
-                        zipElm = document.getElementById("zip");
-                        break;
-                    case "contactAddress1":
-                        streetElm = document.getElementById("contactAddress1");
-                        cityElm = document.getElementById("contactAddress2");
-                        zipElm = document.getElementById("contactZip");
-                        break;
-                }
+                    switch (inputElm.id) {
+                        case "address1":
+                            streetElm = document.getElementById("address1");
+                            cityElm = document.getElementById("address2");
+                            zipElm = document.getElementById("zip");
+                            break;
+                        case "contactAddress1":
+                            streetElm = document.getElementById("contactAddress1");
+                            cityElm = document.getElementById("contactAddress2");
+                            zipElm = document.getElementById("contactZip");
+                            break;
+                    }
 
-                const addressItem = regionalStructure.filter(item => item.type === "regional.address");
-                const addressName = addressItem.length > 0 ? addressItem[0].name : null;
-                const streetItem = regionalStructure.filter(item => item.type === "regional.street");
-                const streetName = streetItem.length > 0 ? streetItem[0].name : null;
-                const municipalityItem = regionalStructure.filter(item => item.type === "regional.municipality");
-                const municipalityName = municipalityItem.length > 0 ? municipalityItem[0].name : null;
-                const municipalityPartItem = regionalStructure.filter(item => item.type === "regional.municipality_part");
-                const municipalityPartName = municipalityPartItem.length > 0 ? municipalityPartItem[0].name : null;
+                    const addressItem = regionalStructure.filter(item => item.type === "regional.address");
+                    const addressName = addressItem.length > 0 ? addressItem[0].name : null;
+                    const streetItem = regionalStructure.filter(item => item.type === "regional.street");
+                    const streetName = streetItem.length > 0 ? streetItem[0].name : null;
+                    const municipalityItem = regionalStructure.filter(item => item.type === "regional.municipality");
+                    const municipalityName = municipalityItem.length > 0 ? municipalityItem[0].name : null;
+                    const municipalityPartItem = regionalStructure.filter(item => item.type === "regional.municipality_part");
+                    const municipalityPartName = municipalityPartItem.length > 0 ? municipalityPartItem[0].name : null;
 
-                if (streetName) {
-                    streetElm.value = streetName + (addressName ? (" " + addressName) : "");
-                } else if (municipalityPartName) {
-                    streetElm.value = municipalityPartName + (addressName ? (" " + addressName) : "");
-                } else {
-                    streetElm.value = "";
-                }
-                if (municipalityItem.length > 0 && municipalityItem[0].name === "Praha" && municipalityPartItem.length >= 2) {
-                    cityElm.value = municipalityPartItem[1].name + " - " + municipalityPartItem[0].name;
-                } else {
-                    cityElm.value = municipalityName || "";
-                }
-                zipElm.value = origData.zip || "";
-            });
-        })(addressAutofillElms[i]);
+                    if (streetName) {
+                        streetElm.value = streetName + (addressName ? (" " + addressName) : "");
+                    } else if (municipalityPartName) {
+                        streetElm.value = municipalityPartName + (addressName ? (" " + addressName) : "");
+                    } else {
+                        streetElm.value = "";
+                    }
+                    if (municipalityItem.length > 0 && municipalityItem[0].name === "Praha" && municipalityPartItem.length >= 2) {
+                        cityElm.value = municipalityPartItem[1].name + " - " + municipalityPartItem[0].name;
+                    } else {
+                        cityElm.value = municipalityName || "";
+                    }
+                    zipElm.value = origData.zip || "";
+                });
+            })(addressAutofillElms[i]);
+        }
     }
 }
 
 // PAGE: MEMBERSHIP RENEWAL
 if (document.querySelector(".page-membership-renewal")) {
     const jsbtnUseInputValElms = document.querySelectorAll(".jsbtn-useInputVal");
+    const renewalPrefillAlephElms = document.querySelectorAll(".js-renewal-prefill-aleph");
 
     jsbtnUseInputValElms.forEach(button => {
         button.addEventListener("click", function(event) {
             event.preventDefault();
+            const targetSelector = this.getAttribute("data-input-target");
             const parentElm = this.parentElement;
-            const input = parentElm.querySelector("input");
+            const input = targetSelector ? document.querySelector(targetSelector) : parentElm.querySelector("input");
             const value = this.querySelector("i").textContent;
-            input.value = value;
+            if (input) {
+                input.value = value;
+            }
         });
     });
+
+    let prefilledCount = 0;
+    renewalPrefillAlephElms.forEach(button => {
+        const targetSelector = button.getAttribute("data-input-target");
+        const input = targetSelector ? document.querySelector(targetSelector) : null;
+        const valueElm = button.querySelector("i");
+        const value = valueElm ? valueElm.textContent.trim() : "";
+
+        if (!input || !value || input.value.trim().length > 0) {
+            return;
+        }
+
+        input.value = value;
+        prefilledCount += 1;
+    });
+
+    if (prefilledCount > 0) {
+        showAlert(window.translations["alert.renewalAlephPrefillApplied"], "info", 10000);
+    }
 }
 
 // FORM: SET/RESET IDENTITY PASSWORD
@@ -828,9 +1143,28 @@ if (document.getElementById("js-restoreIdentity")) {
 if (document.getElementById("js-identityAlephDeleted")) {
     document.getElementById("js-identityAlephDeleted").addEventListener("click", triggerMarkIdentityAsDeletedInAleph);
 }
-// Footer positioning
-setTimeout(checkFooterPosition, 1000);
-window.addEventListener("resize", checkFooterPosition);
+if (goToServiceBtnElms.length > 0) {
+    goToServiceBtnElms.forEach(link => {
+        link.addEventListener('click', () => {
+            const textToCopy = link.getAttribute('data-copy');
+            navigator.clipboard.writeText(textToCopy);
+            showAlert(window.translations["alert.copiedToClipboard"], "success");
+        });
+    });
+}
+
+void autoLogoutOnLoad();
+
+// Header respo
+respoHeader();
+let resizeRaf = null;   // Throttle resize events
+window.addEventListener("resize", () => {
+    if (resizeRaf) return;
+    resizeRaf = window.requestAnimationFrame(() => {
+        resizeRaf = null;
+        respoHeader();
+    });
+});
 
 // // TESTING
 // const emptyIdentities = async () => {

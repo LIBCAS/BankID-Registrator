@@ -1,8 +1,6 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
 
-    <head>
-        <title th:replace="fragments/head :: head"></title>
-    </head>
+    <head></head>
 
     <body class="page-dashboard">
         <main layout:fragment="content" class="mb-10 container text-center mx-auto print:mx-2 print:my-2">
@@ -51,6 +49,11 @@
                                                 <div th:text="${patron.contactZip}"></div>
                                             </td>
                                         </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.updatedAt}">Updated at</th>
+                                            <td class="px-6 py-4" th:if="${identity.updatedAt != null}" th:text="${dateUtils.convertDateTimeFormat(identity.updatedAt)}"></td>
+                                            <td class="px-6 py-4 text-gray-400" th:if="${identity.updatedAt == null}">N/A</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -82,9 +85,21 @@
                                             <td class="px-6 py-4" th:if="${identity.checkedByAdmin == true}" th:text="#{message.yes}">Yes</td>
                                         </tr>
                                         <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.passwordSet}">Password set</th>
+                                            <td class="px-6 py-4 text-gray-400" th:if="${identity.passwordSet == null}">N/A</td>
+                                            <td class="px-6 py-4 text-red-600 font-semibold" th:if="${identity.passwordSet == false}" th:text="#{message.no}">No</td>
+                                            <td class="px-6 py-4" th:if="${identity.passwordSet == true}" th:text="#{message.yes}">Yes</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
                                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.casEmployee}">CAS employee</th>
                                             <td class="px-6 py-4" th:if="${identity.isCasEmployee == null || identity.isCasEmployee == false}" th:text="#{message.no}">No</td>
                                             <td class="px-6 py-4" th:if="${identity.isCasEmployee == true}" th:text="#{message.yes}">Yes</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.paymentStatus}">Payment status</th>
+                                            <td class="px-6 py-4">
+                                                <span th:class="${paymentStatusClass}" th:utext="${#messages.msg('patronPaymentStatus.' + paymentStatusKey)}">Free / Unknown</span>
+                                            </td>
                                         </tr>
                                         <tr th:if="${patron != null && identity.isCasEmployee == true}" class="border-b border-gray-200">
                                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.email}">E-mail</th>
@@ -94,17 +109,62 @@
                                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50 text-center" th:text="#{message.attachments}" colspan="2">Attachments</th>
                                         </tr>
                                     </tbody>
-                                    <tbody th:if="${patron != null && identity.isCasEmployee == true}" th:each="media : ${medias}">
+                                    <tbody th:if="${patron != null && identity.isCasEmployee == true && currentMediaGroup != null}">
                                         <tr class="border-b border-gray-200">
-                                            <th th:text="${media.name}" class="italic px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50 text-center" colspan="2"></th>
+                                            <th class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" colspan="2" th:text="${currentMediaGroup.title}">Latest attachments</th>
                                         </tr>
-                                        <tr class="border-b border-gray-200">
-                                            <td class="px-6 py-4" colspan="2">
-                                                <a th:href="@{'/files/' + ${media.name}}" target="_blank">
-                                                    <img th:src="@{'/files/' + ${media.name}}" th:alt="${media.name}" class="max-w-xs h-auto my-0 mx-auto"/>
-                                                </a>
+                                        <tr th:if="${currentMediaGroup.submittedAtLabel != null}" class="border-b border-gray-200">
+                                            <td class="px-6 py-3 text-sm text-gray-600 bg-gray-50" colspan="2">
+                                                <span th:text="#{message.submittedAt}">Submitted at</span>: <span th:text="${currentMediaGroup.submittedAtLabel}"></span>
                                             </td>
                                         </tr>
+                                        <th:block th:each="media : ${currentMediaGroup.medias}">
+                                            <tr class="border-b border-gray-200">
+                                                <th th:text="${media.displayName}" class="italic px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50 text-center" colspan="2"></th>
+                                            </tr>
+                                            <tr class="border-b border-gray-200">
+                                                <td class="px-6 py-4" colspan="2">
+                                                    <a th:href="@{'/files/' + ${media.name}}" target="_blank" rel="noopener noreferrer">
+                                                        <img th:if="${#strings.startsWith(media.type, 'image/')}" th:src="@{'/files/' + ${media.name}}" th:alt="${media.displayName}" class="max-w-xs h-auto my-0 mx-auto"/>
+                                                        <span th:if="${media.type == 'application/pdf'}" class="inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900">
+                                                            PDF: <span class="ml-1" th:text="${media.displayName}"></span>
+                                                        </span>
+                                                        <span th:if="${!#strings.startsWith(media.type, 'image/') && media.type != 'application/pdf'}" th:text="${media.displayName}"></span>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </th:block>
+                                    </tbody>
+                                    <tbody th:if="${patron != null && identity.isCasEmployee == true && !#lists.isEmpty(historicalMediaGroups)}">
+                                        <tr class="border-b border-gray-200">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50 text-center" th:text="#{message.attachmentsHistory}" colspan="2">Attachment history</th>
+                                        </tr>
+                                        <th:block th:each="mediaGroup : ${historicalMediaGroups}">
+                                            <tr class="border-b border-gray-200">
+                                                <th class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" colspan="2" th:text="${mediaGroup.title}">Older attachments</th>
+                                            </tr>
+                                            <tr th:if="${mediaGroup.submittedAtLabel != null}" class="border-b border-gray-200">
+                                                <td class="px-6 py-3 text-sm text-gray-600 bg-gray-50" colspan="2">
+                                                    <span th:text="#{message.submittedAt}">Submitted at</span>: <span th:text="${mediaGroup.submittedAtLabel}"></span>
+                                                </td>
+                                            </tr>
+                                            <th:block th:each="media : ${mediaGroup.medias}">
+                                                <tr class="border-b border-gray-200">
+                                                    <th th:text="${media.displayName}" class="italic px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50 text-center" colspan="2"></th>
+                                                </tr>
+                                                <tr class="border-b border-gray-200">
+                                                    <td class="px-6 py-4" colspan="2">
+                                                        <a th:href="@{'/files/' + ${media.name}}" target="_blank" rel="noopener noreferrer">
+                                                            <img th:if="${#strings.startsWith(media.type, 'image/')}" th:src="@{'/files/' + ${media.name}}" th:alt="${media.displayName}" class="max-w-xs h-auto my-0 mx-auto"/>
+                                                            <span th:if="${media.type == 'application/pdf'}" class="inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:text-gray-900">
+                                                                PDF: <span class="ml-1" th:text="${media.displayName}"></span>
+                                                            </span>
+                                                            <span th:if="${!#strings.startsWith(media.type, 'image/') && media.type != 'application/pdf'}" th:text="${media.displayName}"></span>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </th:block>
+                                        </th:block>
                                     </tbody>
                                     <tbody>
                                         <tr class="border-b border-gray-200">
@@ -126,6 +186,38 @@
                                         <tr class="border-b border-gray-200">
                                             <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap bg-gray-50" th:text="#{message.language}">Language</th>
                                             <td class="px-6 py-4" th:text="${patron.conLng}"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div th:if="${!#lists.isEmpty(confirmedVoucherUsages)}" class="print:hidden no-print">
+                            <h3 class="text-lg font-semibold mb-3" th:text="#{message.usedVouchers}">Used vouchers</h3>
+                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                                <table class="w-full text-sm text-left rtl:text-right text-gray-500">
+                                    <tbody>
+                                        <tr th:each="usage : ${confirmedVoucherUsages}" class="border-b border-gray-200">
+                                            <td class="px-6 py-4">
+                                                <a th:href="@{/dashboard/vouchers/{id}(id=${usage.voucher.id})}" class="font-semibold text-libcas-blue hover:underline" th:text="${usage.voucher.code}">Voucher</a>
+                                            </td>
+                                            <td class="px-6 py-4" th:text="#{message.discountApplied} + ': -' + ${#numbers.formatDecimal(usage.discountApplied, 1, 'DEFAULT', 2, 'DEFAULT')} + ' ' + #{message.czk}">Discount applied</td>
+                                            <td class="px-6 py-4" th:text="#{message.appliedAt} + ': ' + ${dateUtils.convertDateTimeFormat(usage.usedAt)}">Applied at</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div th:if="${!#lists.isEmpty(pendingVoucherUsages)}" class="print:hidden no-print">
+                            <h3 class="text-lg font-semibold mb-3" th:text="#{message.pendingVouchers}">Pending vouchers</h3>
+                            <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+                                <table class="w-full text-sm text-left rtl:text-right text-gray-500">
+                                    <tbody>
+                                        <tr th:each="usage : ${pendingVoucherUsages}" class="border-b border-gray-200">
+                                            <td class="px-6 py-4">
+                                                <a th:href="@{/dashboard/vouchers/{id}(id=${usage.voucher.id})}" class="font-semibold text-libcas-blue hover:underline" th:text="${usage.voucher.code}">Voucher</a>
+                                            </td>
+                                            <td class="px-6 py-4" th:text="#{message.discountApplied} + ': -' + ${#numbers.formatDecimal(usage.discountApplied, 1, 'DEFAULT', 2, 'DEFAULT')} + ' ' + #{message.czk}">Discount applied</td>
+                                            <td class="px-6 py-4" th:text="#{message.appliedAt} + ': ' + ${dateUtils.convertDateTimeFormat(usage.usedAt)}">Applied at</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -161,8 +253,8 @@
                 <a th:if="${identity.alephDeleted == false}" id="js-identityAlephDeleted" th:href="@{/dashboard/identity/{id}/aleph-deleted(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 mt-4" th:text="#{message.markAsDeletedInAleph}">
                     Mark as deleted in Aleph
                 </a>
-                <a th:if="${identity.deleted == false}" id="js-deleteIdentity" th:href="@{/dashboard/identity/{id}/delete(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 mt-4" th:text="#{message.delete}">
-                    Delete
+                <a th:if="${identity.deleted == false}" id="js-deleteIdentity" th:href="@{/dashboard/identity/{id}/delete(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 mt-4" th:text="#{message.archiveIdentity}">
+                    Archive
                 </a>
                 <a th:if="${identity.deleted == true}" id="js-restoreIdentity" th:href="@{/dashboard/identity/{id}/restore(id=${identity.id})}" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 mt-4" th:text="#{message.restore}">
                     Restore

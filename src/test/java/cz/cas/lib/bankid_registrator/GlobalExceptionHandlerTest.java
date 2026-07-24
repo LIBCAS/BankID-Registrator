@@ -11,6 +11,9 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.servlet.ModelAndView;
 import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -90,6 +93,63 @@ public class GlobalExceptionHandlerTest
         assertEquals(statusCode, modelAndView.getModel().get("errorCode"));
         assertEquals(statusReasonPhrase, modelAndView.getModel().get("errorTitle"));
         assertEquals(null, modelAndView.getModel().get("error"));
+        assertEquals(DEFAULT_LOCALE.getLanguage(), modelAndView.getModel().get("lang"));
+    }
+
+    /**
+     * Test that the {@link GlobalExceptionHandler#handleMethodNotSupportedException(HttpRequestMethodNotSupportedException, Locale, MockHttpServletRequest)} method
+     * returns a {@link ModelAndView} with the correct values set when the message translation is missing.
+     */
+    @Test
+    public void testHandleMethodNotSupportedException()
+    {
+        HttpStatus status = HttpStatus.METHOD_NOT_ALLOWED;
+        String statusCode = String.valueOf(status.value());
+        String statusReasonPhrase = status.getReasonPhrase();
+        String statusReasonPhraseTranslationKey = "error." + statusCode + ".text";
+
+        Mockito
+            .when(this.messageSource.getMessage(eq(statusReasonPhraseTranslationKey), any(), eq(statusReasonPhrase), eq(DEFAULT_LOCALE)))
+            .thenReturn(statusReasonPhraseTranslationKey);
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/identity/set-password");
+        HttpRequestMethodNotSupportedException exception = new HttpRequestMethodNotSupportedException("GET", new String[] {"POST"});
+        ModelAndView modelAndView = this.exceptionHandler.handleMethodNotSupportedException(exception, DEFAULT_LOCALE, request);
+
+        assertEquals("error", modelAndView.getViewName());
+        assertEquals(status, modelAndView.getStatus());
+        assertEquals(statusCode, modelAndView.getModel().get("errorCode"));
+        assertEquals(statusReasonPhraseTranslationKey, modelAndView.getModel().get("errorTitle"));
+        assertEquals(exception.getMessage(), modelAndView.getModel().get("error"));
+        assertEquals(DEFAULT_LOCALE.getLanguage(), modelAndView.getModel().get("lang"));
+    }
+
+    /**
+     * Test that the {@link GlobalExceptionHandler#handleMediaTypeNotAcceptableException(HttpMediaTypeNotAcceptableException, Locale, MockHttpServletRequest)} method
+     * returns a {@link ModelAndView} with the correct values set when the message translation
+     */
+    @Test
+    public void testHandleMediaTypeNotAcceptableException()
+    {
+        HttpStatus status = HttpStatus.NOT_ACCEPTABLE;
+        String statusCode = String.valueOf(status.value());
+        String statusReasonPhrase = status.getReasonPhrase();
+        String statusReasonPhraseTranslationKey = "error." + statusCode + ".text";
+
+        Mockito
+            .when(this.messageSource.getMessage(eq(statusReasonPhraseTranslationKey), any(), eq(statusReasonPhrase), eq(DEFAULT_LOCALE)))
+            .thenReturn(statusReasonPhraseTranslationKey);
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/welcome");
+        request.addHeader("Accept", "application/json");
+        HttpMediaTypeNotAcceptableException exception = new HttpMediaTypeNotAcceptableException("Could not find acceptable representation");
+        ModelAndView modelAndView = this.exceptionHandler.handleMediaTypeNotAcceptableException(exception, DEFAULT_LOCALE, request);
+
+        assertEquals("error", modelAndView.getViewName());
+        assertEquals(status, modelAndView.getStatus());
+        assertEquals(statusCode, modelAndView.getModel().get("errorCode"));
+        assertEquals(statusReasonPhraseTranslationKey, modelAndView.getModel().get("errorTitle"));
+        assertEquals(exception.getMessage(), modelAndView.getModel().get("error"));
         assertEquals(DEFAULT_LOCALE.getLanguage(), modelAndView.getModel().get("lang"));
     }
 

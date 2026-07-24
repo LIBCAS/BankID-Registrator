@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+
+    <head></head>
+
+    <body class="page-payment" th:classappend="${isRegistration} ? 'page-fee-payment' : ''">
+        <main layout:fragment="content" class="mb-10 text-center container mx-auto p-5 flex flex-col items-center justify-center gap-6 print:m-0 print:p-0 print:max-w-none">
+            <!--/* Public cancelled return page for logged-out Comgate return - outstanding fines */-->
+            <div th:if="${publicPaymentCancelled and isFinesOnly}" class="payment-cancelled-public flex flex-col gap-6 items-center text-center">
+                <h1 class="text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="#{page.payment.publicCancelled.title.fines}"></h1>
+                <p th:utext="#{payment.publicCancelled.fines}"></p>
+                <a th:href="#{service.libraryCatalog.url}" target="_blank" rel="noopener" class="flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-white focus:outline-none focus:shadow-outline" th:text="#{message.goToCatalog}"></a>
+            </div>
+            <!--/* Public cancelled return page for logged-out Comgate return - registration/renewal */-->
+            <div th:if="${publicPaymentCancelled and !isFinesOnly}" class="payment-cancelled-public flex flex-col gap-6 items-center text-center">
+                <h1 class="text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="#{page.payment.publicCancelled.title}"></h1>
+                <p th:utext="#{payment.publicCancelled.text1}"></p>
+                <p th:utext="${isRegistration} ? #{payment.publicCancelled.text2.registration} : #{payment.publicCancelled.text2.renewal}"></p>
+                <p class="uppercase text-[1rem] tracking-[8px] font-medium" th:utext="#{page.payment.deadline(${paymentDeadline})}"></p>
+                <p th:utext="#{payment.publicCancelled.text3}"></p>
+                <a th:href="#{service.libraryCatalog.fines.url}" target="_blank" rel="noopener" class="flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-white focus:outline-none focus:shadow-outline" th:text="#{message.loginAndPay}"></a>
+            </div>
+            <!--/* Initial state - show payment form */-->
+            <div th:if="${showPaymentForm}" class="payment-form flex flex-col gap-8 items-center text-center">
+                <h1 class="text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="${pageTitle}"></h1>
+                <p th:if="${paymentFailed}" th:utext="${errorMessage}"></p>
+                <p th:if="${!paymentFailed}" th:utext="${isFinesOnly} ? #{page.payment.description.fines} : #{page.payment.description}"></p>
+                <!--/* Username display */-->
+                <div th:if="${identity != null && identity.alephBarcode != null}" class="p-4 bg-gray-50 rounded-lg">
+                    <p class="text-lg">
+                        <span th:text="#{message.yourUsername}"></span>: <b th:text="${identity.alephBarcode}"></b>
+                    </p>
+                </div>
+                <!--/* Payment clauses */-->
+                <div>
+                    <p class="uppercase text-[1rem] tracking-[8px] font-medium" th:utext="#{page.payment.deadline(${paymentDeadline})}"></p>
+                    <p th:if="${isFinesOnly}" th:utext="#{page.payment.ifNotPaidClaims.fines}"></p>
+                    <p th:if="${!isFinesOnly and isRegistration}" th:utext="#{page.payment.ifNotPaidClaims.registration}"></p>
+                    <p th:if="${!isFinesOnly and !isRegistration}" th:utext="#{page.payment.ifNotPaidClaims.renewal}"></p>
+                </div>
+                <!--/* Amount to pay */-->
+                <div class="p-6 bg-blue-50 rounded-lg">
+                    <p class="text-2xl font-bold" th:text="#{page.payment.amount}"></p>
+                    <!--/* Show discount breakdown if voucher was applied */-->
+                    <div th:if="${discountAmount != null && discountAmount > 0}" class="mt-2">
+                        <p class="text-lg text-gray-500 line-through">
+                            <span th:text="${#numbers.formatDecimal(amount, 1, 'DEFAULT', 2, 'DEFAULT')}"></span> <span th:text="#{message.czk}"></span>
+                        </p>
+                        <p class="text-sm text-green-600 font-medium">
+                            <span th:text="#{voucher.discount.applied}"></span>: -<span th:text="${#numbers.formatDecimal(discountAmount, 1, 'DEFAULT', 2, 'DEFAULT')}"></span>&nbsp;<span th:text="#{message.czk}"></span>
+                            <span th:if="${voucherCode != null}">(<span th:text="${voucherCode}"></span>)</span>
+                        </p>
+                    </div>
+                    <p class="text-4xl font-extrabold text-blue-600 mt-2">
+                        <span th:text="${#numbers.formatDecimal(amountToPay != null ? amountToPay : amount, 1, 'DEFAULT', 2, 'DEFAULT')}"></span>  <span th:text="#{message.czk}"></span>
+                    </p>
+                </div>
+                <!--/* Payment buttons */-->
+                <div class="flex flex-col gap-4 items-center">
+                    <!--/* Voucher code input */-->
+                    <div th:if="${allowVoucherOnPaymentPage}" class="w-full max-w-sm">
+                        <form th:action="@{/payment/apply-voucher}" method="post" class="flex flex-col gap-2 items-center">
+                            <label for="voucherCodeInput" class="text-sm font-medium text-gray-700" th:text="#{voucher.label}"></label>
+                            <div class="flex gap-2 w-full items-start">
+                                <div class="relative flex-1">
+                                    <input type="text" id="voucherCodeInput" name="voucherCode" maxlength="50"
+                                           class="w-full px-3 py-2 pe-10 border border-gray-300 rounded-md text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                           th:placeholder="#{voucher.placeholder}" th:value="${voucherCode}" />
+                                    <button type="button" data-target="#voucherCodeInput" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                        ✕
+                                    </button>
+                                </div>
+                                <button type="submit"
+                                        class="px-4 py-2 rounded-md bg-gray-900 text-white hover:bg-gray-700 focus:outline-none focus:shadow-outline text-sm font-medium"
+                                        th:text="#{voucher.apply}"></button>
+                            </div>
+                            <p th:if="${voucherError != null}" class="text-sm text-red-600" th:text="${voucherError}"></p>
+                            <p th:if="${paymentCoveredByVoucher}" class="text-sm text-green-700 font-medium">
+                                <span th:text="#{voucher.valid.prefix}"></span>
+                                <span th:text="#{voucher.valid.fullyCovered}"></span>
+                            </p>
+                        </form>
+                    </div>
+                    <!--/* Continue after 100% voucher button */-->
+                    <form id="payment-form" th:if="${paymentCoveredByVoucher}" th:action="@{/payment/initiate}" method="get">
+                        <button id="payment-initiate-button" type="submit" class="flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-white focus:outline-none focus:shadow-outline">
+                            <span th:text="#{page.payment.button.continue}"></span>
+                        </button>
+                    </form>
+                    <!--/* Pay now button */-->
+                    <form id="payment-form" th:unless="${paymentCoveredByVoucher}" th:action="@{/payment/initiate}" method="post">
+                        <button id="payment-initiate-button" type="submit" class="flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-white focus:outline-none focus:shadow-outline">
+                            <span th:text="${isFinesOnly} ? #{page.payment.button.payNow.fines} : #{page.payment.button.payNow}"></span>
+                        </button>
+                    </form>
+                    <!--/* Skip / Pay later button */-->
+                    <!--
+                    <form th:action="@{/payment/skip}" method="post">
+                        <button type="submit" class="w-full inline-flex justify-center py-3 px-6 font-medium text-indigo-600 underline hover:text-indigo-800 hover:no-underline">
+                            <span th:text="#{page.payment.button.payLater}"></span>
+                        </button>
+                    </form>
+                    -->
+                </div>
+            </div>
+            <!--/* Success state with progress loader (registration only) */-->
+            <div th:if="${paymentSuccess && isRegistration}" class="payment-success-registration">
+                <!--/* Initial content - visible while loader runs */-->
+                <div id="payment-initial-content" class="flex flex-col gap-6 items-center">
+                    <h1 class="mb-6 text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="#{page.payment.success.title}"></h1>
+                    <p th:text="#{page.payment.success.registration.syncing}"></p>
+                    <!--/* Progress loader */-->
+                    <div id="patron-username" th:if="${identity.alephId}" th:data-value="${identity.alephId}"></div>
+                    <div th:replace="fragments/progress-loader :: progress-loader"></div>
+                </div>
+                <!--/* Final content - shown after loader completes (hidden initially) */-->
+                <div id="payment-final-content" class="flex flex-col gap-6 items-center text-center hidden">
+                    <h1 class="text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="#{page.completeRegistrationCompleted.title}"></h1>
+                    <p th:utext="#{page.completeRegistrationCompleted.text}"></p>
+                    <p>
+                        <span th:text="#{message.yourUsername}"></span>: <b th:text="${identity.alephBarcode}"></b>
+                    </p>
+                    <div>
+                        <p th:utext="#{message.doNotForgetUsername}"></p>
+                        <p th:utext="#{message.clickOnServiceAndCopyUsername}" class="text-gray-500"></p>
+                    </div>
+                    <div>
+                        <p th:utext="#{message.doSelect}" class="uppercase text-[1rem] tracking-[8px] font-medium mb-5"></p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 place-items-center">
+                            <a th:href="#{service.eiz.url}" th:data-copy="${identity.alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{service.eiz}"></span>
+                                <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                            </a>
+                            <a th:href="#{service.libraryCatalog.url}" th:data-copy="${identity.alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{service.libraryCatalog}"></span>
+                                <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                            </a>
+                            <a th:href="#{service.digitalLibrary.url}" th:data-copy="${identity.alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{service.digitalLibrary}"></span>
+                                <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                            </a>
+                            <a th:href="#{service.studyRoomWebsite.url}" th:data-copy="${identity.alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                                <span th:text="#{service.studyRoomWebsite}"></span>
+                                <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--/* Success state without progress loader (renewal only) */-->
+            <div th:if="${paymentSuccess && !isRegistration}" class="payment-success-renewal flex flex-col gap-6 items-center text-center">
+                <h1 class="text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="${pageTitle}"></h1>
+                <p th:utext="${successMessage}"></p>
+                <p>
+                    <span th:text="#{message.usernameRemains}"></span>: <b th:text="${identity.alephBarcode}"></b>
+                </p>
+                <div>
+                    <p th:utext="#{message.doNotForgetUsername}"></p>
+                    <p th:utext="#{message.clickOnServiceAndCopyUsername}" class="text-gray-500"></p>
+                </div>
+                <div>
+                    <p th:utext="#{message.doSelect}" class="uppercase text-[1rem] tracking-[8px] font-medium mb-5"></p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 place-items-center">
+                        <a th:href="#{service.eiz.url}" th:data-copy="${identity.alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                            <span th:text="#{service.eiz}"></span>
+                            <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                        </a>
+                        <a th:href="#{service.libraryCatalog.url}" th:data-copy="${identity.alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                            <span th:text="#{service.libraryCatalog}"></span>
+                            <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                        </a>
+                        <a th:href="#{service.digitalLibrary.url}" th:data-copy="${identity.alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                            <span th:text="#{service.digitalLibrary}"></span>
+                            <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                        </a>
+                        <a th:href="#{service.studyRoomWebsite.url}" th:data-copy="${identity.alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                            <span th:text="#{service.studyRoomWebsite}"></span>
+                            <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!--/* Skipped state with progress loader (registration only) */-->
+            <div th:if="${paymentSkipped && isRegistration}" class="payment-skipped-registration">
+                <!--/* Initial content - visible while loader runs */-->
+                <div id="payment-initial-content" class="flex flex-col gap-6 items-center">
+                    <h1 class="mb-6 text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="#{page.payment.skipped.title}"></h1>
+                    <p th:text="#{page.payment.skipped.registration.syncing}"></p>
+                    <!--/* Progress loader */-->
+                    <div id="patron-username" th:if="${identity.alephId}" th:data-value="${identity.alephId}"></div>
+                    <div th:replace="fragments/progress-loader :: progress-loader"></div>
+                </div>
+                <!--/* Final content - shown after loader completes (hidden initially) */-->
+                <div id="payment-final-content" class="flex flex-col gap-6 items-center hidden">
+                    <h1 class="mb-6 text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="#{page.payment.skipped.title}"></h1>
+                    <p th:text="#{page.payment.skipped.registration.complete}"></p>
+                    <p class="text-xl">
+                        <span th:text="#{message.yourUsername}"></span>: <b th:text="${identity.alephBarcode}"></b>
+                    </p>
+                    <a href="https://katalog.lib.cas.cz/KNAV/MyResearch/Fines" target="_blank" class="inline-flex justify-center py-3 px-6 border border-transparent shadow-sm font-medium rounded-md text-white bg-indigo-600 no-print no-underline hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hover:text-white" th:text="#{message.payLaterInCatalog}"></a>
+                </div>
+            </div>
+            <!--/* Skipped state without progress loader (renewal only) */-->
+            <div th:if="${paymentSkipped && !isRegistration}" class="payment-skipped-renewal flex flex-col gap-6 items-center">
+                <h1 class="mb-6 text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="${pageTitle}"></h1>
+                <p th:text="${skippedMessage}"></p>
+                <p class="text-xl">
+                    <span th:text="#{message.usernameRemains}"></span>: <b th:text="${identity.alephBarcode}"></b>
+                </p>
+                <a href="https://katalog.lib.cas.cz/KNAV/MyResearch/Fines" target="_blank" class="inline-flex justify-center py-3 px-6 border border-transparent shadow-sm font-medium rounded-md text-white bg-indigo-600 no-print no-underline hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hover:text-white" th:text="#{message.payLaterInCatalog}"></a>
+            </div>
+        </main>
+    </body>
+
+</html>

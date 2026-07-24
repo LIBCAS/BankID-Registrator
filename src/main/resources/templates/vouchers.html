@@ -1,0 +1,389 @@
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+
+    <head></head>
+
+    <body class="page-dashboard page-vouchers">
+        <main layout:fragment="content" class="mb-10 px-10 text-center mx-auto">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="${pageTitle}"></h1>
+
+            <!-- Success / error messages -->
+            <div th:if="${successMessage}" class="mb-4 p-4 text-sm text-green-800 bg-green-100 rounded-lg">
+                <span th:text="${successMessage}"></span>
+            </div>
+            <div th:if="${errorMessage}" class="mb-4 p-4 text-sm text-red-800 bg-red-100 rounded-lg">
+                <span th:text="${errorMessage}"></span>
+            </div>
+
+            <!-- Filters -->
+            <section class="mb-3 text-left">
+                <details class="border border-gray-200 bg-gray-50">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3 text-sm font-semibold text-gray-800">
+                        <span th:text="#{voucher.admin.filters}"></span>
+                        <span class="text-xs font-normal text-gray-500" th:text="#{voucher.admin.filtersCollapsedHint}"></span>
+                    </summary>
+
+                    <form th:action="@{/dashboard/vouchers}" method="GET" class="border-t border-gray-200 bg-white px-4 py-4">
+                        <div class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2 xl:grid-cols-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1" th:text="#{voucher.admin.voucherSearchLabel}"></label>
+                                <input type="text" name="voucherSearch" th:placeholder="#{voucher.admin.voucherSearchPlaceholder}" th:value="${voucherSearch}" class="w-full border border-gray-300 p-2" />
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1" th:text="#{voucher.admin.patronIdFilterLabel}"></label>
+                                <input type="text" name="patronId" th:placeholder="#{voucher.admin.patronIdFilterPlaceholder}" th:value="${patronId}" class="w-full border border-gray-300 p-2" />
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1" th:text="#{voucher.admin.type}"></label>
+                                <select name="type" class="w-full border border-gray-300 p-2 h-10.5 text-base">
+                                    <option value="" th:text="#{voucher.admin.allTypes}"></option>
+                                    <option th:each="vt : ${voucherTypes}" th:value="${vt}" th:selected="${type != null and type.name() == vt.name()}" th:text="#{${'voucher.type.' + vt}}"></option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1" th:text="#{voucher.admin.discountType}"></label>
+                                <select name="discountType" class="w-full border border-gray-300 p-2 h-10.5 text-base">
+                                    <option value="" th:text="#{voucher.admin.allDiscountTypes}"></option>
+                                    <option th:each="dt : ${discountTypes}" th:value="${dt}" th:selected="${discountType != null and discountType.name() == dt.name()}" th:text="#{${'voucher.discountType.' + dt}}"></option>
+                                </select>
+                            </div>
+
+                            <fieldset class="border border-gray-200 p-3 md:col-span-2 xl:col-span-4">
+                                <legend class="px-1 text-xs font-medium text-gray-500" th:text="#{voucher.admin.status}"></legend>
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <label th:each="vs : ${voucherStatuses}" class="flex items-center gap-2">
+                                        <input type="checkbox" name="statuses" th:value="${vs}" th:checked="${statuses == null || statuses.isEmpty() || #lists.contains(statuses, vs)}" />
+                                        <span th:text="#{${'voucher.status.' + vs}}" th:classappend="${voucherStatusStyleMap[vs.name()]}"></span>
+                                    </label>
+                                </div>
+                            </fieldset>
+
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1" th:text="#{voucher.admin.expiresFrom}"></label>
+                                <input type="date" name="expiresFrom" th:value="${expiresFrom}" class="w-full border border-gray-300 p-2" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1" th:text="#{voucher.admin.expiresTo}"></label>
+                                <input type="date" name="expiresTo" th:value="${expiresTo}" class="w-full border border-gray-300 p-2" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1" th:text="#{voucher.admin.firstUsedFrom}"></label>
+                                <input type="date" name="firstUsedFrom" th:value="${firstUsedFrom}" class="w-full border border-gray-300 p-2" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 mb-1" th:text="#{voucher.admin.firstUsedTo}"></label>
+                                <input type="date" name="firstUsedTo" th:value="${firstUsedTo}" class="w-full border border-gray-300 p-2" />
+                            </div>
+                        </div>
+
+                        <input type="hidden" name="sortBy" th:value="${sortBy}" />
+                        <input type="hidden" name="sortDir" th:value="${sortDir}" />
+
+                        <div class="mt-4 flex flex-wrap items-center gap-2">
+                            <button type="submit" th:text="#{message.filter}" class="bg-blue-600 text-white px-3 py-2"></button>
+                            <a th:href="@{/dashboard/vouchers}" th:text="#{message.clearFilters}" class="bg-red-600 text-white px-3 py-2 no-underline"></a>
+                            <a th:href="@{/dashboard/vouchers/export(voucherSearch=${voucherSearch}, patronId=${patronId}, statuses=${statuses}, type=${type}, discountType=${discountType}, expiresFrom=${expiresFrom}, expiresTo=${expiresTo}, firstUsedFrom=${firstUsedFrom}, firstUsedTo=${firstUsedTo}, sortBy=${sortBy}, sortDir=${sortDir})}"
+                               class="bg-green-600 text-white px-3 py-2 no-underline" th:text="#{voucher.admin.exportCsv}"></a>
+                        </div>
+                    </form>
+                </details>
+            </section>
+
+            <!-- Active filters -->
+            <section class="mb-4 flex flex-wrap items-center justify-between gap-3 border border-gray-200 bg-white px-4 py-3 text-left text-sm">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="font-semibold text-gray-700" th:text="#{voucher.admin.activeFilters}"></span>
+                    <span th:if="${!activeFilters}" class="text-gray-500" th:text="#{voucher.admin.noActiveFilters}"></span>
+                    <span th:if="${voucherSearch != null and !voucherSearch.trim().isEmpty()}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                        <span th:text="#{voucher.admin.voucherSearchLabel}"></span>: <span th:text="${voucherSearch}"></span>
+                    </span>
+                    <span th:if="${patronId != null and !patronId.trim().isEmpty()}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                        <span th:text="#{voucher.admin.patronIdFilterLabel}"></span>: <span th:text="${patronId}"></span>
+                    </span>
+                    <th:block th:if="${statusFilterActive}">
+                        <span th:each="selectedStatus : ${statuses}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                            <span th:text="#{voucher.admin.status}"></span>: <span th:text="#{${'voucher.status.' + selectedStatus}}"></span>
+                        </span>
+                    </th:block>
+                    <span th:if="${type != null}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                        <span th:text="#{voucher.admin.type}"></span>: <span th:text="#{${'voucher.type.' + type}}"></span>
+                    </span>
+                    <span th:if="${discountType != null}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                        <span th:text="#{voucher.admin.discountType}"></span>: <span th:text="#{${'voucher.discountType.' + discountType}}"></span>
+                    </span>
+                    <span th:if="${expiresFrom != null and !expiresFrom.trim().isEmpty()}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                        <span th:text="#{voucher.admin.expiresFrom}"></span>: <span th:text="${expiresFrom}"></span>
+                    </span>
+                    <span th:if="${expiresTo != null and !expiresTo.trim().isEmpty()}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                        <span th:text="#{voucher.admin.expiresTo}"></span>: <span th:text="${expiresTo}"></span>
+                    </span>
+                    <span th:if="${firstUsedFrom != null and !firstUsedFrom.trim().isEmpty()}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                        <span th:text="#{voucher.admin.firstUsedFrom}"></span>: <span th:text="${firstUsedFrom}"></span>
+                    </span>
+                    <span th:if="${firstUsedTo != null and !firstUsedTo.trim().isEmpty()}" class="bg-gray-100 px-2 py-1 text-gray-700">
+                        <span th:text="#{voucher.admin.firstUsedTo}"></span>: <span th:text="${firstUsedTo}"></span>
+                    </span>
+                </div>
+                <a th:href="@{/dashboard/vouchers}" th:text="#{message.clearFilters}" class="bg-red-600 text-white px-3 py-2 no-underline"></a>
+            </section>
+
+            <!-- Voucher table -->
+            <form th:action="@{/dashboard/vouchers/deactivate-selected}" method="post">
+                <input type="hidden" name="voucherSearch" th:value="${voucherSearch}" />
+                <input type="hidden" name="patronId" th:value="${patronId}" />
+                <input th:each="selectedStatus : ${statuses}" type="hidden" name="statuses" th:value="${selectedStatus}" />
+                <input type="hidden" name="type" th:value="${type}" />
+                <input type="hidden" name="discountType" th:value="${discountType}" />
+                <input type="hidden" name="expiresFrom" th:value="${expiresFrom}" />
+                <input type="hidden" name="expiresTo" th:value="${expiresTo}" />
+                <input type="hidden" name="firstUsedFrom" th:value="${firstUsedFrom}" />
+                <input type="hidden" name="firstUsedTo" th:value="${firstUsedTo}" />
+                <input type="hidden" name="sortBy" th:value="${sortBy}" />
+                <input type="hidden" name="sortDir" th:value="${sortDir}" />
+                <div class="mb-3 flex flex-wrap items-center justify-start gap-3">
+                    <button th:if="${voucherPrinterConfigured}" id="print-selected-vouchers" type="submit" disabled
+                            th:formaction="@{/dashboard/vouchers/print-selected}" formtarget="_blank"
+                            class="bg-blue-600 text-white p-2 no-underline disabled:cursor-not-allowed disabled:opacity-50"
+                            th:text="#{voucher.admin.printSelected}"></button>
+                    <button th:if="${voucherPrinterConfigured and voucherPage.totalElements > voucherPage.numberOfElements}"
+                            id="print-all-matching-vouchers" type="submit" name="selectionMode" value="FILTERED"
+                            th:formaction="@{/dashboard/vouchers/print-selected}" formtarget="_blank"
+                            th:disabled="${voucherPage.totalElements > maxBatchPrintSize}"
+                            th:title="${voucherPage.totalElements > maxBatchPrintSize} ? #{voucher.admin.printAllMatchingTooManyHint(${maxBatchPrintSize})} : #{voucher.admin.printAllMatchingHint}"
+                            class="hidden bg-indigo-700 text-white p-2 no-underline disabled:cursor-not-allowed disabled:opacity-50"
+                            th:text="#{voucher.admin.printAllMatching(${voucherPage.totalElements})}"></button>
+                    <button id="deactivate-selected-vouchers" type="submit" disabled
+                            class="bg-red-600 text-white p-2 no-underline disabled:cursor-not-allowed disabled:opacity-50"
+                            th:text="#{voucher.admin.deactivateSelected}"
+                            th:data-confirm-message="#{voucher.admin.deactivateSelectedConfirm}"></button>
+                    <span class="text-sm text-gray-500" th:text="#{voucher.admin.selectedPageOnly}"></span>
+                </div>
+
+                <div class="text-sm text-gray-500 flex flex-wrap justify-between gap-3 my-5">
+                    <div>
+                        <span th:text="#{voucher.admin.selectedCount}"></span>:
+                        <span id="selected-voucher-count">0</span>
+                    </div>
+                    <div class="flex flex-wrap gap-5">
+                        <span>
+                            <span th:text="#{voucher.admin.pageSummary}"></span>:
+                            <span id="voucher-page-number" th:text="${displayPageNumber} + ' / ' + ${displayTotalPages}"></span>
+                        </span>
+                        <span>
+                            <span th:text="#{voucher.admin.displayedRange}"></span>:
+                            <span id="voucher-display-range" th:text="${displayedFrom} + ' - ' + ${displayedTo}"></span>
+                        </span>
+                        <span>
+                            <span th:text="#{voucher.admin.totalFiltered}"></span>:
+                            <span id="voucher-total-count" th:text="${voucherPage.totalElements}"></span>
+                        </span>
+                    </div>
+                </div>
+
+            <div class="voucher-table-shell relative shadow-md sm:rounded-lg">
+                <table class="voucher-table w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="sticky-select px-6 py-3">
+                                <input id="select-vouchers-on-page" type="checkbox" th:aria-label="#{voucher.admin.selectAllOnPage}" />
+                            </th>
+                            <th scope="col" class="sticky-id px-6 py-3">
+                                <a th:href="@{/dashboard/vouchers(voucherSearch=${voucherSearch}, patronId=${patronId}, statuses=${statuses}, type=${type}, discountType=${discountType}, expiresFrom=${expiresFrom}, expiresTo=${expiresTo}, firstUsedFrom=${firstUsedFrom}, firstUsedTo=${firstUsedTo}, sortBy='id', sortDir=${sortBy == 'id' and sortDir == 'ASC' ? 'DESC' : 'ASC'})}"
+                                   class="no-underline hover:text-blue-600">ID</a>
+                                <span th:if="${sortBy == 'id' and sortDir == 'ASC'}">&#9650;</span>
+                                <span th:if="${sortBy == 'id' and sortDir == 'DESC'}">&#9660;</span>
+                            </th>
+                            <th scope="col" class="sticky-code px-6 py-3" th:text="#{voucher.admin.code}"></th>
+                            <th scope="col" class="px-6 py-3">
+                                <a th:href="@{/dashboard/vouchers(voucherSearch=${voucherSearch}, patronId=${patronId}, statuses=${statuses}, type=${type}, discountType=${discountType}, expiresFrom=${expiresFrom}, expiresTo=${expiresTo}, firstUsedFrom=${firstUsedFrom}, firstUsedTo=${firstUsedTo}, sortBy='createdAt', sortDir=${sortBy == 'createdAt' and sortDir == 'DESC' ? 'ASC' : 'DESC'})}"
+                                   class="no-underline hover:text-blue-600" th:text="#{message.createdAt}"></a>
+                                <span th:if="${sortBy == 'createdAt' and sortDir == 'ASC'}">&#9650;</span>
+                                <span th:if="${sortBy == 'createdAt' and sortDir == 'DESC'}">&#9660;</span>
+                            </th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.type}"></th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.recipientType}"></th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.discountType}"></th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.discountValue}"></th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.usesColumn}"></th>
+                            <th scope="col" class="px-6 py-3">
+                                <a th:href="@{/dashboard/vouchers(voucherSearch=${voucherSearch}, patronId=${patronId}, statuses=${statuses}, type=${type}, discountType=${discountType}, expiresFrom=${expiresFrom}, expiresTo=${expiresTo}, firstUsedFrom=${firstUsedFrom}, firstUsedTo=${firstUsedTo}, sortBy='expiresAt', sortDir=${sortBy == 'expiresAt' and sortDir == 'ASC' ? 'DESC' : 'ASC'})}"
+                                   class="no-underline hover:text-blue-600" th:text="#{voucher.admin.expiresAt}"></a>
+                                <span th:if="${sortBy == 'expiresAt' and sortDir == 'ASC'}">&#9650;</span>
+                                <span th:if="${sortBy == 'expiresAt' and sortDir == 'DESC'}">&#9660;</span>
+                            </th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.status}"></th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.patronIds}"></th>
+                            <th scope="col" class="px-6 py-3">
+                                <a th:href="@{/dashboard/vouchers(voucherSearch=${voucherSearch}, patronId=${patronId}, statuses=${statuses}, type=${type}, discountType=${discountType}, expiresFrom=${expiresFrom}, expiresTo=${expiresTo}, firstUsedFrom=${firstUsedFrom}, firstUsedTo=${firstUsedTo}, sortBy='firstUsedAt', sortDir=${sortBy == 'firstUsedAt' and sortDir == 'ASC' ? 'DESC' : 'ASC'})}"
+                                   class="no-underline hover:text-blue-600" th:text="#{voucher.admin.firstUsedAt}"></a>
+                                <span th:if="${sortBy == 'firstUsedAt' and sortDir == 'ASC'}">&#9650;</span>
+                                <span th:if="${sortBy == 'firstUsedAt' and sortDir == 'DESC'}">&#9660;</span>
+                            </th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.buyer}"></th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.paymentMethod}"></th>
+                            <th scope="col" class="px-6 py-3" th:text="#{voucher.admin.invoice}"></th>
+                            <th scope="col" class="sticky-actions px-6 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="voucher : ${voucherPage.content}" th:class="${voucher.status.name() == 'INACTIVE' or voucher.status.name() == 'EXPIRED'} ? 'bg-red-50 border-b hover:bg-gray-100' : (${voucher.status.name() == 'APPLIED'} ? 'bg-yellow-50 border-b hover:bg-gray-100' : 'bg-white border-b hover:bg-gray-100')">
+                            <td class="sticky-select px-6 py-4">
+                                <input class="voucher-row-checkbox" type="checkbox" name="voucherIds" th:value="${voucher.id}" th:aria-label="#{voucher.admin.selectVoucher}" />
+                            </td>
+                            <td class="sticky-id px-6 py-4 text-gray-500" th:text="${voucher.id}"></td>
+                            <td class="sticky-code px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                <a th:href="@{/dashboard/vouchers/{id}(id=${voucher.id})}" th:text="${voucher.code}" th:title="${voucher.note}" class="underline"></a>
+                            </td>
+                            <td class="px-6 py-4" th:text="${dateUtils.convertDateTimeFormat(voucher.createdAt)}"></td>
+                            <td class="px-6 py-4" th:text="#{${'voucher.type.' + voucher.type}}"></td>
+                            <td class="px-6 py-4">
+                                <span th:if="${voucher.recipientType == null}" th:text="#{voucher.recipientType.STANDARD}"></span>
+                                <span th:if="${voucher.recipientType != null}" th:text="#{${'voucher.recipientType.' + voucher.recipientType}}"></span>
+                            </td>
+                            <td class="px-6 py-4" th:text="#{${'voucher.discountType.' + voucher.discountType}}"></td>
+                            <td class="px-6 py-4">
+                                <span th:text="${voucher.discountValue}"></span>
+                                <span th:if="${voucher.discountType.name() == 'PERCENTAGE'}">%</span>
+                                <span th:if="${voucher.discountType.name() == 'FIXED_CZK'}" th:text="#{message.czk}"></span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span th:text="${voucher.currentUses}"></span> / <span th:text="${voucher.maxUses == 0} ? '∞' : ${voucher.maxUses}"></span>
+                            </td>
+                            <td class="px-6 py-4" th:text="${voucher.expiresAt != null} ? ${dateUtils.convertDateTimeFormat(voucher.expiresAt)} : '-'"></td>
+                            <td class="px-6 py-4">
+                                <span th:if="${voucher.status.name() == 'ACTIVE'}" class="text-green-600 font-bold" th:text="#{voucher.status.ACTIVE}"></span>
+                                <span th:if="${voucher.status.name() == 'INACTIVE'}" class="text-red-600 font-bold" th:text="#{voucher.status.INACTIVE}"></span>
+                                <span th:if="${voucher.status.name() == 'EXPIRED'}" class="text-orange-600 font-bold" th:text="#{voucher.status.EXPIRED}"></span>
+                                <span th:if="${voucher.status.name() == 'APPLIED'}" class="text-blue-600 font-bold" th:text="#{voucher.status.APPLIED}"></span>
+                            </td>
+                            <td class="px-6 py-4 max-w-xs truncate" th:text="${voucher.patronIds}" th:title="${voucher.patronIds}"></td>
+                            <td class="px-6 py-4" th:text="${voucher.firstUsedAt != null} ? ${dateUtils.convertDateTimeFormat(voucher.firstUsedAt)} : '-'"></td>
+                            <td class="px-6 py-4 max-w-xs truncate" th:text="${voucher.buyer}" th:title="${voucher.buyer}"></td>
+                            <td class="px-6 py-4 max-w-xs truncate" th:text="${voucher.paymentMethod}" th:title="${voucher.paymentMethod}"></td>
+                            <td class="px-6 py-4 max-w-xs truncate" th:text="${voucher.invoice}" th:title="${voucher.invoice}"></td>
+                            <td class="sticky-actions px-6 py-4 text-left">
+                                <div class="flex gap-2 justify-start">
+                                    <a th:href="@{/dashboard/vouchers/{id}(id=${voucher.id})}" th:title="#{message.view}" class="no-underline">
+                                        <i class="text-xl fa-regular fa-eye"></i>
+                                    </a>
+                                    <a th:if="${voucherPrinterConfigured}" th:href="@{/dashboard/vouchers/{id}/print(id=${voucher.id})}" target="_blank" rel="noopener"
+                                       th:title="#{voucher.admin.printWithVoucherPrinter}" th:aria-label="#{voucher.admin.printWithVoucherPrinter}" class="no-underline">
+                                        <i class="text-xl fa-solid fa-print"></i>
+                                    </a>
+                                    <a th:if="${voucher.status.name() == 'ACTIVE'}" th:href="@{/dashboard/vouchers/{id}/deactivate(id=${voucher.id})}" th:title="#{voucher.admin.deactivate}" class="no-underline text-red-500"
+                                       onclick="return confirm(/*[[#{voucher.admin.deactivateConfirm}]]*/ 'Deactivate?');">
+                                        <i class="text-xl fa-solid fa-ban"></i>
+                                    </a>
+                                    <a th:if="${voucher.status.name() == 'INACTIVE'}" th:href="@{/dashboard/vouchers/{id}/activate(id=${voucher.id})}" th:title="#{voucher.admin.activate}" class="no-underline text-green-500">
+                                        <i class="text-xl fa-solid fa-check-circle"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </form>
+
+            <!-- Pagination -->
+            <div th:if="${voucherPage.totalPages > 1}" class="mt-4 flex items-center justify-center gap-4">
+                <a th:if="${voucherPage.number > 0}"
+                    th:href="@{/dashboard/vouchers(page=${voucherPage.number - 1}, voucherSearch=${voucherSearch}, patronId=${patronId}, statuses=${statuses}, type=${type}, discountType=${discountType}, expiresFrom=${expiresFrom}, expiresTo=${expiresTo}, firstUsedFrom=${firstUsedFrom}, firstUsedTo=${firstUsedTo}, sortBy=${sortBy}, sortDir=${sortDir})}"
+                    th:text="#{message.previous}" class="bg-blue-500 text-white p-2 no-underline"></a>
+                <div>
+                    <span th:text="#{message.page}"></span>
+                    <span th:text="${voucherPage.number + 1} + ' / ' + ${voucherPage.totalPages}"></span>
+                </div>
+                <a th:if="${voucherPage.number < voucherPage.totalPages - 1}"
+                    th:href="@{/dashboard/vouchers(page=${voucherPage.number + 1}, voucherSearch=${voucherSearch}, patronId=${patronId}, statuses=${statuses}, type=${type}, discountType=${discountType}, expiresFrom=${expiresFrom}, expiresTo=${expiresTo}, firstUsedFrom=${firstUsedFrom}, firstUsedTo=${firstUsedTo}, sortBy=${sortBy}, sortDir=${sortDir})}"
+                    th:text="#{message.next}" class="bg-blue-500 text-white p-2 no-underline"></a>
+            </div>
+            <script>
+                (function () {
+                    const selectAll = document.getElementById("select-vouchers-on-page");
+                    const checkboxes = Array.from(document.querySelectorAll(".voucher-row-checkbox"));
+                    const printButton = document.getElementById("print-selected-vouchers");
+                    const printAllMatchingButton = document.getElementById("print-all-matching-vouchers");
+                    const deactivateButton = document.getElementById("deactivate-selected-vouchers");
+                    const selectedCount = document.getElementById("selected-voucher-count");
+                    const tableShell = document.querySelector(".voucher-table-shell");
+
+                    function syncSelectionState() {
+                        const checkedCount = checkboxes.filter((checkbox) => checkbox.checked).length;
+                        if (printButton) {
+                            printButton.disabled = checkedCount === 0;
+                        }
+                        if (printAllMatchingButton) {
+                            printAllMatchingButton.classList.toggle("hidden", checkedCount !== checkboxes.length);
+                        }
+                        if (deactivateButton) {
+                            deactivateButton.disabled = checkedCount === 0;
+                        }
+                        if (selectedCount) {
+                            selectedCount.textContent = String(checkedCount);
+                        }
+                        if (selectAll) {
+                            selectAll.checked = checkedCount > 0 && checkedCount === checkboxes.length;
+                            selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+                        }
+                    }
+
+                    if (deactivateButton) {
+                        deactivateButton.addEventListener("click", function (event) {
+                            if (!window.confirm(deactivateButton.dataset.confirmMessage)) {
+                                event.preventDefault();
+                            }
+                        });
+                    }
+
+                    if (selectAll) {
+                        selectAll.addEventListener("change", function () {
+                            checkboxes.forEach((checkbox) => {
+                                checkbox.checked = selectAll.checked;
+                            });
+                            syncSelectionState();
+                        });
+                    }
+
+                    checkboxes.forEach((checkbox) => {
+                        checkbox.addEventListener("change", syncSelectionState);
+                    });
+                    syncSelectionState();
+
+                    function syncTableScrollHint() {
+                        if (!tableShell) {
+                            return;
+                        }
+                        const maxScrollLeft = tableShell.scrollWidth - tableShell.clientWidth;
+                        tableShell.classList.toggle("has-scroll-left", tableShell.scrollLeft > 0);
+                        tableShell.classList.toggle("has-scroll-right", maxScrollLeft > 1 && tableShell.scrollLeft < maxScrollLeft - 1);
+                    }
+
+                    if (tableShell) {
+                        tableShell.addEventListener("wheel", function (event) {
+                            if (tableShell.scrollWidth <= tableShell.clientWidth) {
+                                return;
+                            }
+
+                            const horizontalDelta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+                            if (horizontalDelta === 0) {
+                                return;
+                            }
+
+                            event.preventDefault();
+                            tableShell.scrollLeft += horizontalDelta;
+                            syncTableScrollHint();
+                        }, { passive: false });
+
+                        tableShell.addEventListener("scroll", syncTableScrollHint);
+                        window.addEventListener("resize", syncTableScrollHint);
+                        syncTableScrollHint();
+                    }
+                })();
+            </script>
+        </main>
+    </body>
+
+</html>

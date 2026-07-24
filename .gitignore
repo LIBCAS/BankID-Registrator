@@ -49,3 +49,16 @@ Procfile
 .pki
 .cache
 .config
+.codex
+
+docs/*
+!docs/.gitkeep
+payments-api
+voucher-generator
+
+# E2E tests
+e2e/node_modules/
+e2e/.env
+e2e/screenshots/
+e2e/test-results/
+e2e/playwright-report/

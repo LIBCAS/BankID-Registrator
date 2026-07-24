@@ -1,18 +1,25 @@
     package cz.cas.lib.bankid_registrator.controllers;
 
+    import cz.cas.lib.bankid_registrator.entities.media.MediaSubmissionType;
     import cz.cas.lib.bankid_registrator.entities.patron.PatronFineStatus;
     import cz.cas.lib.bankid_registrator.model.identity.Identity;
     import cz.cas.lib.bankid_registrator.model.identity.IdentityActivity;
     import cz.cas.lib.bankid_registrator.model.media.Media;
     import cz.cas.lib.bankid_registrator.model.patron.Patron;
+    import cz.cas.lib.bankid_registrator.model.voucher.VoucherUsage;
+    import java.time.LocalDateTime;
+    import java.time.format.DateTimeFormatter;
     import cz.cas.lib.bankid_registrator.services.AlephService;
     import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
     import cz.cas.lib.bankid_registrator.services.IdentityService;
     import cz.cas.lib.bankid_registrator.services.MediaService;
+    import cz.cas.lib.bankid_registrator.services.VoucherService;
     import cz.cas.lib.bankid_registrator.util.DateUtils;
+    import java.util.ArrayList;
     import java.util.Arrays;
     import java.util.Collections;
     import java.util.HashSet;
+    import java.util.LinkedHashMap;
     import java.util.List;
     import java.util.Locale;
     import java.util.Map;
@@ -46,19 +53,22 @@
         private final IdentityActivityService identityActivityService;
         private final IdentityService identityService;
         private final MediaService mediaService;
+        private final VoucherService voucherService;
 
         public DashboardController(
             MessageSource messageSource, 
             AlephService alephService, 
             IdentityActivityService identityActivityService, 
             IdentityService identityService, 
-            MediaService mediaService
+            MediaService mediaService,
+            VoucherService voucherService
         ) {
             super(messageSource);
             this.alephService = alephService;
             this.identityActivityService = identityActivityService;
             this.identityService = identityService;
             this.mediaService = mediaService;
+            this.voucherService = voucherService;
         }
 
         /**
@@ -72,6 +82,7 @@
          * @param searchFullname
          * @param filterCasEmployee
          * @param filterCheckedByAdmin
+         * @param filterPasswordSet
          * @param filterPaymentStatus
          * @param filterSoftDeleted
          * @return 
@@ -87,6 +98,7 @@
             @RequestParam(required = false) String searchFullname, 
             @RequestParam(required = false) Boolean filterCasEmployee, 
             @RequestParam(required = false) Boolean filterCheckedByAdmin,
+            @RequestParam(required = false) Boolean filterPasswordSet,
             @RequestParam(required = false) List<String> filterPaymentStatus,
             @RequestParam(defaultValue = "true") Boolean filterSoftDeleted
         ) {
@@ -95,7 +107,7 @@
             // stopWatch.start("MySQL Query");
             Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortField).ascending() : Sort.by(sortField).descending();
 
-            List<Identity> allMatchingIdentities = this.identityService.findAllIdentities(searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterSoftDeleted, sort);
+            List<Identity> allMatchingIdentities = this.identityService.findAllIdentities(searchAlephIdOrBarcode, filterCasEmployee, filterCheckedByAdmin, filterPasswordSet, filterSoftDeleted, sort);
             // stopWatch.stop();
 
             // logger.info("MySQL query returned {} records", allMatchingIdentities.size());
@@ -201,6 +213,7 @@
             model.addAttribute("searchFullname", searchFullname);
             model.addAttribute("filterCasEmployee", filterCasEmployee);
             model.addAttribute("filterCheckedByAdmin", filterCheckedByAdmin);
+            model.addAttribute("filterPasswordSet", filterPasswordSet);
             model.addAttribute("filterSoftDeleted", filterSoftDeleted);
             model.addAttribute("filterPaymentStatus", filterPaymentStatus);
             model.addAttribute("patronFineStatusMap", Map.of(
@@ -230,6 +243,20 @@
                 Identity identity = identitySearch.get();
                 List<Media> medias = this.mediaService.findByIdentityId(identityId);
                 List<IdentityActivity> activities = this.identityActivityService.findByIdentityId(identityId);
+                List<VoucherUsage> voucherUsages = this.voucherService.getUsagesByIdentity(identity);
+                List<VoucherUsage> confirmedVoucherUsages = new ArrayList<>();
+                List<VoucherUsage> pendingVoucherUsages = new ArrayList<>();
+
+                for (VoucherUsage usage : voucherUsages) {
+                    if (usage.isConfirmed()) {
+                        confirmedVoucherUsages.add(usage);
+                    } else {
+                        pendingVoucherUsages.add(usage);
+                    }
+                }
+
+                String paymentStatusKey = PatronFineStatus.FREE_OR_UNKNOWN.getKey();
+                String paymentStatusClass = getPaymentStatusClass(paymentStatusKey);
 
                 if (identity.getAlephId() != null) {
                     Map<String, Object> alephPatronGet = alephService.getAlephPatron(identity.getAlephId(), true);
@@ -246,18 +273,111 @@
                     model.addAttribute("membershipExpiryDate", alephPatronExpiryDate);
                     model.addAttribute("membershipHasExpired", DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy"));
                     model.addAttribute("membershipExpiresToday", DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy"));
+
+                    Map<String, List<Object[]>> alephPaymentData = this.alephService.getBulkPatronsData(Collections.singletonList(identity.getAlephId()));
+                    List<Object[]> patronPaymentRows = alephPaymentData.get(identity.getAlephId());
+                    if (patronPaymentRows != null && !patronPaymentRows.isEmpty()) {
+                        paymentStatusKey = String.valueOf(patronPaymentRows.get(0)[1]);
+                        paymentStatusClass = getPaymentStatusClass(paymentStatusKey);
+                    }
                 } else {
                     model.addAttribute("pageTitle", this.messageSource.getMessage("message.identity", null, locale));
                 }
 
                 model.addAttribute("identity", identity);
                 model.addAttribute("medias", medias);
+                List<MediaGroupView> mediaGroups = buildMediaGroups(medias, locale);
+                model.addAttribute("currentMediaGroup", mediaGroups.isEmpty() ? null : mediaGroups.get(0));
+                model.addAttribute("historicalMediaGroups", mediaGroups.size() > 1 ? mediaGroups.subList(1, mediaGroups.size()) : Collections.emptyList());
                 model.addAttribute("activities", activities);
+                model.addAttribute("paymentStatusKey", paymentStatusKey);
+                model.addAttribute("paymentStatusClass", paymentStatusClass);
+                model.addAttribute("confirmedVoucherUsages", confirmedVoucherUsages);
+                model.addAttribute("pendingVoucherUsages", pendingVoucherUsages);
 
                 return "identity_detail";
             } else {
                 return "redirect:/dashboard";
             }
+        }
+
+        private String getPaymentStatusClass(String paymentStatusKey) {
+            return Map.of(
+                PatronFineStatus.PAID.getKey(), "bg-green-100 text-green-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm",
+                PatronFineStatus.NOT_PAID.getKey(), "bg-red-100 text-red-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm",
+                PatronFineStatus.CANCELLED.getKey(), "bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm",
+                PatronFineStatus.FREE_OR_UNKNOWN.getKey(), "bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm"
+            ).getOrDefault(paymentStatusKey, "bg-yellow-100 text-yellow-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-sm");
+        }
+
+        private List<MediaGroupView> buildMediaGroups(List<Media> mediaList, Locale locale) {
+            if (mediaList == null || mediaList.isEmpty()) {
+                return Collections.emptyList();
+            }
+
+            List<Media> legacyMedia = mediaList.stream()
+                .filter(media -> media.getSubmissionBatchId() == null || media.getSubmissionBatchId().trim().isEmpty())
+                .collect(Collectors.toList());
+
+            Map<String, List<Media>> groupedMedia = mediaList.stream()
+                .filter(media -> media.getSubmissionBatchId() != null && !media.getSubmissionBatchId().trim().isEmpty())
+                .collect(Collectors.groupingBy(Media::getSubmissionBatchId, LinkedHashMap::new, Collectors.toList()));
+
+            List<MediaGroupView> groups = new ArrayList<>();
+            if (!legacyMedia.isEmpty()) {
+                groups.add(new MediaGroupView(
+                    "legacy",
+                    this.messageSource.getMessage("message.attachmentsLegacy", null, locale),
+                    null,
+                    null,
+                    legacyMedia
+                ));
+            }
+
+            for (Map.Entry<String, List<Media>> entry : groupedMedia.entrySet()) {
+                List<Media> groupedItems = new ArrayList<>(entry.getValue());
+                groupedItems.sort(
+                    java.util.Comparator.comparing(Media::getBatchOrderIndex, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                        .thenComparing(Media::getCreatedAt, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                        .thenComparing(Media::getId, java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                );
+
+                Media firstMedia = groupedItems.get(0);
+                groups.add(new MediaGroupView(
+                    entry.getKey(),
+                    getMediaGroupTitle(firstMedia.getSubmissionType(), locale),
+                    firstMedia.getCreatedAt(),
+                    formatMediaGroupSubmittedAt(firstMedia.getCreatedAt()),
+                    groupedItems
+                ));
+            }
+
+            groups.sort(
+                java.util.Comparator.comparing(MediaGroupView::getSubmittedAt, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
+                    .thenComparing(MediaGroupView::getBatchId, java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder()))
+            );
+
+            return groups;
+        }
+
+        private String getMediaGroupTitle(MediaSubmissionType submissionType, Locale locale) {
+            if (submissionType == MediaSubmissionType.REGISTRATION) {
+                return this.messageSource.getMessage("message.attachmentsRegistration", null, locale);
+            }
+
+            if (submissionType == MediaSubmissionType.RENEWAL) {
+                return this.messageSource.getMessage("message.attachmentsRenewal", null, locale);
+            }
+
+            return this.messageSource.getMessage("message.attachments", null, locale);
+        }
+
+        private String formatMediaGroupSubmittedAt(LocalDateTime submittedAt) {
+            if (submittedAt == null) {
+                return null;
+            }
+
+            return submittedAt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
         }
 
         /**
@@ -298,7 +418,7 @@
                     try {
                         mediaService.delete(media);
                     } catch (RuntimeException e) {
-                        throw new RuntimeException(this.messageSource.getMessage("error.media.failedToDelete", null, locale) + " " + media.getName() + ": " + e.getMessage(), e);
+                        throw new RuntimeException(this.messageSource.getMessage("error.media.failedToDelete", null, locale) + " " + media.getDisplayName() + ": " + e.getMessage(), e);
                     }
                 }
 
@@ -350,7 +470,7 @@
                     try {
                         mediaService.delete(media);
                     } catch (RuntimeException e) {
-                        throw new RuntimeException(this.messageSource.getMessage("error.media.failedToDelete", null, locale) + " " + media.getName() + ": " + e.getMessage(), e);
+                        throw new RuntimeException(this.messageSource.getMessage("error.media.failedToDelete", null, locale) + " " + media.getDisplayName() + ": " + e.getMessage(), e);
                     }
                 }
 
@@ -359,5 +479,42 @@
             }
 
             return "redirect:/dashboard";
+        }
+
+        public static class MediaGroupView
+        {
+            private final String batchId;
+            private final String title;
+            private final LocalDateTime submittedAt;
+            private final String submittedAtLabel;
+            private final List<Media> medias;
+
+            public MediaGroupView(String batchId, String title, LocalDateTime submittedAt, String submittedAtLabel, List<Media> medias) {
+                this.batchId = batchId;
+                this.title = title;
+                this.submittedAt = submittedAt;
+                this.submittedAtLabel = submittedAtLabel;
+                this.medias = medias;
+            }
+
+            public String getBatchId() {
+                return batchId;
+            }
+
+            public String getTitle() {
+                return title;
+            }
+
+            public LocalDateTime getSubmittedAt() {
+                return submittedAt;
+            }
+
+            public String getSubmittedAtLabel() {
+                return submittedAtLabel;
+            }
+
+            public List<Media> getMedias() {
+                return medias;
+            }
         }
     }

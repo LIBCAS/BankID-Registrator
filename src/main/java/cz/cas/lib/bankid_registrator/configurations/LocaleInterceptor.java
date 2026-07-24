@@ -21,6 +21,10 @@ public class LocaleInterceptor extends ConfigurationAbstract implements HandlerI
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String uri = request.getRequestURI();
+        if (isStaticAssetUri(uri)) {
+            return true;
+        }
+
         Locale locale = localeResolver.resolveLocale(request);
 
         String localizedUri = getLocalizedUri(uri, locale);
@@ -43,5 +47,11 @@ public class LocaleInterceptor extends ConfigurationAbstract implements HandlerI
             getLogger().info("No localized URI found for " + uri + " in locale " + locale.getLanguage());
             return uri;
         }
+    }
+
+    private boolean isStaticAssetUri(String uri) {
+        return uri.contains("/assets/")
+            || uri.contains("/img/")
+            || uri.contains("/favicon");
     }
 }

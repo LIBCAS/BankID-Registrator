@@ -2,17 +2,38 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
   layout:decorate="~{layout}">
 
-<head>
-  <title th:replace="fragments/head :: head"></title>
-</head>
+<head></head>
 
-<body class="page-welcome page--minh70vh">
+<body class="page-welcome overflow-x-hidden">
   <main layout:fragment="content" id="main" class="mb-10 text-center container mx-auto p-5 flex flex-col items-center justify-center gap-6">
-    <div class="flex flex-col gap-6 text-center max-w-3xl">
-      <h1 class="text-3xl font-extrabold text-center" th:text="#{page.home.heading}"></h1>
-      <p class="text-center" th:utext="#{page.home.description}"></p>
-      <a th:href="${loginEndpoint}" class="block my-0 mx-auto" th:insert="~{fragments/svg/btn-bankid :: btn-bankid}" th:title="#{button.verifyViaBankid}"></a>
+    <div class="flex flex-col gap-6 text-center max-w-3xl lg:max-w-6xl">
+      <h1 class="text-3xl font-extrabold text-center" th:text="#{page.home.heading1}"></h1>
+      <h2 class="font-semibold text-center text-[1rem] tracking-[8px] md:relative md:left-1/2 md:right-1/2 md:-ml-[50vw] md:-mr-[50vw] md:w-screen md:px-5 uppercase" th:utext="#{page.home.heading2}"></h2>
+      <p class="text-left sm:text-center my-5" th:utext="#{page.home.description1}"></p>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 text-left">
+        <section class="flex flex-col gap-6">
+          <h3 class="font-semibold mt-5 -mb-3 font-medium text-[1rem] tracking-[8px] uppercase" th:text="#{page.home.heading3}"></h3>
+          <p class="-mb-4" th:utext="#{page.home.description2}"></p>
+          <ol class="list-decimal list-outside ml-6 space-y-2" th:utext="#{page.home.description2.ol}"></ol>
+          <p class="text-justify" th:utext="#{page.home.description3}"></p>
+        </section>
+        <section class="flex flex-col gap-6">
+          <h3 class="font-semibold mt-5 -mb-3 font-medium text-[1rem] tracking-[8px] uppercase" th:text="#{page.home.heading4}"></h3>
+          <p class="-mb-4" th:utext="#{page.home.description4}"></p>
+          <ol class="list-decimal list-outside ml-6 space-y-2" th:utext="#{page.home.description4.ol}"></ol>
+          <p class="text-justify" th:utext="#{page.home.description5}"></p>
+        </section>
+      </div>
+      <h4 class="font-bold text-left mt-5 -mb-3" th:text="#{page.home.heading5}"></h4>
+      <p class="text-justify" th:utext="#{page.home.description6}"></p>
+      <h4 class="font-bold text-left mt-5 -mb-3" th:text="#{page.home.heading6}"></h4>
+      <p class="text-justify" th:utext="#{page.home.description7}"></p>
+      <a th:href="${loginEndpoint}" class="block my-5 mx-auto" th:insert="~{fragments/svg/btn-bankid :: btn-bankid}" th:title="#{a11y.verifyViaBankid}" th:aria-label="#{a11y.verifyViaBankid}"></a>
+      <p class="text-justify text-gray-500" th:utext="#{page.home.comgateText}"></p>
     </div>
+
+    <!-- Tester's Toolkit (local/testing only, when no identity is logged in) -->
+    <aside th:replace="fragments/test-toolkit :: test-toolkit"></aside>
   </main>
 </body>
 

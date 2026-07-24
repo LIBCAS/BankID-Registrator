@@ -1,10 +1,13 @@
 package cz.cas.lib.bankid_registrator.exceptions;
 
 import java.util.Locale;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -49,6 +52,69 @@ public class GlobalExceptionHandler extends ExceptionHandlerAbstract
         mav.setStatus(status);
 
         this.getLogger().error("Exception: " + statusMessage, e);
+
+        return mav;
+    }
+
+    @ExceptionHandler(value = HttpMediaTypeNotAcceptableException.class)
+    @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
+    public ModelAndView handleMediaTypeNotAcceptableException(
+        HttpMediaTypeNotAcceptableException e,
+        Locale locale,
+        HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.NOT_ACCEPTABLE;
+        String statusCode = String.valueOf(status.value());
+        String statusMessage = this.messageSource.getMessage("error." + statusCode + ".text", null, status.getReasonPhrase(), locale);
+
+        ModelAndView mav = new ModelAndView();
+        mav.addObject("lang", locale.getLanguage());
+        mav.addObject("appName", this.appName);
+        mav.addObject("pageTitle", statusCode + " " + statusMessage);
+        mav.addObject("errorTitle", statusMessage);
+        mav.addObject("errorCode", statusCode);
+        mav.addObject("error", e.getMessage());
+        mav.setViewName("error");
+        mav.setStatus(status);
+
+        this.getLogger().warn(
+            "Unacceptable media type requested: method={}, uri={}, accept={}, producibleMediaTypes={}",
+            request.getMethod(),
+            request.getRequestURI(),
+            request.getHeader("Accept"),
+            e.getSupportedMediaTypes()
+        );
+
+        return mav;
+    }
+
+    @ExceptionHandler(value = HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public ModelAndView handleMethodNotSupportedException(
+        HttpRequestMethodNotSupportedException e,
+        Locale locale,
+        HttpServletRequest request
+    ) {
+        HttpStatus status = HttpStatus.METHOD_NOT_ALLOWED;
+        String statusCode = String.valueOf(status.value());
+        String statusMessage = this.messageSource.getMessage("error." + statusCode + ".text", null, status.getReasonPhrase(), locale);
+
+        ModelAndView mav = new ModelAndView();
+        mav.addObject("lang", locale.getLanguage());
+        mav.addObject("appName", this.appName);
+        mav.addObject("pageTitle", statusCode + " " + statusMessage);
+        mav.addObject("errorTitle", statusMessage);
+        mav.addObject("errorCode", statusCode);
+        mav.addObject("error", e.getMessage());
+        mav.setViewName("error");
+        mav.setStatus(status);
+
+        this.getLogger().warn(
+            "Unsupported request method: method={}, uri={}, supportedMethods={}",
+            request.getMethod(),
+            request.getRequestURI(),
+            e.getSupportedHttpMethods()
+        );
 
         return mav;
     }

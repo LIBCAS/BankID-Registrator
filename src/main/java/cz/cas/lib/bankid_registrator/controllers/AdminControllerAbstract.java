@@ -38,6 +38,7 @@ public abstract class AdminControllerAbstract
         model.addAttribute("currentUrl", currentUrl);
         model.addAttribute("currentUrlParamsConnector", currentUrlParamsConnector);
         model.addAttribute("dateUtils", new DateUtils());
+        model.addAttribute("isAdminPage", true);
     }
 
     /**

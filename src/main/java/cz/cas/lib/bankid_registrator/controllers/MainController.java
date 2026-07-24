@@ -3,17 +3,27 @@ package cz.cas.lib.bankid_registrator.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
+import cz.cas.lib.bankid_registrator.configurations.RegistrationFeeConfig;
+import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
+import cz.cas.lib.bankid_registrator.dto.AlertDTO;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
+import cz.cas.lib.bankid_registrator.entities.media.MediaSubmissionType;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
+import cz.cas.lib.bankid_registrator.entities.payment.PaymentStatus;
+import cz.cas.lib.bankid_registrator.entities.payment.PaymentType;
 import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
+import cz.cas.lib.bankid_registrator.exceptions.IdentityAuthException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
+import cz.cas.lib.bankid_registrator.model.payment.Payment;
+import cz.cas.lib.bankid_registrator.model.voucher.Voucher;
 import cz.cas.lib.bankid_registrator.product.Connect;
 import cz.cas.lib.bankid_registrator.product.Identify;
 import cz.cas.lib.bankid_registrator.services.AlephService;
+import cz.cas.lib.bankid_registrator.services.AppSettingsService;
 import cz.cas.lib.bankid_registrator.services.AlephServiceIface;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
@@ -22,24 +32,31 @@ import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.MainService;
 import cz.cas.lib.bankid_registrator.services.MediaService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
+import cz.cas.lib.bankid_registrator.services.PaymentService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
+import cz.cas.lib.bankid_registrator.services.VoucherService;
+import cz.cas.lib.bankid_registrator.services.TestSettingsService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
 import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
 
 import java.net.URI;
+import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.time.LocalDateTime;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -69,7 +86,14 @@ public class MainController extends ControllerAbstract
     private final IdentityActivityService identityActivityService;
     private final AccessTokenContainer accessTokenContainer;
     private final EmailService emailService;
+    private final AppSettingsService appSettingsService;
     private final TokenService tokenService;
+    private final PaymentService paymentService;
+    private final VoucherService voucherService;
+    private final RegistrationFeeConfig registrationFeeConfig;
+
+    @Autowired(required = false)
+    private TestSettingsService testSettingsService;
 
     public MainController(
         MessageSource messageSource,
@@ -87,9 +111,14 @@ public class MainController extends ControllerAbstract
         IdentityAuthService identityAuthService,
         AccessTokenContainer accessTokenContainer,
         EmailService emailService,
-        TokenService tokenService
+        AppSettingsService appSettingsService,
+        TokenService tokenService,
+        PaymentService paymentService,
+        VoucherService voucherService,
+        RegistrationFeeConfig registrationFeeConfig,
+        SessionTimerConfig sessionTimerConfig
     ) {
-        super(messageSource, identityAuthService);
+        super(messageSource, identityAuthService, sessionTimerConfig);
         this.mainConfig = mainConfig;
         this.mainService = mainService;
         this.alephService = alephService;
@@ -103,7 +132,11 @@ public class MainController extends ControllerAbstract
         this.identityActivityService = identityActivityService;
         this.accessTokenContainer = accessTokenContainer;
         this.emailService = emailService;
+        this.appSettingsService = appSettingsService;
         this.tokenService = tokenService;
+        this.paymentService = paymentService;
+        this.voucherService = voucherService;
+        this.registrationFeeConfig = registrationFeeConfig;
 
         init();
     }
@@ -119,15 +152,30 @@ public class MainController extends ControllerAbstract
     }
 
     /**
+     * Main page
      * 
+     * @param session
      * @param model
-     * @return 
-     * @throws Exception 
+     * @param locale
+     * @param request
+     * @return String
+     * @throws Exception
      */
     @RequestMapping(value="/welcome", method=RequestMethod.GET, produces=MediaType.TEXT_HTML_VALUE)
-    public String WelcomeEntry(Model model, Locale locale) throws Exception {
+    public String WelcomeEntry(
+        @RequestParam(value = "session", required = false) String session,
+        Model model,
+        Locale locale,
+        HttpServletRequest request
+    ) throws Exception {
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
         model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
+
+        if ("expired".equals(session) && !this.identityAuthService.isLoggedin(request)) {
+            String alertMsg = this.messageSource.getMessage("alert.sessionExpired", null, locale);
+            AlertDTO alert = new AlertDTO(alertMsg, "warning", 0);
+            model.addAttribute("alert", alert);
+        }
 
         return "welcome";
     }
@@ -173,12 +221,20 @@ public class MainController extends ControllerAbstract
      */
     @RequestMapping(value = "/callback", method = RequestMethod.GET, produces = MediaType.TEXT_HTML_VALUE)
     public String CallbackEntry(
-        @RequestParam(value = "code", required = false) String code, 
+        @RequestParam(value = "code", required = false) String code,
+        @RequestParam(value = "error", required = false) String error,
+        @RequestParam(value = "error_description", required = false) String errorDescription,
+        @RequestParam(value = "traceId", required = false) String traceId,
+        @RequestParam(value = "state", required = false) String state,
         Model model, 
         Locale locale, 
         HttpSession session, 
         HttpServletRequest request
     ) {
+        if (error != null || errorDescription != null) {
+            return handleBankIdCbError(error, errorDescription, traceId, state, model, locale, session, request);
+        }
+
         if (code == null && session.getAttribute("code") == null) {
             throw new HttpErrorException(HttpStatus.NOT_FOUND, null);
         }
@@ -189,7 +245,33 @@ public class MainController extends ControllerAbstract
 
         if (!isIdentityLoggedIn) {
             // If this is the first time the Bank iD verified identity is accessing the callback page, log them in
-            this.identityAuthService.login(request, code, locale);
+            try {
+                this.identityAuthService.login(request, code, locale);
+            } catch (IdentityAuthException e) {
+                if (isInvalidGrantTokenExchange(e)) {
+                    return handleBankIdCbError(
+                        "invalid_grant",
+                        "Authorization code expired or already used",
+                        null,
+                        state,
+                        model,
+                        locale,
+                        session,
+                        request
+                    );
+                }
+
+                throw e;
+            }
+
+            // addCommonAttributes() ran before login, so the session timer config was not set.
+            // Set it now so the timer renders correctly on the callback page.
+            Long loginTimestamp = (Long) session.getAttribute("loginTimestamp");
+            model.addAttribute("sessionTimerInactivityTimeout", this.sessionTimerConfig.getInactivityTimeoutSeconds());
+            model.addAttribute("sessionTimerHardCap", this.sessionTimerConfig.getHardCapSeconds());
+            model.addAttribute("sessionTimerWarningBefore", this.sessionTimerConfig.getWarningBeforeSeconds());
+            model.addAttribute("sessionTimerKeepAliveInterval", this.sessionTimerConfig.getKeepAliveIntervalSeconds());
+            model.addAttribute("sessionTimerLoginTimestamp", loginTimestamp);
         } else {
             // If the Bank iD verified identity is already logged in, check if the access token is still valid and log them out if not
             String existingAccessToken = (String) session.getAttribute("accessToken");
@@ -212,6 +294,7 @@ public class MainController extends ControllerAbstract
         Map<String, Object> bankIdPatronCreation = this.envAlephService.newPatron(userInfo, userProfile);
 
         if (bankIdPatronCreation.containsKey("error")) {
+            this.identityAuthService.logout(request);
             model.addAttribute("error", "Registrace byla zamítnuta: " + (String) bankIdPatronCreation.get("error"));
             return "error";
         }
@@ -233,6 +316,7 @@ public class MainController extends ControllerAbstract
         if (bankIdPatron.isNew()) {
             identity = new Identity(UUID.randomUUID().toString());
             identity.setCheckedByAdmin(false);
+            identity.setPasswordSet(false);
             this.identityService.save(identity);
 
             session.setAttribute("identity", identity.getId());
@@ -254,6 +338,7 @@ public class MainController extends ControllerAbstract
             String patronAlephId = bankIdPatron.getPatronId();
 
             if (patronAlephId == null) {
+                this.identityAuthService.logout(request);
                 getLogger().error("Patron exists in Aleph but has no Aleph ID");
                 model.addAttribute("error", "Registrace byla zamítnuta: Chyba identifikace.");
                 return "error";
@@ -281,10 +366,62 @@ public class MainController extends ControllerAbstract
             this.identityActivityService.logBankIdVerificationSuccess(identity);
             this.identityActivityService.logMembershipRenewalInitiation(identity);
 
+            // Check if the returning identity has completed the initial password-setting step.
+            // Show the password form only when passwordSet is explicitly FALSE
+            // (i.e. a new registration that hasn't set the password yet).
+            // null = legacy/pre-existing identity → treat as already set (skip form).
+            // true = password was set → skip form.
+            if (Boolean.FALSE.equals(identity.getPasswordSet())) {
+                getLogger().info("Returning user has not set their password yet. Showing password-setting form. Identity: {}", identity.getId());
+
+                Boolean patronIsCasEmployee = identity.getIsCasEmployee() != null ? identity.getIsCasEmployee() : false;
+
+                model.addAttribute("token", this.tokenService.createIdentityToken(identity));
+                model.addAttribute("passwordDTO", new PatronPasswordDTO());
+                model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
+                model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.title", null, locale));
+
+                return "identity_set_password";
+            }
+
+            // Check if the user has an unpaid payment from a previous session
+            // (e.g. they verified via BankID yesterday but didn't complete the payment)
+            Optional<Payment> existingPayment = this.paymentService.getLatestPaymentByIdentity(identity);
+            if (existingPayment.isPresent()) {
+                Payment payment = existingPayment.get();
+                PaymentStatus paymentStatus = payment.getStatus();
+
+                if (paymentStatus == PaymentStatus.PENDING || paymentStatus == PaymentStatus.FAILED) {
+                    // Verify the patron still has outstanding fees in Aleph
+                    boolean stillHasOutstandingFees = !this.paymentService.verifyPaymentStatus(identity.getAlephId());
+
+                    if (stillHasOutstandingFees) {
+                        getLogger().info("Returning user with unpaid {} payment. Redirecting to payment page. Identity: {}, PaymentId: {}",
+                            payment.getType(), identity.getId(), payment.getId());
+                        // Redirect to the payment page which shows username, fee, voucher field, pay button
+                        return "redirect:/payment";
+                    } else {
+                        // Fee was paid through other means (e.g. library catalog) — mark payment as SUCCESS
+                        getLogger().info("Outstanding fee already paid (via other means). Marking payment as SUCCESS. Identity: {}, PaymentId: {}",
+                            identity.getId(), payment.getId());
+                        this.paymentService.updatePaymentStatus(payment, PaymentStatus.SUCCESS);
+
+                        // Confirm voucher usage if a voucher was applied to this payment
+                        if (payment.getVoucherCode() != null && !payment.getVoucherCode().isEmpty()) {
+                            this.voucherService.findByCode(payment.getVoucherCode()).ifPresent(voucher ->
+                                this.voucherService.confirmOrCreateUsage(voucher, identity, payment.getDiscountAmount()));
+                            getLogger().info("Confirmed voucher usage for externally paid payment. Voucher: {}, Identity: {}",
+                                payment.getVoucherCode(), identity.getId());
+                        }
+                    }
+                }
+            }
+
             // Mapping Aleph patron data to a Patron entity (so-called "Aleph patron")
             Map<String, Object> alephPatronCreation = this.alephService.getAlephPatron(patronAlephId, true);
 
             if (alephPatronCreation.containsKey("error")) {
+                this.identityAuthService.logout(request);
                 getLogger().error("Error getting patron from Aleph: {}", alephPatronCreation.get("error"));
                 model.addAttribute("error", "Registrace byla zamítnuta: Chyba identifikace.");
                 return "error";
@@ -305,6 +442,13 @@ public class MainController extends ControllerAbstract
             boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
             boolean membershipExpiresToday = DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy");
             boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
+            BigDecimal outstandingFinesAmount = paymentService.getPatronTotalDueCash(identity.getAlephId());
+
+            // Tester's Toolkit: override expiryDateIn1MonthOrLess when forceRenewal is enabled (local/testing profiles only)
+            if (this.testSettingsService != null && this.testSettingsService.isForceRenewal()) {
+                expiryDateIn1MonthOrLess = true;
+                getLogger().info("Tester's Toolkit: forceRenewal is ON — overriding expiryDateIn1MonthOrLess to true");
+            }
 
             // Merging BankId patron and Aleph patron into a Patron with the latest data (so-called "the latest patron")
             Patron latestPatron = PatronService.mergePatrons(bankIdPatron, alephPatron);
@@ -332,6 +476,7 @@ public class MainController extends ControllerAbstract
             session.setAttribute("membershipHasExpired", membershipHasExpired);
             session.setAttribute("membershipExpiresToday", membershipExpiresToday);
             session.setAttribute("expiryDateIn1MonthOrLess", expiryDateIn1MonthOrLess);
+            session.setAttribute("outstandingFinesAmount", outstandingFinesAmount);
 
             model.addAttribute("patronId", latestPatron.getSysId());
             model.addAttribute("patron", latestPatronDTO);
@@ -341,9 +486,173 @@ public class MainController extends ControllerAbstract
             model.addAttribute("membershipHasExpired", membershipHasExpired);
             model.addAttribute("membershipExpiresToday", membershipExpiresToday);
             model.addAttribute("expiryDateIn1MonthOrLess", expiryDateIn1MonthOrLess);
+            model.addAttribute("outstandingFinesAmount", outstandingFinesAmount);
+            model.addAttribute("standardRenewalFeeAmount", registrationFeeConfig.getDefaultAmount());
 
             return "callback_registration_renewal";
         }
+    }
+
+    private String handleBankIdCbError(
+        String error,
+        String errorDescription,
+        String traceId,
+        String state,
+        Model model,
+        Locale locale,
+        HttpSession session,
+        HttpServletRequest request
+    ) {
+        String normalizedError = error != null ? error.trim() : "";
+        String normalizedErrorDescription = errorDescription != null ? errorDescription.trim() : "";
+        String messageKeySuffix = resolveBankIdCbErrorMessageKeySuffix(normalizedError, normalizedErrorDescription);
+        String supportTicketId = StringUtils.generateSupportTicketId();
+        String customerLanguage = locale.getLanguage();
+        String pageTitle = this.messageSource.getMessage("page.bankidCbError.title", null, locale);
+
+        getLogger().warn(
+            "{} >>> supportTicketId={}, customerLanguage={}, error={}, errorDescription={}, traceId={}, statePresent={}, sessionCodePresent={}, sessionId={}, remoteAddr={}",
+            pageTitle,
+            supportTicketId,
+            customerLanguage,
+            normalizedError,
+            normalizedErrorDescription,
+            traceId,
+            state != null && !state.isBlank(),
+            session.getAttribute("code") != null,
+            session.getId(),
+            request.getRemoteAddr()
+        );
+
+        sendBankIdCbErrorSupportNotification(
+            pageTitle,
+            supportTicketId,
+            customerLanguage,
+            normalizedError,
+            normalizedErrorDescription,
+            traceId,
+            state,
+            session,
+            request
+        );
+
+        model.addAttribute("pageTitle", pageTitle);
+        model.addAttribute("loginEndpoint", this.servletContext.getContextPath().concat("/login"));
+        model.addAttribute(
+            "bankidCbErrorTitle",
+            this.messageSource.getMessage("page.bankidCbError." + messageKeySuffix + ".title", null, locale)
+        );
+        model.addAttribute(
+            "bankidCbErrorDescription",
+            this.messageSource.getMessage("page.bankidCbError." + messageKeySuffix + ".description", null, locale)
+        );
+        this.appSettingsService.getPrimarySupportEmail().ifPresent(primarySupportEmail -> {
+            model.addAttribute("bankidCbErrorPrimarySupportEmail", primarySupportEmail.getEmail());
+            model.addAttribute("bankidCbErrorSupportTicketId", supportTicketId);
+        });
+
+        return "bankid_cb_error";
+    }
+
+    private void sendBankIdCbErrorSupportNotification(
+        String pageTitle,
+        String supportTicketId,
+        String customerLanguage,
+        String error,
+        String errorDescription,
+        String traceId,
+        String state,
+        HttpSession session,
+        HttpServletRequest request
+    ) {
+        List<String> supportEmails = this.appSettingsService.getSupportEmails().stream()
+            .map(supportEmail -> supportEmail.getEmail())
+            .collect(Collectors.toList());
+
+        if (supportEmails.isEmpty()) {
+            return;
+        }
+
+        String subject = pageTitle + " - ref. ID: " + supportTicketId;
+        String body = String.format(
+            "%s%n%n"
+                + "supportTicketId=%s%n"
+                + "customerLanguage=%s%n"
+                + "error=%s%n"
+                + "errorDescription=%s%n"
+                + "traceId=%s%n"
+                + "statePresent=%s%n"
+                + "sessionCodePresent=%s%n"
+                + "sessionId=%s%n"
+                + "remoteAddr=%s",
+            pageTitle,
+            supportTicketId,
+            customerLanguage,
+            error,
+            errorDescription,
+            traceId,
+            state != null && !state.isBlank(),
+            session.getAttribute("code") != null,
+            session.getId(),
+            request.getRemoteAddr()
+        );
+
+        try {
+            this.emailService.sendPlainTextEmail(supportEmails, subject, body);
+        } catch (Exception e) {
+            getLogger().error("Failed to send Bank iD callback error support notification email", e);
+        }
+    }
+
+    private String resolveBankIdCbErrorMessageKeySuffix(String error, String errorDescription) {
+        switch (error) {
+            case "access_denied":
+                if ("User declined the authentication".equals(errorDescription)) {
+                    return "accessDeniedAuthentication";
+                }
+                if ("User declined consent".equals(errorDescription)) {
+                    return "accessDeniedConsent";
+                }
+                return "accessDenied";
+
+            case "eid_doesnt_exist":
+                if ("User not eligible".equals(errorDescription)) {
+                    return "eidDoesntExistNotEligible";
+                }
+                if ("User disabled authentication".equals(errorDescription)) {
+                    return "eidDoesntExistDisabledAuthentication";
+                }
+                return "eidDoesntExist";
+
+            case "user_not_eligible":
+                if ("User authentication method insufficient".equals(errorDescription)) {
+                    return "userNotEligibleMethodInsufficient";
+                }
+                if ("Insufficient user data or age restriction".equals(errorDescription)) {
+                    return "userNotEligibleDataOrAge";
+                }
+                return "userNotEligible";
+
+            case "invalid_grant":
+                return "invalidGrant";
+
+            default:
+                return "default";
+        }
+    }
+
+    private boolean isInvalidGrantTokenExchange(IdentityAuthException e) {
+        Throwable cause = e.getCause();
+
+        while (cause != null) {
+            String message = cause.getMessage();
+            if (message != null && message.contains("\"invalid_grant\"")) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+
+        return false;
     }
 
     /**
@@ -376,6 +685,7 @@ public class MainController extends ControllerAbstract
 
         PatronDTO beforeEditedPatron = (PatronDTO) session.getAttribute("bankIdPatronDTO");
         if (beforeEditedPatron == null) {
+            this.identityAuthService.logout(request);
             throw new HttpErrorException(
                 HttpStatus.BAD_REQUEST, 
                 this.messageSource.getMessage("error.400.text", null, locale)
@@ -408,7 +718,7 @@ public class MainController extends ControllerAbstract
 
         session.removeAttribute("patron");
         session.removeAttribute("userProfile");
-        session.removeAttribute("identity");
+        // session.removeAttribute("identity");
         session.removeAttribute("bankIdPatron");
         session.removeAttribute("bankIdPatronDTO");
 
@@ -426,6 +736,7 @@ public class MainController extends ControllerAbstract
         getLogger().info("new-registration - code: {}", code);
 
         if (patronSysId == null || patron == null || userProfile == null || code == null || identity == null) {
+            this.identityAuthService.logout(request);
             throw new HttpErrorException(
                 HttpStatus.BAD_REQUEST, 
                 this.messageSource.getMessage("error.400.text", null, locale)
@@ -433,6 +744,7 @@ public class MainController extends ControllerAbstract
         }
 
         if (editedPatron.getExportConsent() != PatronBoolean.Y) {
+            this.identityAuthService.logout(request);
             throw new HttpErrorException(
                 HttpStatus.BAD_REQUEST, 
                 this.messageSource.getMessage("error.400.text", null, locale)
@@ -456,6 +768,7 @@ public class MainController extends ControllerAbstract
         synchronized (this) {
             Map<String, Object> patronCreation = this.alephService.createPatron(patron);
             if (patronCreation.containsKey("error")) {
+                this.identityAuthService.logout(request);
                 getLogger().info("RESULT: {}", patronCreation);
                 getLogger().error("Error creating patron: {}", patronCreation.get("error"));
                 return "error";
@@ -482,8 +795,20 @@ public class MainController extends ControllerAbstract
                 boolean hasMediaFiles = mediaFiles != null && mediaFilesCount > 0;
 
                 if (hasMediaFiles) {
+                    String submissionBatchId = this.mediaService.createSubmissionBatchId();
+                    int batchOrderIndex = 1;
                     for (MultipartFile file : mediaFiles) {
-                        Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
+                        if (file == null || file.isEmpty()) {
+                            continue;
+                        }
+
+                        Map<String, Object> uploadResult = this.mediaService.uploadMedia(
+                            file,
+                            identity,
+                            MediaSubmissionType.REGISTRATION,
+                            submissionBatchId,
+                            batchOrderIndex++
+                        );
                         if (uploadResult.containsKey("error")) {
                             getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
                         }
@@ -534,6 +859,8 @@ public class MainController extends ControllerAbstract
         Model model, 
         Locale locale, 
         @RequestParam("media") MultipartFile[] mediaFiles, 
+        @RequestParam(value = "voucherCode", required = false) String voucherCode,
+        @RequestParam(value = "renewalAction", required = false) String renewalAction,
         HttpServletRequest request
     ) {
         if (!this.identityAuthService.isLoggedin(request)) {
@@ -579,6 +906,8 @@ public class MainController extends ControllerAbstract
             model.addAttribute("membershipHasExpired", session.getAttribute("membershipHasExpired"));
             model.addAttribute("membershipExpiresToday", session.getAttribute("membershipExpiresToday"));
             model.addAttribute("expiryDateIn1MonthOrLess", session.getAttribute("expiryDateIn1MonthOrLess"));
+            model.addAttribute("outstandingFinesAmount", session.getAttribute("outstandingFinesAmount"));
+            model.addAttribute("standardRenewalFeeAmount", registrationFeeConfig.getDefaultAmount());
 
             model.addAttribute("org.springframework.validation.BindingResult.patron", bindingResult);
 
@@ -594,7 +923,7 @@ public class MainController extends ControllerAbstract
         session.removeAttribute("alephPatron");
         session.removeAttribute("patron");
         session.removeAttribute("userProfile");
-        session.removeAttribute("identity");
+        // session.removeAttribute("identity");
         session.removeAttribute("latestPatron");
         session.removeAttribute("latestPatronDTO");
         session.removeAttribute("bankIdPatronDTO");
@@ -603,6 +932,7 @@ public class MainController extends ControllerAbstract
         session.removeAttribute("membershipHasExpired");
         session.removeAttribute("membershipExpiresToday");
         session.removeAttribute("expiryDateIn1MonthOrLess");
+        session.removeAttribute("outstandingFinesAmount");
 
         try {
             getLogger().info("membership-renewal - originalPatron: {}", patron.toJson());
@@ -629,6 +959,7 @@ public class MainController extends ControllerAbstract
             );
         }
 
+        boolean identityWasArchived = identity.isDeleted();
         this.identityActivityService.logMembershipRenewalSubmission(identity);
 
         this.patronRepository.deleteById(patronSysId);
@@ -658,8 +989,12 @@ public class MainController extends ControllerAbstract
 
         identity.setIsCasEmployee(patronIsCasEmployee);
         identity.setCheckedByAdmin(false);
+        identity.setDeleted(false);
         identity.setUpdatedAt(LocalDateTime.now());
         this.identityService.save(identity);
+        if (identityWasArchived) {
+            this.identityActivityService.logIdentityRestored(identity);
+        }
 
         if (patronIsCasEmployee) {
             int mediaFilesCount = 0;
@@ -669,8 +1004,20 @@ public class MainController extends ControllerAbstract
                 boolean hasMediaFiles = mediaFiles != null && mediaFilesCount > 0;
 
                 if (hasMediaFiles) {
+                    String submissionBatchId = this.mediaService.createSubmissionBatchId();
+                    int batchOrderIndex = 1;
                     for (MultipartFile file : mediaFiles) {
-                        Map<String, Object> uploadResult = this.mediaService.uploadMedia(file, identity);
+                        if (file == null || file.isEmpty()) {
+                            continue;
+                        }
+
+                        Map<String, Object> uploadResult = this.mediaService.uploadMedia(
+                            file,
+                            identity,
+                            MediaSubmissionType.RENEWAL,
+                            submissionBatchId,
+                            batchOrderIndex++
+                        );
                         if (uploadResult.containsKey("error")) {
                             getLogger().error("Error uploading media file: {}", uploadResult.get("error"));
                         }
@@ -682,6 +1029,7 @@ public class MainController extends ControllerAbstract
         this.identityActivityService.logMembershipRenewalSuccess(identity);
 
         String membershipExpiryDate = patron.getExpiryDate();
+        BigDecimal outstandingFinesAmount = paymentService.getPatronTotalDueCash(identity.getAlephId());
 
         try {
             if (patronHasEmail) {
@@ -692,14 +1040,110 @@ public class MainController extends ControllerAbstract
             getLogger().error("Failed to send a membership renewal confirmation email to " + patronEmail, e);
         }
 
-        this.identityAuthService.logout(request);
+        // Check if user is an employee
+        if (patronIsCasEmployee) {
+            voucherCode = null;
+            if (isSubmitAndPayAction(renewalAction) && outstandingFinesAmount.compareTo(BigDecimal.ZERO) > 0) {
+                paymentService.createPayment(identity, PaymentType.RENEWAL_FINES_ONLY);
+                getLogger().info("Created fines-only payment for employee renewal. Identity: {}, Barcode: {}, Outstanding fines: {}",
+                    identity.getId(), identity.getAlephBarcode(), outstandingFinesAmount);
+                return "redirect:/payment/initiate";
+            }
 
+            return renderMembershipRenewalSuccess(model, identity, patronIsCasEmployee, patronHasEmail,
+                membershipExpiryDate, alephPatronBarcode, outstandingFinesAmount);
+        } else {
+            // Non-employees need to pay
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            String appliedVoucherCode = null;
+            Voucher appliedVoucher = null;
+
+            // Validate and apply voucher if provided
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                BigDecimal feeAmount = registrationFeeConfig.getDefaultAmount();
+                Map<String, Object> voucherResult = voucherService.validateVoucher(voucherCode.trim(), identity, feeAmount);
+
+                if (Boolean.TRUE.equals(voucherResult.get("valid"))) {
+                    discountAmount = (BigDecimal) voucherResult.get("discountAmount");
+                    appliedVoucherCode = voucherCode.trim().toUpperCase();
+                    appliedVoucher = (Voucher) voucherResult.get("voucher");
+                    getLogger().info("Voucher '{}' applied for membership renewal. Identity: {}, Discount: {}",
+                        appliedVoucherCode, identity.getId(), discountAmount);
+                } else {
+                    getLogger().warn("Invalid voucher '{}' for renewal. Identity: {}, Error: {}",
+                        voucherCode, identity.getId(), voucherResult.get("error"));
+                    // Proceed without voucher — don't block renewal
+                }
+            }
+
+            boolean feeFullyCovered = appliedVoucherCode != null
+                && discountAmount.compareTo(registrationFeeConfig.getDefaultAmount()) >= 0;
+
+            if (feeFullyCovered) {
+                voucherService.confirmOrCreateUsage(appliedVoucher, identity, discountAmount);
+
+                if (outstandingFinesAmount.compareTo(BigDecimal.ZERO) > 0) {
+                    if (isSubmitAndPayAction(renewalAction)) {
+                        Payment payment = paymentService.createPayment(identity, PaymentType.RENEWAL_FINES_ONLY);
+                        getLogger().info("Voucher fully covered renewal fee, redirecting to fines-only payment. Identity: {}, Barcode: {}, Outstanding fines: {}",
+                            identity.getId(), identity.getAlephBarcode(), outstandingFinesAmount);
+                        return "redirect:/payment/initiate";
+                    }
+
+                    getLogger().info("Voucher fully covered renewal fee and patron chose not to pay outstanding fines now. Identity: {}, Outstanding fines: {}",
+                        identity.getId(), outstandingFinesAmount);
+                    return renderMembershipRenewalSuccess(model, identity, patronIsCasEmployee, patronHasEmail,
+                        membershipExpiryDate, alephPatronBarcode, outstandingFinesAmount);
+                }
+
+                getLogger().info("Fee fully covered by voucher. Completing renewal without payment gateway. Identity: {}", identity.getId());
+                return renderMembershipRenewalSuccess(model, identity, patronIsCasEmployee, patronHasEmail,
+                    membershipExpiryDate, alephPatronBarcode, outstandingFinesAmount);
+            }
+
+            synchronized (this) {
+                Map<String, Object> feeCreation = this.alephService.createRenewalFee(patron);
+                if (feeCreation.containsKey("error")) {
+                    getLogger().error("Error creating renewal fee in Aleph: {}", feeCreation.get("error"));
+                    return "error";
+                }
+            }
+
+            Payment payment = paymentService.createPayment(identity, PaymentType.RENEWAL, appliedVoucherCode, discountAmount);
+            getLogger().info("Created payment for membership renewal. Identity: {}, Barcode: {}, Discount: {}",
+                identity.getId(), identity.getAlephBarcode(), discountAmount);
+
+            // If partial discount, create pending usage and redirect to payment
+            if (appliedVoucherCode != null && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+                voucherService.createPendingUsage(appliedVoucher, identity, discountAmount);
+            }
+
+            return "redirect:/payment/initiate";
+        }
+    }
+
+    private boolean isSubmitAndPayAction(String renewalAction) {
+        return "submitAndPay".equalsIgnoreCase(renewalAction);
+    }
+
+    private String renderMembershipRenewalSuccess(
+        Model model,
+        Identity identity,
+        boolean patronIsCasEmployee,
+        boolean patronHasEmail,
+        String membershipExpiryDate,
+        String alephPatronBarcode,
+        BigDecimal outstandingFinesAmount
+    ) {
+        model.addAttribute("apiToken", this.tokenService.createApiToken(identity.getId().toString()));
+        model.addAttribute("autoLogoutOnLoad", true);
         model.addAttribute("isIdentityLoggedIn", false);
         model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
         model.addAttribute("patronHasEmail", patronHasEmail);
         model.addAttribute("membershipExpiryDate", membershipExpiryDate);
-        // model.addAttribute("xml", patronUpdate.get("xml-patron"));
         model.addAttribute("alephBarcode", alephPatronBarcode);
+        model.addAttribute("outstandingFinesAmount", outstandingFinesAmount);
+        model.addAttribute("hasOutstandingFines", outstandingFinesAmount.compareTo(BigDecimal.ZERO) > 0);
 
         return "membership_renewal_success";
     }

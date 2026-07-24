@@ -17,12 +17,12 @@
                 <p>
                     Přihlašovací údaje slouží k:
                     <ul>
-                        <li>přihlášení do uživatelského konta,</li>
-                        <li>přístupu k jednotlivým elektronickým informačním zdrojům,</li>
-                        <li>přístupu do digitálních knihoven,</li>
+                        <li><a href="#jumplink-1">přihlášení do uživatelského konta</a>,</li>
+                        <li><a href="#jumplink-2">přístupu k jednotlivým elektronickým informačním zdrojům</a>,</li>
+                        <li><a href="#jumplink-3">přístupu do digitálních knihoven</a>,</li>
                         <li>využití služby <a href="https://ziskej-info.techlib.cz/pro-ctenare" target="_blank">Získej</a>,</li>
-                        <li>objednání tištěných dokumentů z našeho fondu,</li>
-                        <li>objednání individuální studovny.</li>
+                        <li><a href="#jumplink-4">objednání tištěných dokumentů z našeho fondu</a>,</li>
+                        <li>objednání <a href="https://katalog.lib.cas.cz/knav/MyResearch/Studyrooms" target="_blank">individuální</a> nebo <a href="https://katalog.lib.cas.cz/knav/MyResearch/StudyroomsHourly" target="_blank">zvukotěsné</a> studovny.</li>
                     </ul>
                 </p>
                 <p>
@@ -30,42 +30,44 @@
                     <a th:href="'mailto:' + ${alephPatronBarcode} + '@study.lib.cas.cz'">
                         <b th:text="${alephPatronBarcode} + '@study.lib.cas.cz'"></b>
                     </a>
-                    
                 </p>
                 <p>
                     Síť: <b>KNAV_STUDY</b>
                 </p>
 
                 <p th:if="${!isEmployee}">
-                    Registrace je dokončena úhradou registračního <a href="https://katalog.lib.cas.cz/knav/MyResearch/Fines" target="_blank">poplatku v uživatelském kontu</a> (splatnost 14 dní). Využívání našich služeb Vám umožníme hned po jejím dokončení.
+                    Registrace je dokončena úhradou registračního poplatku. Pokud jste jej dosud neuhradili, můžete platbu provést ve svém <a href="https://katalog.lib.cas.cz/knav/MyResearch/Fines" target="_blank">uživatelském kontu</a> (splatnost 7 dní od odeslání registračního formuláře). <strong>Využívání našich služeb Vám umožníme bezprostředně po připsání platby na náš účet</strong>. Pokud poplatek neuhradíte ve lhůtě splatnosti, vymažeme údaje uživatelského konta a registraci zrušíme.
                 </p>
 
                 <br>
-                <h2>UŽIVATELSKÉ KONTO</h2>
+                <h2 id="jumplink-1">UŽIVATELSKÉ KONTO</h2>
                 <p>
-                    Registrace je platná do <b th:text="${membershipExpiryDate}"></b>. Datum platnosti registrace zjistíte i v <a href="http://katalog.lib.cas.cz/KNAV/MyResearch/Home" target="_blank">uživatelském kontu</a>, kde můžete také spravovat své kontaktní údaje, sledovat stav požadavků, výpůjční lhůty, počet jejich prodloužení a rezervovat nájem individuální studovny. Pokud se budete chtít vracet k historii svých výpůjček, je potřeba, abyste nám v něm udělili souhlas s jejím zpracováním.
+                    Registrace je platná do <b th:text="${membershipExpiryDate}"></b>. Datum platnosti registrace zjistíte i v <a href="http://katalog.lib.cas.cz/KNAV/MyResearch/Home" target="_blank">uživatelském kontu</a>, kde můžete také spravovat své kontaktní údaje, sledovat stav požadavků, výpůjční lhůty, počet jejich prodloužení a rezervovat nájem individuální nebo zvukotěsné studovny. Pokud se budete chtít vracet k historii svých výpůjček, je potřeba, abyste nám v něm udělili souhlas s jejím zpracováním.
                 </p>
 
                 <p th:if="${!isEmployee}">
-                    Platnost své registrace Komplet můžete obnovit nejdříve měsíc před a nejpozději tři roky po jejím skončení. Pokud známe Váš e-mail, pošleme 30 a 15 dní předem upozornění na její blížící se konec. Obnovení platnosti prostřednictvím Bank iD probíhá stejným způsobem jako samotná registrace. Obnovit ji můžete také osobně u registračního pultu ve studovně.
+                    Platnost své registrace Komplet můžete obnovit nejdříve měsíc před a nejpozději jeden rok po jejím skončení. Pokud známe Váš e-mail, pošleme 30 a 15 dní předem upozornění na její blížící se konec. Obnovení platnosti prostřednictvím Bank iD probíhá stejným způsobem jako samotná registrace. Obnovit ji můžete také osobně u registračního pultu ve studovně.
                 </p>
                 <p th:if="${isEmployee}">
-                    Platnost své registrace Komplet můžete obnovit nejdříve měsíc před a nejpozději tři roky po jejím skončení. Pokud známe Váš e-mail, pošleme 30 a 15 dní předem upozornění na její blížící se konec. Obnovení platnosti prostřednictvím Bank iD probíhá stejným způsobem jako samotná registrace. Obnovit ji můžete také osobně u registračního pultu ve studovně. Ukončením Vašeho pracovněprávního vztahu k AV ČR nárok na poskytování zvýhodněných podmínek zaniká, proto nám prosím tuto skutečnost, pokud nastane, bezodkladně ohlaste.
+                    Platnost své registrace Komplet můžete obnovit nejdříve měsíc před a nejpozději jeden rok po jejím skončení. Pokud známe Váš e-mail, pošleme 30 a 15 dní předem upozornění na její blížící se konec. Obnovení platnosti prostřednictvím Bank iD probíhá stejným způsobem jako samotná registrace. Obnovit ji můžete také osobně u registračního pultu ve studovně. Ukončením Vašeho pracovněprávního vztahu k AV ČR nárok na poskytování zvýhodněných podmínek zaniká, proto nám prosím tuto skutečnost, pokud nastane, bezodkladně ohlaste.
                 </p>
 
                 <br>
-                <h2>ELEKTRONICKÉ INFORMAČNÍ ZDROJE</h2>
+                <h2 id="jumplink-2">ELEKTRONICKÉ INFORMAČNÍ ZDROJE</h2>
                 <p>
-                    Pro přístup k jednotlivým EIZ používejte odkazy „vzdálený přístup Shibboleth“, nebo „vzdálený přístup EZProxy“ z tohoto <a href="https://lib.cas.cz/eiz/" target="_blank">přehledu</a>; nepřihlašujte se přímo na webových stránkách jednotlivých databází.
+                    Do jednotlivých EIZ přistupujte z tohoto <a href="https://lib.cas.cz/eiz/" target="_blank">přehledu</a> kliknutím na symbol zámečku u vybrané databáze; nepřihlašujte se přímo na webových stránkách jednotlivých EIZ. 
                 </p>
                 <p>
-                    Protože většina databází není předplácena kompletně, najdete v přehledu u každého EIZ i podrobné informace o možnostech jeho využívání (odkaz „více informací“). Zároveň můžete pomocí filtrů vpravo vybrat, zda chcete zobrazit plnotextové, bibliografické, nebo citační databáze a zvolit i další parametry.
+                    K výběru můžete využít také abecední filtr. Pomocí filtrů vpravo vybírejte, zda chcete zobrazit plnotextové, bibliografické, nebo citační databáze a volte i další parametry, nebo filtry resetujte.
                 </p>
                 <p>
-                    Na zpřístupňování digitalizovaných časopisů a knih, zejména z produkce Akademie věd ČR a jejích předchůdkyň, je zaměřena <a href="https://lib.cas.cz/databaze-a-katalogy/digitalni-knihovna/" target="_blank">Digitální knihovna AV ČR</a>. Vzdálený přístup k dílům nedostupným na trhu poskytují i <a href="https://dnnt.cz/" target="_blank">další knihovny</a>.
+                    Protože většina databází není předplácena kompletně, najdete v přehledu u každého EIZ i podrobné informace o možnostech jeho využívání, které zobrazíte kliknutím na název konkrétní databáze. Pro vzdálený přístup k jednotlivým EIZ z detailu databáze používejte odkazy „Vzdálený přístup Shibboleth“, nebo „Vzdálený přístup EZProxy“. Při přístupu z naší studovny používejte tlačítko “Přístup z KNAV”.
                 </p>
                 <p>
-                    Online i offline čtení elektronických knih desítek českých nakladatelství umožňuje databáze <a href="https://lib.cas.cz/eiz/bookport/" target="_blank">Bookport</a>, ve které najdete jak odborné a populárně naučné publikace, tak i nejnovější beletrii.
+                    Na zpřístupňování děl nedostupných na trhu (DNNT), zejména digitalizovaných časopisů a knih z produkce Akademie věd ČR a jejích předchůdkyň, je zaměřena <a href="https://kramerius.lib.cas.cz/" target="_blank">Digitální knihovna AV ČR</a>. Vzdálený přístup k dílům nedostupným na trhu poskytují i <a href="https://dnnt.cz/" target="_blank">další knihovny</a>.
+                </p>
+                <p>
+                    Online i offline čtení elektronických knih desítek českých nakladatelství umožňuje databáze <a href="https://lib.cas.cz/eiz/bookport/" target="_blank">Bookport</a>, ve které najdete jak odborné a populárně naučné publikace, tak i nejnovější beletrii. Pro přímé přihlášení do Bookportu zvolte “Přístup přes eduID.cz / safeID.sk” a z nabídky vyberte přihlásit účtem “Knihovna AV ČR, v. v. i.”.
                 </p>
 
                 <br>
@@ -74,34 +76,34 @@
                     1. Literatura na určité téma
                 </h3>
                 <p>
-                    Pro zjištění dostupnosti literatury na určité téma buď nastavte v našem <a href="https://katalog.lib.cas.cz/KNAV/" target="_blank">katalogu</a> vyhledávání se zahrnutím EIZ a výsledky omezte na plné texty, nebo vstupte do <a href="https://katalog.lib.cas.cz/KNAV/EDS/FULLTEXT" target="_blank">katalogu s už nastavenými filtry</a>. Pro zpřístupnění vybraného zdroje pak použijte nástroj SFX (sekce “Full Text”), nebo připojený externí odkaz.
+                    Pro zjištění dostupnosti literatury na určité téma buď zaškrtněte v našem <a href="https://katalog.lib.cas.cz/KNAV/" target="_blank">katalogu</a> “Zahrnout EIZ" a výsledky omezte na plné texty, nebo vstupte do <a href="https://katalog.lib.cas.cz/KNAV/EDS/FULLTEXT" target="_blank">katalogu s už nastavenými filtry</a>. Pro zpřístupnění vybraného zdroje pak použijte nástroj SFX (sekce “Full Text”), nebo připojený externí odkaz. Služba je dostupná pouze pro přihlášené uživatele.
                 </p>
                 <h3>
                     2. Konkrétní elektronické tituly
                 </h3>
                 <p>
-                    V <a href="https://msfx-lib-cas-cz.ezproxy.lib.cas.cz/sfxlcl3/az/KNAV" target="_blank">portálu elektronických časopisů a knih KNAV</a> snadno ověříte dostupnost konkrétního titulu v EIZ podle jeho názvu a u předplacených, nebo zakoupených titulů získáte prostřednictvím nástroje SFX (sekce “Full Text”) přístup k jeho plnému textu. 
+                    V portálech <a href="https://ezproxy.lib.cas.cz/login?url=https://msfx.lib.cas.cz/sfxlcl3/az/KNAV" target="_blank">E-časopisy</a> a <a href="https://ezproxy.lib.cas.cz/login?url=https://msfx.lib.cas.cz/sfxlcl3/ebooksearch/KNAV" target="_blank">E-knihy</a> snadno ověříte dostupnost konkrétního titulu v EIZ podle jeho názvu a u předplacených, nebo zakoupených titulů, získáte prostřednictvím nástroje SFX (sekce “Full Text”) přístup k jeho plnému textu.
                 </p>
-                <h3>
+                <h3 id="jumplink-3">
                     3. Digitalizovaná díla nedostupná na trhu (<a href="https://dnnt.cz/" target="_blank">DNNT</a>)
                 </h3>
                 <p>
                     Pro zjištění dostupnosti digitalizovaných děl využijte portál <a href="https://www.knihovny.cz/Search/Results" target="_blank">Knihovny.cz</a>. Po zobrazení výsledků svého dotazu vyberte vlevo u třetího filtru (Online dostupnost) možnost “DNNT: dostupné pro registrované”. Po otevření záznamu zvoleného titulu vyberte v tabulce dole na stránce druhou záložku “E-verze” a následně odkaz “Digitalizovaný dokument”, případně “Online verze”.
                 </p>
                 <p>
-                    Před zobrazením plného textu nejprve odsouhlaste podmínky použití a zvolte přihlášení knihovním účtem/eduID. Následně vyberte přihlášení účtem instituce “Knihovna AV ČR, v. v. i.”, a přihlaste se svými údaji.
+                    Po přesměrování do vybrané digitální knihovny přejděte na stránku přihlášení (odkaz v horní liště vpravo, nebo zobrazený po kliknutí na nedostupnou stránku dokumentu). Pro zobrazení plného textu vyberte “Přihlásit knihovním účtem/eduID”, zvolte z nabídky knihovní účet “Knihovna AV ČR, v. v. i.”, a přihlaste se svými údaji.
                 </p>
                 <p>
                     Tato díla jsou na základě licenční smlouvy <a href="https://dnnt.cz/o-projektu/" target="_blank">zpřístupněna pouze pro online čtení</a>. Je zakázáno zhotovit si jak digitální, tak i tiskové kopie.
                 </p>
 
                 <br>
-                <h2>OBJEDNÁNÍ TIŠTĚNÝCH DOKUMENTŮ</h2>
+                <h2 id="jumplink-4">OBJEDNÁNÍ TIŠTĚNÝCH DOKUMENTŮ</h2>
                 <p>
                     Dokumenty z našeho fondu si můžete <a href="https://katalog.lib.cas.cz/KNAV/" target="_blank">objednat</a> ještě před svou první návštěvou <a href="https://lib.cas.cz/aktuality/oteviraci-doba/" target="_blank">studovny</a>. Vaše požadavky vyřídíme nejpozději následující otevírací den (dokumenty z hlavní budovy připravíme do 30 minut, z externího depozitáře nejpozději následující otevírací den v 15 hodin). Jejich stav můžete sledovat v <a href="https://katalog.lib.cas.cz/KNAV/Holds/List" target="_blank">uživatelském kontu</a> a pokud známe Váš e-mail, pošleme zprávu, až bude objednaný dokument připraven k vyzvednutí.
                 </p>
                 <p>
-                    Tituly, které půjčujeme domů, Vám připravíme k samoobslužné výpůjčce pod selfcheck. Ten najdete v centrální studovně u pultu informací. Dokumenty hledejte pod kódem složeným z prvních tří písmen svého jména a příjmení.
+                    Tituly, které půjčujeme domů, Vám připravíme k samoobslužné výpůjčce pod selfcheck. Ten najdete v centrální studovně u pultu informací. Dokumenty hledejte pod kódem složeným z prvních tří písmen svého příjmení a jména.
                 </p>
                 <p>
                     Na tituly běžně dostupné ve volném výběru nejde zadávat požadavky. Vyhledáte si je přímo ve studovně a ty, které mají na hřbetu nalepený bílý štítek s černě natištěnou signaturou, si můžete na selfchecku rovnou vypůjčit domů.
@@ -110,7 +112,7 @@
                     Pro samotné vypůjčení na selfchecku:
                     <ul>
                         <li>zvolte nabídku „Výpůjčka“,</li>
-                        <li>nechte čtenářský průkaz položený na RFID čtečce (vedle selfchecku vpravo),</li>
+                        <li>nechte čtenářský průkaz vložený v RFID čtečce (vedle selfchecku vpravo),</li>
                         <li>jednotlivé knihy vložte postupně do prostoru pod monitorem,</li>
                         <li>po připsání všech knih na uživatelské konto vyberte nabídku „Konec“,</li>
                         <li>zvolte, zda budete chtít vytisknout stvrzenku s termínem vrácení (ten kdykoli zjistíte i v <a href="https://katalog.lib.cas.cz/KNAV/MyResearch/CheckedOut" target="_blank">uživatelském kontu</a>),</li>

@@ -2,6 +2,9 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <div th:fragment="body-bottom">
+    <div id="api-token" th:if="${apiToken}" th:data-value="${apiToken}" class="hidden"></div>
+    <div id="auto-logout-on-load" th:if="${autoLogoutOnLoad}" class="hidden" data-enabled="true"></div>
+
     <!-- TailwindCSS, Flowbite scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
 
@@ -29,6 +32,7 @@
             "loader.newRegistration.savingData": /*[[#{loader.newRegistration.savingData}]]*/,
             "loader.newRegistration.done": /*[[#{loader.newRegistration.done}]]*/,
             "loader.submittingData": /*[[#{loader.submittingData}]]*/,
+            "alert.identityLoggedOut": /*[[#{alert.identityLoggedOut}]]*/,
             "alert.rfidAlreadyExists": /*[[#{alert.rfidAlreadyExists}]]*/,
             "alert.rfidIsAvailable": /*[[#{alert.rfidIsAvailable}]]*/,
             "alert.rfidCheckFailed": /*[[#{alert.rfidCheckFailed}]]*/,
@@ -39,6 +43,8 @@
             "alert.attachedFilesInvalid": /*[[#{alert.attachedFilesInvalid}]]*/,
             "alert.totalFileSizeExceeded": /*[[#{alert.totalFileSizeExceeded}]]*/,
             "alert.attachedFilesStillLoading": /*[[#{alert.attachedFilesStillLoading}]]*/,
+            "alert.copiedToClipboard": /*[[#{alert.copiedToClipboard}]]*/,
+            "alert.renewalAlephPrefillApplied": /*[[#{alert.renewalAlephPrefillApplied}]]*/,
             "filepond.labelIdle": /*[[#{filepond.labelIdle}]]*/,
             "filepond.maxFileSizeExceeded": /*[[#{filepond.maxFileSizeExceeded}]]*/,
             "filepond.maxFileSize": /*[[#{filepond.maxFileSize}]]*/,
@@ -51,6 +57,65 @@
             "indentity.markAsDeletedInAleph.warning": /*[[#{indentity.markAsDeletedInAleph.warning}]]*/,
         };
     </script>
+
+    <!-- Session timer script (only for logged-in identities) -->
+    <script th:if="${isIdentityLoggedIn}" th:inline="javascript">
+        window.sessionTimerConfig = {
+            enabled: true,
+            inactivityTimeoutSeconds: /*[[${sessionTimerInactivityTimeout}]]*/ 300,
+            hardCapSeconds: /*[[${sessionTimerHardCap}]]*/ 2700,
+            warningBeforeSeconds: /*[[${sessionTimerWarningBefore}]]*/ 60,
+            keepAliveIntervalSeconds: /*[[${sessionTimerKeepAliveInterval}]]*/ 30,
+            loginTimestamp: /*[[${sessionTimerLoginTimestamp}]]*/ null,
+            translations: {
+                timerLabel: /*[[#{sessionTimer.label}]]*/ 'Session expires in',
+                warningTitle: /*[[#{sessionTimer.warningTitle}]]*/ 'Session expiring',
+                warningMessage: /*[[#{sessionTimer.warningMessage}]]*/ 'Your session will expire in less than a minute due to inactivity.',
+                warningContinueBtn: /*[[#{sessionTimer.continueBtn}]]*/ 'Continue',
+                warningLogoutBtn: /*[[#{sessionTimer.logoutBtn}]]*/ 'Log out',
+                hardCapWarning: /*[[#{sessionTimer.hardCapWarning}]]*/ 'Your session will expire soon due to security time limit.',
+                hardCapExpired: /*[[#{sessionTimer.hardCapExpired}]]*/ 'Your session has expired due to security time limit.'
+            }
+        };
+    </script>
+    <script th:if="${isIdentityLoggedIn}" src="/bankid-registrator/assets/dist/js/session-timer.js"></script>
+
+    <!-- Voucher validation script + i18n messages -->
+    <script th:if="${isIdentityLoggedIn}" src="/bankid-registrator/assets/dist/js/voucher.js"></script>
+    <div th:if="${isIdentityLoggedIn}" id="voucher-messages" class="hidden"
+         th:attr="
+            data-voucher-error-empty=#{voucher.error.empty},
+            data-voucher-error-notFound=#{voucher.error.notFound},
+            data-voucher-error-inactive=#{voucher.error.inactive},
+            data-voucher-error-expired=#{voucher.error.expired},
+            data-voucher-error-maxUsesReached=#{voucher.error.maxUsesReached},
+            data-voucher-error-alreadyUsed=#{voucher.error.alreadyUsed},
+            data-voucher-error-unknown=#{voucher.error.unknown},
+            data-voucher-error-sessionExpired=#{voucher.error.sessionExpired},
+            data-voucher-error-network=#{voucher.error.network},
+            data-voucher-valid-prefix=#{voucher.valid.prefix},
+            data-voucher-valid-fullyCovered=#{voucher.valid.fullyCovered},
+            data-voucher-valid-discount=#{voucher.valid.discount},
+            data-voucher-valid-youPay=#{voucher.valid.youPay},
+            data-voucher-valid-insteadOf=#{voucher.valid.insteadOf},
+            data-voucher-currency=#{message.czk},
+            data-voucher-validateBtn=#{voucher.validateBtn}
+         "></div>
+
+    <!-- Back-end injected alert -->
+    <script th:if="${alert}" th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            const alertData = {
+                message: /*[[${alert.message}]]*/ '',
+                type: /*[[${alert.type}]]*/ 'info',
+                duration: /*[[${alert.duration}]]*/ 6000
+            };
+            showAlert(alertData.message, alertData.type, alertData.duration);   // showAlert defined in main.js
+        });
+    </script>
+
+    <!-- Tester's Toolkit script (non-production only, when no identity is logged in) -->
+    <script th:if="${(isNotProduction ?: false) and !(isIdentityLoggedIn ?: false)}" src="/bankid-registrator/assets/dist/js/test-toolkit.js"></script>
 </div>
 
 </html>

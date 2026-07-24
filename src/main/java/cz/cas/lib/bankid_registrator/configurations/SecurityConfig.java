@@ -1,7 +1,5 @@
 package cz.cas.lib.bankid_registrator.configurations;
 
-import cz.cas.lib.bankid_registrator.services.AppUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,6 +29,8 @@ public class SecurityConfig
                 .logoutUrl("/user/logout")
                 .logoutSuccessUrl("/user/login")
                 .permitAll())
+            .sessionManagement(session -> session
+                .invalidSessionUrl("/welcome?session=expired"))
             .csrf(csrf -> csrf.and());
 
         return http.build();

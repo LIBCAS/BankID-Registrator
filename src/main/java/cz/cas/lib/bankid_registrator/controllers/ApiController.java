@@ -1,6 +1,7 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.ApiConfig;
+import cz.cas.lib.bankid_registrator.configurations.RegistrationFeeConfig;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
 import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
@@ -9,6 +10,9 @@ import cz.cas.lib.bankid_registrator.services.LdapService;
 import cz.cas.lib.bankid_registrator.services.MapyCzService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
+import cz.cas.lib.bankid_registrator.services.VoucherService;
+import cz.cas.lib.bankid_registrator.model.identity.Identity;
+import java.math.BigDecimal;
 import java.util.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -39,6 +43,8 @@ public class ApiController extends ApiControllerAbstract
     private final LdapService ldapService;
     private final TokenService tokenService;
     private final IdentityAuthService identityAuthService;
+    private final VoucherService voucherService;
+    private final RegistrationFeeConfig registrationFeeConfig;
 
     public ApiController(
         MessageSource messageSource, 
@@ -50,7 +56,9 @@ public class ApiController extends ApiControllerAbstract
         MapyCzService mapyCzService,
         LdapService ldapService,
         TokenService tokenService,
-        IdentityAuthService identityAuthService
+        IdentityAuthService identityAuthService,
+        VoucherService voucherService,
+        RegistrationFeeConfig registrationFeeConfig
     ) {
         super(messageSource, apiConfig);
         this.patronService = patronService;
@@ -61,6 +69,36 @@ public class ApiController extends ApiControllerAbstract
         this.ldapService = ldapService;
         this.tokenService = tokenService;
         this.identityAuthService = identityAuthService;
+        this.voucherService = voucherService;
+        this.registrationFeeConfig = registrationFeeConfig;
+    }
+
+    /**
+     * Keep-alive endpoint for the session inactivity timer.
+     * The frontend pings this on user activity to keep the server-side session alive.
+     * @param request
+     * @return ResponseEntity with session status
+     */
+    @GetMapping("/keep-alive")
+    public ResponseEntity<Map<String, Object>> keepAlive(HttpServletRequest request)
+    {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            boolean loggedIn = this.identityAuthService.isLoggedin(request);
+            result.put("loggedIn", loggedIn);
+
+            if (loggedIn) {
+                HttpSession session = request.getSession(false);
+                Long loginTimestamp = session != null ? (Long) session.getAttribute("loginTimestamp") : null;
+                result.put("loginTimestamp", loginTimestamp);
+            }
+        } catch (IllegalStateException e) {
+            // Session was invalidated concurrently (e.g. logout in progress)
+            result.put("loggedIn", false);
+        }
+
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -275,4 +313,49 @@ public class ApiController extends ApiControllerAbstract
 
     //     return ResponseEntity.ok(result);
     // }
+
+    /**
+     * Validate a voucher code for the currently authenticated patron.
+     * Used by the frontend to show discount preview before form submission.
+     *
+     * @param voucherCode The voucher code to validate
+     * @param request
+     * @return ResponseEntity with validation result: valid, discountAmount, amountToPay, error
+     */
+    @PostMapping("/validate-voucher")
+    public ResponseEntity<Map<String, Object>> validateVoucher(
+        @RequestParam @NotBlank String voucherCode,
+        HttpServletRequest request
+    ) {
+        Map<String, Object> result = new HashMap<>();
+
+        // Must be authenticated
+        if (!this.identityAuthService.isLoggedin(request)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+
+        Long identityId = this.identityAuthService.getAuthenticatedIdentityId(request);
+        Optional<Identity> identityOpt = this.identityService.findById(identityId);
+
+        if (!identityOpt.isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+
+        Identity identity = identityOpt.get();
+        BigDecimal feeAmount = this.registrationFeeConfig.getDefaultAmount();
+
+        Map<String, Object> validation = this.voucherService.validateVoucher(voucherCode, identity, feeAmount);
+
+        result.put("valid", validation.get("valid"));
+
+        if ((boolean) validation.get("valid")) {
+            result.put("discountAmount", validation.get("discountAmount"));
+            result.put("amountToPay", validation.get("amountToPay"));
+            result.put("feeAmount", feeAmount);
+        } else {
+            result.put("error", validation.get("error"));
+        }
+
+        return ResponseEntity.ok(result);
+    }
 }

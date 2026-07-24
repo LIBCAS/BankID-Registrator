@@ -29,9 +29,12 @@ import org.springframework.util.Assert;
 @Profile("local")
 public class LocalAlephService extends AlephService implements AlephServiceIface
 {
-    public LocalAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository, ResourceLoader resourceLoader)
+    private final TestSettingsService testSettingsService;
+
+    public LocalAlephService(MainConfiguration mainConfig, AlephServiceConfig alephServiceConfig, IdentityService identityService, OracleRepository oracleRepository, ResourceLoader resourceLoader, TestSettingsService testSettingsService)
     {
         super(mainConfig, alephServiceConfig, identityService, oracleRepository, resourceLoader);
+        this.testSettingsService = testSettingsService;
 
         this.borXOpsNoSuccessMsg = new String[] {
             PatronBorXOp.BOR_INFO.getValue(),
@@ -61,7 +64,7 @@ public class LocalAlephService extends AlephService implements AlephServiceIface
         // String lname = userInfo.getFamily_name();     // Rowling
 
         String fname = StringUtils.capitalizeIfUppercase(userInfo.getGiven_name());      // Joanne
-        String mname = StringUtils.capitalizeIfUppercase(this.generateTestingMname());     // Kathleen
+        String mname = StringUtils.capitalizeIfUppercase(this.testSettingsService.getMiddleName()); // Dynamically set via Tester's Toolkit
         String lname = StringUtils.capitalizeIfUppercase(userInfo.getFamily_name());     // Rowling
 
         patron.setLastname(lname);

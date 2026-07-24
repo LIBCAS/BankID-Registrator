@@ -16,6 +16,7 @@ import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.LocalAlephService;
 import cz.cas.lib.bankid_registrator.services.PatronService;
+import cz.cas.lib.bankid_registrator.services.TestSettingsService;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
 import java.io.FileInputStream;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import static org.junit.jupiter.api.Assertions.*;
@@ -308,9 +310,11 @@ class AlephServiceTest
         assertNotNull(customMiddleName, "The system property 'test2PatronMiddleName' must be set.");
         assertNotNull(customBirthDate, "The system property 'test2PatronBirthDate' must be set.");
 
-        // The `localAlephService.generateTestingMname` method generates a random middle name but we want to use a custom one defined above
+        // Mock the TestSettingsService to return the custom middle name for the test
         LocalAlephService spyLocalAlephService = Mockito.spy(localAlephService);
-        Mockito.doReturn(customMiddleName).when(spyLocalAlephService).generateTestingMname();
+        TestSettingsService mockTestSettingsService = Mockito.mock(TestSettingsService.class);
+        Mockito.when(mockTestSettingsService.getMiddleName()).thenReturn(customMiddleName);
+        ReflectionTestUtils.setField(spyLocalAlephService, "testSettingsService", mockTestSettingsService);
 
         Connect userInfo = new Connect(
             customName,

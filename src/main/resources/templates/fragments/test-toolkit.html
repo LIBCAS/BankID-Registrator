@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<!--/*
+    Tester's Toolkit fragment — floating side panel for non-production environments.
+    Include on pages where th:if="${isNotProduction and !isIdentityLoggedIn}" is true.
+*/-->
+<div th:fragment="test-toolkit"
+     th:if="${isNotProduction and !isIdentityLoggedIn}"
+     id="test-toolkit-panel"
+     class="test-toolkit"
+     th:attr="data-msg-saved=#{testToolkit.saved},data-msg-error=#{testToolkit.error},data-msg-invalid-email=#{testToolkit.invalidEmail}">
+
+    <!-- Toggle button (gear icon) -->
+    <button type="button"
+            id="test-toolkit-toggle"
+            class="test-toolkit__toggle"
+            aria-expanded="false"
+            th:title="#{testToolkit.title}">
+        <i class="fa-solid fa-gear"></i>
+    </button>
+
+    <!-- Panel body -->
+    <div class="test-toolkit__panel">
+        <h3 class="test-toolkit__title" th:text="#{testToolkit.title}">Tester's Toolkit</h3>
+
+        <!-- Middle name field -->
+        <div class="test-toolkit__group">
+            <label class="test-toolkit__label" for="test-toolkit-middle-name"
+                   th:text="#{testToolkit.middleName.label}">Middle name (fake BankID)</label>
+            <input type="text"
+                   id="test-toolkit-middle-name"
+                   class="test-toolkit__input"
+                   th:placeholder="#{testToolkit.middleName.placeholder}"
+                   autocomplete="off" />
+            <div class="test-toolkit__btn-row">
+                <button type="button"
+                        id="test-toolkit-generate"
+                        class="test-toolkit__btn test-toolkit__btn--secondary"
+                        th:text="#{testToolkit.middleName.generate}">Random name</button>
+            </div>
+        </div>
+
+        <div class="test-toolkit__group">
+            <label class="test-toolkit__label" for="test-toolkit-email"
+                   th:text="#{testToolkit.testerEmail.label}">Tester email for message copies</label>
+            <input type="email"
+                   id="test-toolkit-email"
+                   class="test-toolkit__input"
+                   th:placeholder="#{testToolkit.testerEmail.placeholder}"
+                   autocomplete="email" />
+            <p class="test-toolkit__description"
+               th:text="#{testToolkit.testerEmail.description}">When set, every app email also sends a non-production tester copy.</p>
+        </div>
+
+        <!-- Force renewal toggle -->
+        <div class="test-toolkit__group">
+            <div class="test-toolkit__switch-row">
+                <label class="test-toolkit__switch">
+                    <input type="checkbox" id="test-toolkit-force-renewal" />
+                    <span class="test-toolkit__switch-slider"></span>
+                </label>
+                <span class="test-toolkit__label" style="margin-bottom:0"
+                      th:text="#{testToolkit.forceRenewal.label}">Force renewal mode</span>
+            </div>
+            <p class="test-toolkit__description"
+               th:text="#{testToolkit.forceRenewal.description}">When enabled, the renewal form is always shown.</p>
+        </div>
+
+        <div class="test-toolkit__btn-row">
+            <button type="button"
+                    id="test-toolkit-save-mname"
+                    class="test-toolkit__btn test-toolkit__btn--primary"
+                    th:text="#{testToolkit.save}">Save</button>
+        </div>
+
+        <!-- Status message -->
+        <div id="test-toolkit-status" class="test-toolkit__status"></div>
+    </div>
+</div>
+
+</html>

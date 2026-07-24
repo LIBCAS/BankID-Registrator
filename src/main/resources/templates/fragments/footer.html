@@ -2,21 +2,55 @@
 <html xmlns:th="http://www.thymeleaf.org">
 
 <body>
-    <footer th:fragment="footer" class="fixed bottom-0 left-0 z-20 w-full bg-white border-t border-gray-200 md:flex md:items-center md:justify-between print:hidden no-print">
-        <div class="w-full mx-auto max-w-screen-xl p-4 flex flex-col md:flex md:flex-row md:items-center md:justify-between gap-2 text-center">
-            <span class="text-sm text-gray-500 dark:text-gray-400">© <span th:text="${#dates.year(#dates.createNow())}"></span> <a href="https://www.lib.cas.cz/" target="_blank" class="hover:underline">LIBCAS</a>
-        </span>
-        <ul class="flex flex-col flex-wrap md:flex-row items-center mt-3 text-sm font-medium text-gray-500 dark:text-gray-400 md:mt-0 gap-2 md:gap-5">
-            <!-- <li>
-                <a href="/bankid-registrator/identity/reset-password-request" class="hover:underline" th:text="#{message.passwordReset}"></a>
-            </li> -->
-            <li>
-                <a th:href="#{a.href.libraryRegulations}" class="hover:underline" th:text="#{message.libraryRegulations}" target="_blank"></a>
-            </li>
-            <li>
-                <a th:href="#{a.href.privacyPolicy}" class="hover:underline" th:text="#{message.privacyPolicy}" target="_blank"></a>
-            </li>
-        </ul>
+    <footer th:fragment="footer" role="contentinfo" class="z-20 w-full bg-c-footer text-white border-t border-gray-200 print:hidden no-print">
+        <div class="w-full mx-auto max-w-screen-xl px-4 py-6 flex flex-row flex-wrap items-center justify-center sm:justify-between gap-10">
+            <a th:href="#{footer.libcas.url}" target="_blank" rel="noopener" tabindex="0">
+                <img width="200" src="https://lib.cas.cz/wp-content/uploads/2024/10/logo-knav-cs-512-white.png" th:alt="#{footer.libcas}">
+                <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+            </a>
+            <a th:href="#{footer.cas.url}" target="_blank" rel="noopener" tabindex="0">
+                <img width="200" src="https://lib.cas.cz/wp-content/uploads/2024/10/av-cr-logo-cs-512-white.png" th:alt="#{footer.cas}">
+                <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+            </a>
+        </div>
+        
+        <nav th:aria-label="#{message.footerNavigation}">
+            <ul class="w-full mx-auto max-w-screen-xl px-4 py-6 flex flex-col items-center md:flex-wrap md:flex-row md:justify-center md:gap-x-10 gap-5 text-sm">
+                <li>
+                    <a th:href="#{footer.contacts.url}" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{footer.contacts}"></span>
+                        <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                    </a>
+                </li>
+                <li>
+                    <a th:href="#{footer.eiz.url}" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{footer.eiz}"></span>
+                        <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                    </a>
+                </li>
+                <li>
+                    <a th:href="#{footer.digitalLibrary.url}" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{footer.digitalLibrary}"></span>
+                        <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                    </a>
+                </li>
+                <li>
+                    <a th:href="#{footer.catalog.url}" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{footer.catalog}"></span>
+                        <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                    </a>
+                </li>
+                <li>
+                    <a th:href="#{footer.studyRoom.url}" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{footer.studyRoom}"></span>
+                        <span class="sr-only" th:text="#{a11y.opensInNewWindow}"></span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="w-full mx-auto max-w-screen-xl px-4 py-4 border-t border-gray-200 text-center text-sm text-gray-400">
+            <span>&copy;</span>&nbsp;<span th:text="${#dates.year(#dates.createNow())}"></span> <span th:text="#{message.libcas.institution}"></span>
         </div>
     </footer>
 </body>

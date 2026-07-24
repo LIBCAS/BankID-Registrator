@@ -1,0 +1,20 @@
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+
+    <head></head>
+
+    <body class="page-dashboard page-voucher-printer-post">
+        <main layout:fragment="content" class="mb-10 px-10 text-center mx-auto">
+            <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="${pageTitle}"></h1>
+
+            <form id="voucher-printer-form" th:action="${voucherPrinterAppUrl}" method="post">
+                <textarea name="payload" class="hidden" th:text="${payload}"></textarea>
+                <button type="submit" class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600" th:text="#{voucher.admin.printSelectedFallback}"></button>
+            </form>
+
+            <script>
+                document.getElementById("voucher-printer-form").submit();
+            </script>
+        </main>
+    </body>
+
+</html>

@@ -1,5 +1,6 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
+import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
@@ -31,9 +32,10 @@ public class LocalMainController extends ControllerAbstract
         MessageSource messageSource,
         AlephService alephService,
         PatronService patronService,
-        IdentityAuthService identityAuthService
+        IdentityAuthService identityAuthService,
+        SessionTimerConfig sessionTimerConfig
     ) {
-        super(messageSource, identityAuthService);
+        super(messageSource, identityAuthService, sessionTimerConfig);
         this.alephService = alephService;
         this.patronService = patronService;
 
@@ -58,6 +60,7 @@ public class LocalMainController extends ControllerAbstract
         model.addAttribute("pageTitle", this.messageSource.getMessage("page.welcome.title", null, locale));
         model.addAttribute("patronId", 1);
         model.addAttribute("patron", bankIdPatronDTO);
+        model.addAttribute("isIdentityLoggedIn", false);
 
         return "callback_registration_new";
     }
@@ -80,7 +83,8 @@ public class LocalMainController extends ControllerAbstract
         String alephPatronExpiryDate = bankIdPatron.getExpiryDate();
         boolean membershipHasExpired = DateUtils.isDateExpired(alephPatronExpiryDate, "dd/MM/yyyy");
         boolean membershipExpiresToday = DateUtils.isDateToday(alephPatronExpiryDate, "dd/MM/yyyy");
-        boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
+        // boolean expiryDateIn1MonthOrLess = DateUtils.isLessThanOrEqualToOneMonthFromToday(alephPatronExpiryDate, "dd/MM/yyyy");
+        boolean expiryDateIn1MonthOrLess = true;
 
         model.addAttribute("patronId", bankIdPatron.getSysId());
         model.addAttribute("patron", bankIdPatronDTO);
@@ -90,6 +94,7 @@ public class LocalMainController extends ControllerAbstract
         model.addAttribute("membershipHasExpired", membershipHasExpired);
         model.addAttribute("membershipExpiresToday", membershipExpiresToday);
         model.addAttribute("expiryDateIn1MonthOrLess", expiryDateIn1MonthOrLess);
+        model.addAttribute("isIdentityLoggedIn", false);
 
         return "callback_registration_renewal";
     }

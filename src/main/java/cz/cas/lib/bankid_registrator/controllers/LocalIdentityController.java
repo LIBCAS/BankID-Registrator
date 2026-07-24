@@ -1,5 +1,6 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
+import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
 import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
@@ -24,9 +25,10 @@ public class LocalIdentityController extends ControllerAbstract
 {
     public LocalIdentityController(
         MessageSource messageSource, 
-        IdentityAuthService identityAuthService
+        IdentityAuthService identityAuthService,
+        SessionTimerConfig sessionTimerConfig
     ) {
-        super(messageSource, identityAuthService);
+        super(messageSource, identityAuthService, sessionTimerConfig);
     }
 
     /**

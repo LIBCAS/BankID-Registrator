@@ -1,17 +1,25 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
+import cz.cas.lib.bankid_registrator.configurations.RegistrationFeeConfig;
+import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
+import cz.cas.lib.bankid_registrator.entities.payment.PaymentStatus;
+import cz.cas.lib.bankid_registrator.entities.payment.PaymentType;
 import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
+import cz.cas.lib.bankid_registrator.model.payment.Payment;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.EmailService;
 import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
 import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.LdapService;
+import cz.cas.lib.bankid_registrator.services.PaymentService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
+import cz.cas.lib.bankid_registrator.services.VoucherService;
 import cz.cas.lib.bankid_registrator.util.WebUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -41,22 +49,32 @@ public class IdentityController extends ControllerAbstract
     private final AlephService alephService;
     private final EmailService emailService;
     private final LdapService ldapService;
+    private final PaymentService paymentService;
+    private final VoucherService voucherService;
+    private final RegistrationFeeConfig registrationFeeConfig;
 
     public IdentityController(
-        MessageSource messageSource, 
+        MessageSource messageSource,
         TokenService tokenService,
         IdentityService identityService,
         AlephService alephService,
         EmailService emailService,
         IdentityAuthService identityAuthService,
-        LdapService ldapService
+        LdapService ldapService,
+        PaymentService paymentService,
+        VoucherService voucherService,
+        RegistrationFeeConfig registrationFeeConfig,
+        SessionTimerConfig sessionTimerConfig
     ) {
-        super(messageSource, identityAuthService);
+        super(messageSource, identityAuthService, sessionTimerConfig);
         this.tokenService = tokenService;
         this.identityService = identityService;
         this.alephService = alephService;
         this.emailService = emailService;
         this.ldapService = ldapService;
+        this.paymentService = paymentService;
+        this.voucherService = voucherService;
+        this.registrationFeeConfig = registrationFeeConfig;
     }
 
     /**
@@ -201,6 +219,7 @@ public class IdentityController extends ControllerAbstract
     @RequestMapping(value="/identity/set-password", method=RequestMethod.POST, produces=MediaType.TEXT_HTML_VALUE)
     public String passwordSetFormSubmitted(
         @RequestParam("token") String token,
+        @RequestParam(value = "voucherCode", required = false) String voucherCode,
         @Valid @ModelAttribute("passwordDTO") PatronPasswordDTO passwordDTO,
         BindingResult bindingResult,
         Model model, 
@@ -229,11 +248,18 @@ public class IdentityController extends ControllerAbstract
 
         request.getSession().setAttribute("patronPassword", patronPassword);
 
+        Long identityId = null;
+        Identity identity = null;
+        String patronAlephBarcode = null;
+
         try {
-            Long identityId = Long.parseLong(this.tokenService.extractIdentityIdFromToken(token));
-            Identity identity = this.identityService.findById(identityId).get();
+            identityId = Long.parseLong(this.tokenService.extractIdentityIdFromToken(token));
+            identity = this.identityService.findById(identityId).get();
+
+            // Store identity ID in session for payment flow
+            request.getSession().setAttribute("identity", identityId);
             patronAlephId = identity.getAlephId();
-            String patronAlephBarcode = identity.getAlephBarcode();
+            patronAlephBarcode = identity.getAlephBarcode();
             Patron patron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
 
             model.addAttribute("alephId", patronAlephId);
@@ -246,14 +272,83 @@ public class IdentityController extends ControllerAbstract
             throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage("error.identityPassword.failed", null, locale));
         }
 
-        Boolean patronLdapSynced = this.ldapService.accountExistsByLogin(patronAlephId, patronPassword);
+        // Check if user is an employee
+        if (patronIsCasEmployee) {
+            // Employees don't need to pay, show success page with loader
+            Boolean patronLdapSynced = this.ldapService.accountExistsByLogin(patronAlephId, patronPassword);
 
-        model.addAttribute("isIdentityLoggedIn", false);
-        model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.title", null, locale));
-        model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
-        model.addAttribute("patronLdapSynced", patronLdapSynced);
+            model.addAttribute("isIdentityLoggedIn", false);
+            model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.success", null, locale));
+            model.addAttribute("patronIsCasEmployee", patronIsCasEmployee);
+            model.addAttribute("patronLdapSynced", patronLdapSynced);
 
-        return "identity_set_password_success";
+            return "identity_set_password_success";
+        } else {
+            // Non-employees need to pay
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            String appliedVoucherCode = null;
+
+            // Validate and apply voucher if provided
+            if (voucherCode != null && !voucherCode.trim().isEmpty()) {
+                BigDecimal feeAmount = registrationFeeConfig.getDefaultAmount();
+                Map<String, Object> voucherResult = voucherService.validateVoucher(voucherCode.trim(), identity, feeAmount);
+
+                if (Boolean.TRUE.equals(voucherResult.get("valid"))) {
+                    discountAmount = (BigDecimal) voucherResult.get("discountAmount");
+                    appliedVoucherCode = voucherCode.trim().toUpperCase();
+                    getLogger().info("Voucher '{}' applied for registration. Identity: {}, Discount: {}",
+                        appliedVoucherCode, identity.getId(), discountAmount);
+                } else {
+                    getLogger().warn("Invalid voucher '{}' for registration. Identity: {}, Error: {}",
+                        voucherCode, identity.getId(), voucherResult.get("error"));
+                    // Proceed without voucher — don't block registration
+                }
+            }
+
+            // Determine if the fee is fully covered by voucher (no Aleph fee needed)
+            boolean feeFullyCovered = appliedVoucherCode != null
+                && discountAmount.compareTo(registrationFeeConfig.getDefaultAmount()) >= 0
+                && paymentService.getPatronTotalDueCash(identity.getAlephId()).compareTo(BigDecimal.ZERO) == 0;
+
+            // Create the Aleph registration fee only when the patron actually needs to pay
+            if (!feeFullyCovered) {
+                synchronized (this) {
+                    Map<String, Object> feeCreation = this.alephService.createRegistrationFee(
+                        (Patron) this.alephService.getAlephPatron(patronAlephId, false).get("patron"));
+                    if (feeCreation.containsKey("error")) {
+                        getLogger().error("Error creating registration fee in Aleph: {}", feeCreation.get("error"));
+                        throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR,
+                            this.messageSource.getMessage("error.identityPassword.failed", null, locale));
+                    }
+                }
+            }
+
+            Payment payment = paymentService.createPayment(identity, PaymentType.REGISTRATION, appliedVoucherCode, discountAmount);
+            getLogger().info("Created payment for new registration. Identity: {}, Barcode: {}, Discount: {}",
+                identity.getId(), identity.getAlephBarcode(), discountAmount);
+
+            // If voucher fully covers the fee, create pending usage and confirm immediately
+            if (payment.getStatus() == PaymentStatus.VOUCHER_COVERED && appliedVoucherCode != null) {
+                voucherService.createPendingUsage(
+                    voucherService.findByCode(appliedVoucherCode).orElse(null),
+                    identity, discountAmount);
+                voucherService.confirmUsage(
+                    voucherService.findByCode(appliedVoucherCode).orElse(null),
+                    identity);
+
+                getLogger().info("Fee fully covered by voucher. Redirecting to success. Identity: {}", identity.getId());
+                return "redirect:/payment/callback?refId=" + identity.getAlephBarcode() + "&status=success";
+            }
+
+            // If partial discount or no voucher, create pending usage and redirect to payment
+            if (appliedVoucherCode != null && discountAmount.compareTo(BigDecimal.ZERO) > 0) {
+                voucherService.createPendingUsage(
+                    voucherService.findByCode(appliedVoucherCode).orElse(null),
+                    identity, discountAmount);
+            }
+
+            return "redirect:/payment/initiate";
+        }
     }
 
     /**
@@ -283,6 +378,10 @@ public class IdentityController extends ControllerAbstract
             result.put("error", "error.identityPassword.failed");
             return result;
         }
+
+        // Mark that the identity has set their password
+        identity.get().setPasswordSet(true);
+        this.identityService.save(identity.get());
 
         // TODO: Blacklist the successfully used token here
 
