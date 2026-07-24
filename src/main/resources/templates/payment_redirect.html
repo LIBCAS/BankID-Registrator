@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+
+    <head></head>
+
+    <body class="page-payment-redirect">
+        <main layout:fragment="content" class="mb-10 text-center container mx-auto p-5 flex flex-col items-center justify-center gap-6">
+            <h1 class="mb-6 text-3xl font-extrabold text-center" th:text="#{page.payment.redirecting}"></h1>
+
+            <div class="progress-loader">
+                <div class="progress-loader__circle">
+                    <div class="progress-loader__circle-inner">
+                        <div class="progress-loader__circle-number">...</div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-xl" th:text="#{page.payment.redirecting.description}"></p>
+
+            <form id="payment-form" th:action="${paymentApiUrl}" method="POST" class="hidden">
+                <input type="hidden" name="id" th:value="${formData['id']}" />
+                <input type="hidden" name="adm" th:value="${formData['adm']}" />
+                <input type="hidden" name="amount" th:value="${formData['amount']}" />
+                <input type="hidden" name="time" th:value="${formData['time']}" />
+                <input type="hidden" name="digest" th:value="${formData['digest']}" />
+                <input type="hidden" name="initiator" value="bank_id" />
+                <input th:if="${formData['discount'] != null}" type="hidden" name="discount" th:value="${formData['discount']}" />
+                <input th:if="${formData['return_url'] != null}" type="hidden" name="return_url" th:value="${formData['return_url']}" />
+            </form>
+
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.getElementById('payment-form').submit();
+                });
+            </script>
+        </main>
+    </body>
+
+</html>

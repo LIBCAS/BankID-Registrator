@@ -185,6 +185,70 @@ public class AlephService extends AlephServiceAbstract
     }
 
     /**
+     * Retrieves patron's total outstanding cash fines from Aleph
+     * @param patronId - Aleph patron ID
+     * @return Map with "totalDueCash" or "error" (String)
+     */
+    public Map<String, Object> getPatronFines(String patronId)
+    {
+        Assert.notNull(patronId, "getPatronFines: \"patronId\" is required");
+
+        Map<String, Object> result = new HashMap<>();
+
+        // Get patron data with cash fines
+        Map<String, String> urlParams = new HashMap<>();
+        urlParams.put("bor_id", patronId);
+        urlParams.put("library", this.alephServiceConfig.getAdmLibrary());
+        urlParams.put("loans", "N");
+        urlParams.put("cash", "Y"); // Request cash fine information
+        urlParams.put("hold", "N");
+        urlParams.put("format", "1");
+
+        Map<String, Object> patronDataGet = this.doXRequestUsingPost(PatronBorXOp.BOR_INFO, urlParams);
+
+        if (patronDataGet.containsKey("error")) {
+            result.put("error", patronDataGet.get("error"));
+            return result;
+        }
+
+        String patronDataResponse = patronDataGet.get("response").toString();
+
+        logger.debug("Aleph patron fines XML response for patronId {}: {}", patronId, patronDataResponse);
+
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            InputSource is = new InputSource(new StringReader(patronDataResponse));
+            Document doc = builder.parse(is);
+
+            // Parse balance from XML - the <balance> tag contains the total outstanding amount
+            // Format: <balance>000000000280.00</balance>
+            java.math.BigDecimal totalDueCash = java.math.BigDecimal.ZERO;
+            NodeList balanceList = doc.getElementsByTagName("balance");
+
+            if (balanceList.getLength() > 0) {
+                String balanceText = balanceList.item(0).getTextContent().trim();
+                try {
+                    totalDueCash = new java.math.BigDecimal(balanceText);
+                    logger.info("Patron {} has outstanding balance: {}", patronId, totalDueCash);
+                } catch (NumberFormatException e) {
+                    logger.warn("Failed to parse balance amount: {}", balanceText);
+                }
+            } else {
+                logger.info("No balance element found for patronId {}", patronId);
+            }
+
+            result.put("totalDueCash", totalDueCash);
+            result.put("success", Boolean.TRUE);
+        } catch (Exception e) {
+            logger.error("Failed to parse patron fines: {}", e.getMessage());
+            result.put("error", "Failed to parse patron fines");
+        }
+
+        return result;
+    }
+
+    /**
      * Creates a new patron in Aleph
      * @param patron
      * @return Map<String, Object>
@@ -192,8 +256,6 @@ public class AlephService extends AlephServiceAbstract
     public Map<String, Object> createPatron(Patron patron)
     {
         Map<String, Object> result = new HashMap<>();
-
-        boolean patronIsCasEmployee = patron.getIsCasEmployee();
 
         // Patron action
         patron.setAction(PatronAction.I);
@@ -237,67 +299,6 @@ public class AlephService extends AlephServiceAbstract
             }
         }
 
-        // Create an item (Aleph registration fee)
-        if (!patronIsCasEmployee) {
-            String actionDescription = "Registrace";
-
-            Map<String, Object> newItem = this.newItem(patron, PatronStatus.STATUS_16.getRegistrationItemStatusId());
-            if (newItem.containsKey("error")) {
-                result.put("error", newItem.get("error"));
-                return result;
-            }
-            PatronItem item = (PatronItem) newItem.get("item");
-            item.setDescription(actionDescription);
-            Map<String, String> itemXmlCreation = this.createItemXml(item);
-            if (itemXmlCreation.containsKey("error")) {
-                result.put("error", itemXmlCreation.get("error"));
-                return result;
-            }
-            String itemXml = itemXmlCreation.get("xml");
-            result.put("xml-item", itemXml);
-            Map<String, Object> itemCreation = this.createItem(itemXml, this.alephServiceConfig.getSysno());
-            if (itemCreation.containsKey("error")) {
-                result.put("error", itemCreation.get("error"));
-                return result;
-            }
-            Map<String, String> itemDetails = this.getItemDetails((String) itemCreation.get("response"));
-            if (itemDetails.containsKey("error")) {
-                result.put("error", itemDetails.get("error"));
-                return result;
-            }
-            String itemId = itemDetails.get("id");
-            String itemSequence = itemDetails.get("sequence");
-            String itemBarcode = itemDetails.get("barcode");
-            String itemIdLong = itemDetails.get("idLong");
-            if (itemId == null || itemSequence == null || itemBarcode == null || itemIdLong == null) {
-                result.put("error", "chybí údaje o vytvořené jednotce");
-                return result;
-            }
-    
-            // Place a hold request
-            Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong, actionDescription);
-            if (holdRequestPlacement.containsKey("error")) {
-                this.deleteItem(itemId, itemSequence, itemBarcode); // Delete the created item
-                result.put("error", holdRequestPlacement.get("error"));
-                return result;
-            }
-    
-            // Cancel the hold request
-            Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
-            if (holdRequestCancellation.containsKey("error")) {
-                this.deleteItem(itemId, itemSequence, itemBarcode); // Delete the created item
-                result.put("error", holdRequestCancellation.get("error"));
-                return result;
-            }
-    
-            // Delete the item
-            Map<String, Object> itemDeletion = this.deleteItem(itemId, itemSequence, itemBarcode);
-            if (itemDeletion.containsKey("error")) {
-                result.put("error", itemDeletion.get("error"));
-                return result;
-            }
-        }
-
         result.put("success", Boolean.TRUE);
 
         return result;
@@ -313,8 +314,6 @@ public class AlephService extends AlephServiceAbstract
     public Map<String, Object> updatePatron(Patron patron, Patron alephPatron)
     {
         Map<String, Object> result = new HashMap<>();
-
-        boolean patronIsCasEmployee = patron.getIsCasEmployee();
 
         // Patron action
         patron.setAction(PatronAction.A);
@@ -353,67 +352,6 @@ public class AlephService extends AlephServiceAbstract
             }
         }
 
-        // Create an item (Aleph registration fee)
-        if (!patronIsCasEmployee) {
-            String actionDescription = "Obnovení registrace";
-
-            Map<String, Object> newItem = this.newItem(patron, PatronStatus.STATUS_16.getRenewalItemStatusId());
-            if (newItem.containsKey("error")) {
-                result.put("error", newItem.get("error"));
-                return result;
-            }
-            PatronItem item = (PatronItem) newItem.get("item");
-            item.setDescription(actionDescription);
-            Map<String, String> itemXmlCreation = this.createItemXml(item);
-            if (itemXmlCreation.containsKey("error")) {
-                result.put("error", itemXmlCreation.get("error"));
-                return result;
-            }
-            String itemXml = itemXmlCreation.get("xml");
-            result.put("xml-item", itemXml);
-            Map<String, Object> itemCreation = this.createItem(itemXml, this.alephServiceConfig.getSysno());
-            if (itemCreation.containsKey("error")) {
-                result.put("error", itemCreation.get("error"));
-                return result;
-            }
-            Map<String, String> itemDetails = this.getItemDetails((String) itemCreation.get("response"));
-            if (itemDetails.containsKey("error")) {
-                result.put("error", itemDetails.get("error"));
-                return result;
-            }
-            String itemId = itemDetails.get("id");
-            String itemSequence = itemDetails.get("sequence");
-            String itemBarcode = itemDetails.get("barcode");
-            String itemIdLong = itemDetails.get("idLong");
-            if (itemId == null || itemSequence == null || itemBarcode == null || itemIdLong == null) {
-                result.put("error", "chybí údaje o vytvořené jednotce");
-                return result;
-            }
-    
-            // Place a hold request
-            Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong, actionDescription);
-            if (holdRequestPlacement.containsKey("error")) {
-                this.deleteItem(itemId, itemSequence, itemBarcode); // Delete the created item
-                result.put("error", holdRequestPlacement.get("error"));
-                return result;
-            }
-    
-            // Cancel the hold request
-            Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
-            if (holdRequestCancellation.containsKey("error")) {
-                this.deleteItem(itemId, itemSequence, itemBarcode); // Delete the created item
-                result.put("error", holdRequestCancellation.get("error"));
-                return result;
-            }
-    
-            // Delete the item
-            Map<String, Object> itemDeletion = this.deleteItem(itemId, itemSequence, itemBarcode);
-            if (itemDeletion.containsKey("error")) {
-                result.put("error", itemDeletion.get("error"));
-                return result;
-            }
-        }
-
         // Update patron's status (patron membership status + membership expiry date)
         List<String> libraries = new ArrayList<>(Arrays.asList(this.alephServiceConfig.getLibraries()));
         String updatePatronStatusXml = this.updatePatronStatusXml(patron, libraries);
@@ -422,6 +360,102 @@ public class AlephService extends AlephServiceAbstract
 
         if (updatePatronStatus.containsKey("error")) {
             result.put("error", updatePatronStatus.get("error"));
+            return result;
+        }
+
+        result.put("success", Boolean.TRUE);
+
+        return result;
+    }
+
+    /**
+     * Creates a registration fee (Z31 fine record) in Aleph for the given patron.
+     * This creates a temporary item, places a hold request, cancels it (which triggers
+     * the Z31 fine creation in Aleph), and then deletes the temporary item.
+     * @param patron - the patron to create the registration fee for
+     * @return Map<String, Object> with "success" or "error"
+     */
+    public Map<String, Object> createRegistrationFee(Patron patron)
+    {
+        return this.createFee(patron, "Registrace", PatronStatus.STATUS_16.getRegistrationItemStatusId());
+    }
+
+    /**
+     * Creates a renewal fee (Z31 fine record) in Aleph for the given patron.
+     * This creates a temporary item, places a hold request, cancels it (which triggers
+     * the Z31 fine creation in Aleph), and then deletes the temporary item.
+     * @param patron - the patron to create the renewal fee for
+     * @return Map<String, Object> with "success" or "error"
+     */
+    public Map<String, Object> createRenewalFee(Patron patron)
+    {
+        return this.createFee(patron, "Obnovení registrace", PatronStatus.STATUS_16.getRenewalItemStatusId());
+    }
+
+    /**
+     * Creates a fee (Z31 fine record) in Aleph by creating a temporary item,
+     * placing a hold request, cancelling it, and deleting the item.
+     * @param patron - the patron
+     * @param actionDescription - description for the fee (e.g. "Registrace" or "Obnovení registrace")
+     * @param itemStatusId - the item status ID from PatronStatus
+     * @return Map<String, Object> with "success" or "error"
+     */
+    private Map<String, Object> createFee(Patron patron, String actionDescription, String itemStatusId)
+    {
+        Map<String, Object> result = new HashMap<>();
+
+        Map<String, Object> newItem = this.newItem(patron, itemStatusId);
+        if (newItem.containsKey("error")) {
+            result.put("error", newItem.get("error"));
+            return result;
+        }
+        PatronItem item = (PatronItem) newItem.get("item");
+        item.setDescription(actionDescription);
+        Map<String, String> itemXmlCreation = this.createItemXml(item);
+        if (itemXmlCreation.containsKey("error")) {
+            result.put("error", itemXmlCreation.get("error"));
+            return result;
+        }
+        String itemXml = itemXmlCreation.get("xml");
+        Map<String, Object> itemCreation = this.createItem(itemXml, this.alephServiceConfig.getSysno());
+        if (itemCreation.containsKey("error")) {
+            result.put("error", itemCreation.get("error"));
+            return result;
+        }
+        Map<String, String> itemDetails = this.getItemDetails((String) itemCreation.get("response"));
+        if (itemDetails.containsKey("error")) {
+            result.put("error", itemDetails.get("error"));
+            return result;
+        }
+        String itemId = itemDetails.get("id");
+        String itemSequence = itemDetails.get("sequence");
+        String itemBarcode = itemDetails.get("barcode");
+        String itemIdLong = itemDetails.get("idLong");
+        if (itemId == null || itemSequence == null || itemBarcode == null || itemIdLong == null) {
+            result.put("error", "chybí údaje o vytvořené jednotce");
+            return result;
+        }
+
+        // Place a hold request
+        Map<String, Object> holdRequestPlacement = this.placeHoldRequest(patron, itemId, itemIdLong, actionDescription);
+        if (holdRequestPlacement.containsKey("error")) {
+            this.deleteItem(itemId, itemSequence, itemBarcode);
+            result.put("error", holdRequestPlacement.get("error"));
+            return result;
+        }
+
+        // Cancel the hold request
+        Map<String, Object> holdRequestCancellation = this.cancelHoldRequest(itemId, itemSequence);
+        if (holdRequestCancellation.containsKey("error")) {
+            this.deleteItem(itemId, itemSequence, itemBarcode);
+            result.put("error", holdRequestCancellation.get("error"));
+            return result;
+        }
+
+        // Delete the item
+        Map<String, Object> itemDeletion = this.deleteItem(itemId, itemSequence, itemBarcode);
+        if (itemDeletion.containsKey("error")) {
+            result.put("error", itemDeletion.get("error"));
             return result;
         }
 
@@ -1266,9 +1300,9 @@ logger.info("AAA doHttpRequest method: {}", method);
 
         PatronItem item = new PatronItem();
 
-        String today = TimestampToDate.getTimestampToDate("yyyyMMdd");
+        String nowDatetime = TimestampToDate.getTimestampToDate("yyyyMMddHHmmss");
         String itemDocNumber = this.alephServiceConfig.getSysno();
-        String itemBarcode = this.alephServiceConfig.getItemBarcodePrefix() + itemDocNumber + today;
+        String itemBarcode = this.alephServiceConfig.getItemBarcodePrefix() + itemDocNumber + nowDatetime;
 
         item.setDocNumber(itemDocNumber);
         item.setBarcode(itemBarcode);
