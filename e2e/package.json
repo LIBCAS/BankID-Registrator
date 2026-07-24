@@ -1,0 +1,21 @@
+{
+  "name": "bankid-registrator-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "E2E tests for BankID Registrator using Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:trace": "playwright test --trace on",
+    "test:video": "E2E_VIDEO_MODE=on playwright test",
+    "test:video:fail": "E2E_VIDEO_MODE=retain-on-failure playwright test",
+    "test:video:retry": "E2E_VIDEO_MODE=on-first-retry playwright test",
+    "codegen": "playwright codegen",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "dotenv": "^16.4.7"
+  }
+}
