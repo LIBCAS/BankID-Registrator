@@ -1,25 +1,38 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
 
-    <head>
-        <title th:replace="fragments/head :: head"></title>
-    </head>
+    <head></head>
 
     <body class="page-final-sucess page-membership-renewal-success">
-        <main layout:fragment="content" id="main" class="mb-10 container mx-auto text-center print:m-0 print:p-0 print:max-w-none">
-            <h1 th:if="${patronIsCasEmployee}" class="mb-6 text-3xl font-extrabold text-center print:text-2xl" th:text="#{page.membershipRenewalSuccess.title}"></h1>
-            <h1 th:if="${!patronIsCasEmployee}" class="mb-6 text-3xl font-extrabold text-center print:text-2xl" th:utext="#{page.membershipRenewalSuccess.fee.details}"></h1>
-            <h3 th:if="${!patronIsCasEmployee}" th:text="#{page.membershipRenewalSuccess.title}" class="mt-4 mb-4 text-2xl font-extrabold print:text-2xl"></h3>
-            <p class="mt-2 text-xl">
-                <span th:text="#{message.registrationIsRenewedUntil}"></span>: <b th:text="${membershipExpiryDate}"></b>
-            </p>
-            <p class="mt-2 text-xl">
-                <span th:text="#{message.usernameRemains}"></span>: <b th:text="${alephBarcode}"></b>
-            </p>
-            <p class="mt-4" th:text="#{page.membershipRenewalSuccess.email.instructions}"></p>
-            <p class="mt-4 no-print">
-                <a href="https://katalog.lib.cas.cz/KNAV/MyResearch/Fines" target="_blank" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-4" th:text="#{message.login}"></a>
-            </p>
+        <main layout:fragment="content" id="main" class="mb-10 text-center container mx-auto p-5 flex flex-col items-center justify-center gap-6 print:m-0 print:p-0 print:max-w-none">
+            <h1 class="text-3xl font-extrabold text-center print:text-2xl print:mb-0" th:text="#{page.membershipRenewalSuccess.completed.title}"></h1>
+            <p class="text-lg" th:utext="#{page.membershipRenewalSuccess.completed.expiry(${membershipExpiryDate})}"></p>
+            <p class="text-lg" th:utext="#{page.membershipRenewalSuccess.completed.username(${alephBarcode})}"></p>
+            <p th:if="${hasOutstandingFines}" class="text-base max-w-3xl" th:text="#{page.membershipRenewalSuccess.finesPending(${#numbers.formatDecimal(outstandingFinesAmount, 1, 'DEFAULT', 2, 'DEFAULT')})}"></p>
+            <div>
+                <p th:utext="#{message.clickOnServiceAndCopyUsername}" class="text-gray-500"></p>
+            </div>
+            <div>
+                <p th:utext="#{message.doSelect}" class="uppercase text-[1rem] tracking-[8px] font-medium mb-5"></p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 place-items-center">
+                    <a th:href="#{service.eiz.url}" th:data-copy="${alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{service.eiz}"></span>
+                        <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                    </a>
+                    <a th:href="#{service.libraryCatalog.url}" th:data-copy="${alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{service.libraryCatalog}"></span>
+                        <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                    </a>
+                    <a th:href="#{service.digitalLibrary.url}" th:data-copy="${alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{service.digitalLibrary}"></span>
+                        <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                    </a>
+                    <a th:href="#{service.studyRoomWebsite.url}" th:data-copy="${alephBarcode}" class="js-gotoservice-btn w-full max-w-xs flex text-xs font-bold leading-[18px] uppercase justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue no-underline text-white hover:text-white focus:outline-none focus:shadow-outline" target="_blank" rel="noopener" tabindex="0">
+                        <span th:text="#{service.studyRoomWebsite}"></span>
+                        <span class="sr-only" th:text="#{a11y.copiesUsernameAndOpensInNewWindow}"></span>
+                    </a>
+                </div>
+            </div>
         </main>
     </body>
 

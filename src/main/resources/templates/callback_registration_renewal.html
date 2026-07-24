@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
 
-    <head>
-        <title th:replace="fragments/head :: head"></title>
-    </head>
+    <head></head>
 
-    <body class="page-callback page-membership-renewal">
+    <body class="page-callback page-membership-renewal" th:classappend="${!expiryDateIn1MonthOrLess} ? 'page-membership-renewal-impossible'">
         <main layout:fragment="content" class="mb-40 md:mb-20 text-center container mx-auto p-5">
             <h1 class="mb-6 text-3xl font-extrabold text-center text-gray-900" th:text="#{page.membershipRenewal.title}"></h1>
             <div class="mb-12 max-w-4xl mx-auto text-left flex flex-col gap-2">
@@ -22,10 +20,11 @@
                 <p th:if="${expiryDateIn1MonthOrLess}" th:text="#{message.membershipRenewal.instructions}">To renew your membership, review the personal information below and fill in the required information.</p>
                 <p th:if="${!expiryDateIn1MonthOrLess}" th:text="#{message.membershipRenewal.epiryDateTooFarAway}">Your membership can be renewed at the earliest 1 month before the expiration date.</p>
             </div>
-            <form th:if="${expiryDateIn1MonthOrLess}" th:action="@{/membership-renewal}" method="post" th:object="${patron}" enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto text-left">
+            <form id="renewal-form" th:if="${expiryDateIn1MonthOrLess}" th:action="@{/membership-renewal}" method="post" th:object="${patron}" enctype="multipart/form-data" class="my-5 space-y-4 max-w-4xl mx-auto text-left">
                 <div class="flex flex-col gap-7">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" required />
                     <input type="hidden" name="patronId" th:value="${patronId}" />
+                    <input type="hidden" id="renewalAction" name="renewalAction" value="submit" />
                     <div class="flex flex-col gap-4">
                         <div class="flex flex-col gap-2">
                             <h3 class="text-md md:text-2xl font-semibold" th:text="#{form.membershipRenewal.section1.title}"></h3>
@@ -139,7 +138,7 @@
                                     <span th:text="#{message.useThisBankIDValue}"></span>:<br>
                                     <i th:text="${bankIdPatron.email}"></i>
                                 </button>
-                                <button th:if="${patron.email == null && alephPatron.email != null and !#strings.isEmpty(alephPatron.email)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                <button th:if="${patron.email == null && alephPatron.email != null and !#strings.isEmpty(alephPatron.email)}" class="jsbtn-useInputVal js-renewal-prefill-aleph w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500" data-input-target="#email">
                                     <span th:text="#{message.useThisKnavValue}"></span>:<br>
                                     <i th:text="${alephPatron.email}"></i>
                                 </button>
@@ -168,7 +167,7 @@
                                     <span th:text="#{message.useThisBankIDValue}"></span>:<br>
                                     <i th:text="${bankIdPatron.smsNumber}"></i>
                                 </button>
-                                <button th:if="${patron.smsNumber == null && alephPatron.smsNumber != null and !#strings.isEmpty(alephPatron.smsNumber)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                <button th:if="${patron.smsNumber == null && alephPatron.smsNumber != null and !#strings.isEmpty(alephPatron.smsNumber)}" class="jsbtn-useInputVal js-renewal-prefill-aleph w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500" data-input-target="#phone">
                                     <span th:text="#{message.useThisKnavValue}"></span>:<br>
                                     <i th:text="${alephPatron.smsNumber}"></i>
                                 </button>
@@ -209,7 +208,7 @@
                                                 <span th:text="#{message.useThisBankIDValue}"></span>:<br>
                                                 <i th:text="${bankIdPatron.contactAddress1}"></i>
                                             </button>
-                                            <button th:if="${patron.contactAddress1 == null && alephPatron.contactAddress1 != null and !#strings.isEmpty(alephPatron.contactAddress1)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                            <button th:if="${patron.contactAddress1 == null && alephPatron.contactAddress1 != null and !#strings.isEmpty(alephPatron.contactAddress1)}" class="jsbtn-useInputVal js-renewal-prefill-aleph w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500" data-input-target="#contactAddress1">
                                                 <span th:text="#{message.useThisKnavValue}"></span>:<br>
                                                 <i th:text="${alephPatron.contactAddress1}"></i>
                                             </button>
@@ -236,7 +235,7 @@
                                                 <span th:text="#{message.useThisBankIDValue}"></span>:<br>
                                                 <i th:text="${bankIdPatron.contactAddress2}"></i>
                                             </button>
-                                            <button th:if="${patron.contactAddress2 == null && alephPatron.contactAddress2 != null and !#strings.isEmpty(alephPatron.contactAddress2)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                            <button th:if="${patron.contactAddress2 == null && alephPatron.contactAddress2 != null and !#strings.isEmpty(alephPatron.contactAddress2)}" class="jsbtn-useInputVal js-renewal-prefill-aleph w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500" data-input-target="#contactAddress2">
                                                 <span th:text="#{message.useThisKnavValue}"></span>:<br>
                                                 <i th:text="${alephPatron.contactAddress2}"></i>
                                             </button>
@@ -263,7 +262,7 @@
                                                 <span th:text="#{message.useThisBankIDValue}"></span>:<br>
                                                 <i th:text="${bankIdPatron.contactZip}"></i>
                                             </button>
-                                            <button th:if="${patron.contactZip == null && alephPatron.contactZip != null and !#strings.isEmpty(alephPatron.contactZip)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                            <button th:if="${patron.contactZip == null && alephPatron.contactZip != null and !#strings.isEmpty(alephPatron.contactZip)}" class="jsbtn-useInputVal js-renewal-prefill-aleph w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500" data-input-target="#contactZip">
                                                 <span th:text="#{message.useThisKnavValue}"></span>:<br>
                                                 <i th:text="${alephPatron.contactZip}"></i>
                                             </button>
@@ -289,49 +288,52 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex flex-col gap-4">
-                        <div class="flex flex-col gap-2">
-                            <h3 class="text-md md:text-2xl font-semibold" th:text="#{form.membershipRenewal.section3.title}"></h3>
-                            <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.subtitle}"></h4>
-                            <p th:utext="#{form.membershipRenewal.section3.text1}"></p>
-                            <p th:utext="#{form.membershipRenewal.section3.text2}"></p>
-                            <div class="flex flex-col gap-2" data-accordion="collapse" data-active-classes="text-gray-900" data-inactive-classes="text-gray-900">
-                                <h4 id="accordion-rfid-heading" class="flex justify-between items-center text-md md:text-xl font-semibold cursor-pointer" type="button" data-accordion-target="#accordion-rfid-body" aria-expanded="false" aria-controls="accordion-rfid-body">
-                                    <span th:text="#{form.membershipRenewal.section3.block1.h}"></span>
-                                    <i class="text-md fa-solid fa-circle-info" th:title="#{message.moreInfo}"></i>
-                                </h4>
-                                <div id="accordion-rfid-body" class="flex flex-col gap-2 hidden" aria-labelledby="accordion-rfid-heading">
-                                    <p th:utext="#{form.membershipRenewal.section3.block1.text}"></p>
-                                    <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block2.h}"></h4>
-                                    <p th:utext="#{form.membershipRenewal.section3.block2.text}"></p>
-                                    <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block3.h}"></h4>
-                                    <p th:utext="#{form.membershipRenewal.section3.block3.text}"></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex flex-col gap-1">
-                            <label for="rfid" class="block text-sm font-medium" th:utext="#{message.rfidWithExamples}"></label>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <div>
-                                    <div class="relative">
-                                        <input type="text" id="rfid" name="rfid" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{rfid}" />
-                                        <button type="button" data-target="#rfid" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
-                                            ✕
+                    <div class="flex flex-col gap-2">
+                        <h3 class="text-md md:text-2xl">
+                            <span class="font-semibold" th:text="#{form.membershipRenewal.section3.title}"></span> (<span th:text="#{message.optional}"></span>)
+                        </h3>
+                        <p th:utext="#{form.membershipRenewal.section3.intro}"></p>
+                        <div class="flex flex-col gap-2" data-accordion="collapse" data-active-classes="text-gray-900" data-inactive-classes="text-gray-900"
+                             th:with="rfidExpanded=${(patron.rfid != null and !#strings.isEmpty(patron.rfid)) or #fields.hasErrors('rfid')}">
+                            <button id="accordion-rfid-heading" type="button" class="inline-flex self-start items-center gap-2 text-xs font-bold leading-[18px] justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-white focus:outline-none focus:shadow-outline" data-accordion-target="#accordion-rfid-body" aria-controls="accordion-rfid-body" th:attr="aria-expanded=${rfidExpanded}, aria-label=#{form.membershipRenewal.section3.accordionBtn.aria}"  th:title="#{form.membershipRenewal.section3.accordionBtn.aria}">
+                                <span class="accordion-rfid-label-show" th:text="#{form.membershipRenewal.section3.accordionBtn.show}"></span>
+                                <span class="accordion-rfid-label-hide" th:text="#{form.membershipRenewal.section3.accordionBtn.hide}"></span>
+                            </button>
+                            <div id="accordion-rfid-body" aria-labelledby="accordion-rfid-heading" class="flex flex-col gap-2" th:classappend="${rfidExpanded} ? '' : ' hidden'">
+                                <h4 class="mt-2 text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.subtitle}"></h4>
+                                <h5 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block1.h}"></h5>
+                                <p th:utext="#{form.membershipRenewal.section3.block1.text1}"></p>
+                                <p th:utext="#{form.membershipRenewal.section3.block1.text2}"></p>
+                                <p th:utext="#{form.membershipRenewal.section3.block1.text3}"></p>
+                                <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block2.h}"></h4>
+                                <p th:utext="#{form.membershipRenewal.section3.block2.text}"></p>
+                                <h4 class="text-md md:text-xl font-semibold" th:text="#{form.membershipRenewal.section3.block3.h}"></h4>
+                                <p th:utext="#{form.membershipRenewal.section3.block3.text}"></p>
+                                <div class="flex flex-col gap-1">
+                                    <label for="rfid" class="block text-sm font-medium" th:utext="#{message.rfidWithExamples}"></label>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                        <div>
+                                            <div class="relative">
+                                                <input type="text" id="rfid" name="rfid" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" th:field="*{rfid}" />
+                                                <button type="button" data-target="#rfid" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                                    ✕
+                                                </button>
+                                            </div>
+                                            <div th:if="${#fields.hasErrors('rfid')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
+                                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                                <span th:errors="*{rfid}" class="ml-1"></span>
+                                            </div>
+                                        </div>
+                                        <button th:if="${patron.rfid == null && bankIdPatron.rfid != null and !#strings.isEmpty(bankIdPatron.rfid)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
+                                            <span th:text="#{message.useThisBankIDValue}"></span>:<br>
+                                            <i th:text="${bankIdPatron.rfid}"></i>
+                                        </button>
+                                        <button th:if="${patron.rfid == null && alephPatron.rfid != null and !#strings.isEmpty(alephPatron.rfid)}" class="jsbtn-useInputVal js-renewal-prefill-aleph w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500" data-input-target="#rfid">
+                                            <span th:text="#{message.useThisKnavValue}"></span>:<br>
+                                            <i th:text="${alephPatron.rfid}"></i>
                                         </button>
                                     </div>
-                                    <div th:if="${#fields.hasErrors('rfid')}" class="flex items-baseline mt-2 px-2 text-sm text-start text-red-600 dark:text-red-500 font-medium">
-                                        <i class="fa-solid fa-triangle-exclamation"></i>
-                                        <span th:errors="*{rfid}" class="ml-1"></span>
-                                    </div>
                                 </div>
-                                <button th:if="${patron.rfid == null && bankIdPatron.rfid != null and !#strings.isEmpty(bankIdPatron.rfid)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
-                                    <span th:text="#{message.useThisBankIDValue}"></span>:<br>
-                                    <i th:text="${bankIdPatron.rfid}"></i>
-                                </button>
-                                <button th:if="${patron.rfid == null && alephPatron.rfid != null and !#strings.isEmpty(alephPatron.rfid)}" class="jsbtn-useInputVal w-full sm:flex-1 p-3 rounded border-2 border-dashed hover:border-indigo-500">
-                                    <span th:text="#{message.useThisKnavValue}"></span>:<br>
-                                    <i th:text="${alephPatron.rfid}"></i>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -421,7 +423,58 @@
                         <b>**</b>&nbsp;<span th:text="#{form.text.requiredCasEmployeeInformation}"></span>
                     </p>
                 </div>
-                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-5" th:text="#{message.renewMembership}"></button>
+                <!-- Voucher code input (non-employees only) -->
+                <div id="renewal-voucher-section" class="mt-6 pt-6 border-t border-gray-200" th:classappend="${patron.isCasEmployee} ? ' hidden' : ''">
+                    <div class="mb-2">
+                        <label for="voucherCode" th:text="#{voucher.label}" class="block text-sm font-medium text-gray-700 mb-2"></label>
+                        <p class="text-xs text-gray-500 mb-2" th:text="#{voucher.hint}"></p>
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <input type="text" id="voucherCode" name="voucherCode" maxlength="50"
+                                    class="w-full p-2 pe-10 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm uppercase"
+                                    th:placeholder="#{voucher.placeholder}" autocomplete="off" />
+                                <button type="button" data-target="#voucherCode" class="js-clear-input absolute inset-y-0 right-0 flex items-center px-3 text-red-400 hover:text-red-600" th:title="#{message.clearInput}" tabindex="-1">
+                                    ✕
+                                </button>
+                            </div>
+                            <button type="button" id="btn-validate-voucher"
+                                class="px-4 py-2 rounded-md bg-gray-900 text-white hover:bg-gray-700 focus:outline-none focus:shadow-outline text-sm font-medium"
+                                th:text="#{voucher.validateBtn}"></button>
+                        </div>
+                    </div>
+                    <div id="voucher-result" class="hidden mt-2 p-3 rounded-md text-sm"></div>
+                </div>
+                <div id="renewal-payment-recap" class="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-5"
+                    th:attr="data-standard-renewal-fee=${standardRenewalFeeAmount},data-outstanding-fines=${outstandingFinesAmount},data-currency-label=#{message.czk}">
+                    <h3 class="text-lg font-semibold mb-4" th:text="#{message.renewalPaymentSummary}">Renewal payment summary</h3>
+                    <div class="space-y-2 text-sm text-gray-700">
+                        <div class="flex items-center justify-between gap-4">
+                            <span th:text="#{message.renewalFee}">Renewal fee</span>
+                            <span id="renewal-fee-amount" class="font-medium"></span>
+                        </div>
+                        <div id="renewal-employee-waiver-row" class="hidden items-center justify-between gap-4 text-green-700">
+                            <span th:text="#{message.employeeWaiver}">Employee waiver</span>
+                            <span id="renewal-employee-waiver-amount" class="font-medium"></span>
+                        </div>
+                        <div id="renewal-voucher-discount-row" class="hidden items-center justify-between gap-4 text-green-700">
+                            <span th:text="#{voucher.discount.applied}">Voucher discount</span>
+                            <span id="renewal-voucher-discount-amount" class="font-medium"></span>
+                        </div>
+                        <div id="renewal-outstanding-fines-row" class="hidden items-center justify-between gap-4">
+                            <span th:text="#{message.outstandingFines}">Outstanding fines</span>
+                            <span id="renewal-outstanding-fines-amount" class="font-medium"></span>
+                        </div>
+                        <div class="border-t border-gray-200 pt-3 mt-3 flex items-center justify-between gap-4 text-base font-semibold text-gray-900">
+                            <span th:text="#{message.amountToPayNow}">Amount to pay now</span>
+                            <span id="renewal-total-amount"></span>
+                        </div>
+                    </div>
+                    <p id="renewal-payment-optional-note" class="hidden mt-3 text-sm text-gray-500" th:text="#{message.optionalFinePaymentAfterRenewal}">You can complete the renewal now and pay outstanding fines later in your online account.</p>
+                </div>
+                <div id="renewal-form-actions" class="mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                    <button id="renewal-submit-button" data-renewal-action="submit" type="submit" class="hidden justify-center py-[10px] px-[20px] rounded-full border border-libcas-blue text-xs font-bold leading-[18px] uppercase text-libcas-blue focus:outline-none focus:shadow-outline" th:text="#{message.submitForm}"></button>
+                    <button id="renewal-submit-and-pay-button" data-renewal-action="submitAndPay" type="submit" class="hidden justify-center py-[10px] px-[20px] rounded-full bg-libcas-blue text-xs font-bold leading-[18px] uppercase text-white focus:outline-none focus:shadow-outline" th:text="#{message.submitAndPay}"></button>
+                </div>
             </form>
         </main>
     </body>
