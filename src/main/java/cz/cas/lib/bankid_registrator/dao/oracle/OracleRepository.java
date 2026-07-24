@@ -3,6 +3,8 @@
  */
 package cz.cas.lib.bankid_registrator.dao.oracle;
 
+import cz.cas.lib.bankid_registrator.configurations.AlephServiceConfig;
+import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -15,6 +17,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +27,12 @@ public class OracleRepository
 {
     @PersistenceContext(unitName = "oracleEntityManager")
     private EntityManager entityManager;
+
+    @Autowired
+    private AlephServiceConfig alephServiceConfig;
+
+    @Autowired
+    private MainConfiguration mainConfiguration;
 
     private static final Logger logger = LoggerFactory.getLogger(OracleRepository.class);
 
@@ -39,14 +48,20 @@ public class OracleRepository
      * @param birthDate The patron's birth date.
      * @return An Optional containing the Aleph patron's ID if found, or empty if not.
      */
-    public Optional<String> getPatronIdByNameAndBirth(String name, String birthDate) {
+    public Optional<String> getPatronIdByNameAndBirth(String name, String birthDate)
+    {
+        String[] prefixes = alephServiceConfig.getPatronidPrefixes();
+        String likeConditions = Arrays.stream(prefixes)
+            .map(prefix -> "C.Z308_REC_KEY LIKE '00" + prefix + "%'")
+            .collect(Collectors.joining(" OR "));
+
         String sql = "SELECT A.Z303_REC_KEY AS patron_id " +
                     "FROM KNA50.Z303 A, KNA50.Z305 B, KNA50.Z308 C " +
                     "WHERE A.Z303_REC_KEY = SUBSTR(B.Z305_REC_KEY, 1, 12) " +
                     "AND A.Z303_REC_KEY = C.Z308_ID " +
                     "AND A.Z303_BIRTH_DATE = :birthDate " +
                     "AND A.Z303_NAME = :name " +
-                    "AND (C.Z308_REC_KEY LIKE '00KNAV%' OR C.Z308_REC_KEY LIKE '00KNBD%') " +
+                    "AND (" + likeConditions + ") " +
                     "AND ROWNUM <= 1";
 
         Query query = entityManager.createNativeQuery(sql);
@@ -69,13 +84,18 @@ public class OracleRepository
      */
     public int getPatronRowsCount(String name, String birthDate)
     {
+        String[] prefixes = alephServiceConfig.getPatronidPrefixes();
+        String likeConditions = Arrays.stream(prefixes)
+            .map(prefix -> "C.Z308_REC_KEY LIKE '00" + prefix + "%'")
+            .collect(Collectors.joining(" OR "));
+
         String sql = "SELECT COUNT(*) AS count " +
                      "FROM KNA50.Z303 A, KNA50.Z305 B, KNA50.Z308 C " +
                      "WHERE A.Z303_REC_KEY = SUBSTR(B.Z305_REC_KEY, 1, 12) " +
                      "AND A.Z303_REC_KEY = C.Z308_ID " +
                      "AND A.Z303_BIRTH_DATE = :birthDate " +
                      "AND A.Z303_NAME = :name " +
-                     "AND C.Z308_REC_KEY LIKE '00KNAV%'";
+                     "AND (" + likeConditions + ")";
 
         Query query = entityManager.createNativeQuery(sql);
         query.setParameter("name", name);
@@ -162,14 +182,17 @@ public class OracleRepository
 
     /**
      * Gets the maximum number from the Z303_REC_KEY column of rows
-     * where Z303_REC_KEY starts with 'KNBD' followed by numeric characters.
+     * where Z303_REC_KEY starts with the configured BankID Aleph patron ID prefix followed by numeric characters.
      * @return Maximum number.
      */
     public Long getMaxBankIdZ303RecKey()
     {
-        String sql = "SELECT MAX(TO_NUMBER(TRIM(SUBSTR(Z303_REC_KEY, 5)))) " +
+        String idPrefix = mainConfiguration.getId_prefix();
+        int prefixLength = idPrefix.length() + 1; // +1 for SUBSTR position (1-indexed)
+
+        String sql = "SELECT MAX(TO_NUMBER(TRIM(SUBSTR(Z303_REC_KEY, " + prefixLength + ")))) " +
                      "FROM KNA50.Z303 " +
-                     "WHERE REGEXP_LIKE(TRIM(Z303_REC_KEY), '^KNBD[0-9]+$')";
+                     "WHERE REGEXP_LIKE(TRIM(Z303_REC_KEY), '^" + idPrefix + "[0-9]+$')";
 
         Query query = entityManager.createNativeQuery(sql);
         Object result = query.getSingleResult();
