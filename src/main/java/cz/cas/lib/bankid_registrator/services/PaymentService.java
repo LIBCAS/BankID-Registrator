@@ -156,6 +156,54 @@ public class PaymentService extends ServiceAbstract
     }
 
     /**
+     * Refresh a pending payment's total amount from Aleph.
+     *
+     * Aleph is the source of truth for the patron's current outstanding balance. The amount
+     * persisted on Payment records is only a snapshot taken when the payment was created and
+     * may become stale after an Aleph-side correction. Never retain the stored amount when the
+     * Aleph lookup fails because doing so could present or sign an incorrect payment amount.
+     *
+     * @param payment - payment whose amount should match the current Aleph balance
+     * @return the same payment instance, with its amount refreshed
+     * @throws IllegalStateException when Aleph cannot provide a valid current balance
+     */
+    @Transactional
+    public Payment refreshPaymentAmountFromAleph(Payment payment) {
+        String patronId = payment.getIdentity().getAlephId();
+        Map<String, Object> finesResult = alephService.getPatronFines(patronId);
+
+        if (finesResult.containsKey("error")) {
+            getLogger().error("Cannot refresh payment {} from Aleph for patron {}: {}",
+                payment.getId(), patronId, finesResult.get("error"));
+            throw new IllegalStateException("Failed to refresh payment amount from Aleph");
+        }
+
+        Object totalDueCash = finesResult.get("totalDueCash");
+        if (!(totalDueCash instanceof BigDecimal)) {
+            getLogger().error("Cannot refresh payment {} from Aleph for patron {}: missing or invalid totalDueCash",
+                payment.getId(), patronId);
+            throw new IllegalStateException("Aleph returned an invalid payment amount");
+        }
+
+        BigDecimal currentAmount = (BigDecimal) totalDueCash;
+        if (currentAmount.compareTo(BigDecimal.ZERO) < 0) {
+            getLogger().error("Cannot refresh payment {} from Aleph for patron {}: negative totalDueCash {}",
+                payment.getId(), patronId, currentAmount);
+            throw new IllegalStateException("Aleph returned an invalid payment amount");
+        }
+
+        if (payment.getAmount().compareTo(currentAmount) != 0) {
+            BigDecimal previousAmount = payment.getAmount();
+            payment.setAmount(currentAmount);
+            payment = paymentRepository.save(payment);
+            getLogger().info("Refreshed payment {} amount from Aleph for patron {}: {} -> {}",
+                payment.getId(), patronId, previousAmount, currentAmount);
+        }
+
+        return payment;
+    }
+
+    /**
      * Verify if a patron has paid (i.e., has no outstanding fines)
      * @param patronId - Aleph patron ID
      * @return true if paid (no outstanding fines), false otherwise

@@ -104,6 +104,11 @@ public class PaymentController extends ControllerAbstract
             return "redirect:/error";
         }
 
+        // After a successful payment, Aleph normally reports zero because the fee has been settled. Preserve Payment.amount as the historical charged amount. For unfinished or retryable payments, refresh the current amount from Aleph.
+        if (callbackStatus.orElse(null) != ComgateReturnStatus.SUCCESS) {
+            payment = paymentService.refreshPaymentAmountFromAleph(payment);
+        }
+
         // Add payment data to model
         model.addAttribute("payment", payment);
         model.addAttribute("identity", identity);
@@ -186,7 +191,7 @@ public class PaymentController extends ControllerAbstract
             return "redirect:/error";
         }
 
-        Payment payment = paymentOpt.get();
+        Payment payment = paymentService.refreshPaymentAmountFromAleph(paymentOpt.get());
 
         // Add payment data to model
         model.addAttribute("payment", payment);
@@ -247,7 +252,7 @@ public class PaymentController extends ControllerAbstract
             return "redirect:/error";
         }
 
-        Payment payment = paymentOpt.get();
+        Payment payment = paymentService.refreshPaymentAmountFromAleph(paymentOpt.get());
 
         // If fee is fully covered by voucher, skip payment gateway entirely
         if (payment.getStatus() == PaymentStatus.VOUCHER_COVERED) {
@@ -306,7 +311,7 @@ public class PaymentController extends ControllerAbstract
             return "redirect:/error";
         }
 
-        Payment payment = paymentOpt.get();
+        Payment payment = paymentService.refreshPaymentAmountFromAleph(paymentOpt.get());
 
         if (payment.getType() == PaymentType.RENEWAL_FINES_ONLY) {
             redirectAttributes.addFlashAttribute("voucherError", getMessage("voucher.error.notApplicableToFines", locale));
