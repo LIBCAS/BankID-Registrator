@@ -13,6 +13,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,6 +77,18 @@ class PaymentServiceTest
             () -> paymentService.refreshPaymentAmountFromAleph(payment));
         assertEquals(new BigDecimal("999.00"), payment.getAmount());
         verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void paymentExistsUsesIdentityAndBusinessType() {
+        PaymentRepository paymentRepository = mock(PaymentRepository.class);
+        PaymentService paymentService = createPaymentService(paymentRepository, mock(AlephService.class));
+        Identity identity = new Identity("bank-id-sub");
+        when(paymentRepository.existsByIdentityAndType(identity, PaymentType.REGISTRATION))
+            .thenReturn(true);
+
+        assertTrue(paymentService.paymentExists(identity, PaymentType.REGISTRATION));
+        assertFalse(paymentService.paymentExists(identity, PaymentType.RENEWAL));
     }
 
     private PaymentService createPaymentService(

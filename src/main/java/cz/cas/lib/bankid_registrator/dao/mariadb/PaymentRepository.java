@@ -1,6 +1,7 @@
 package cz.cas.lib.bankid_registrator.dao.mariadb;
 
 import cz.cas.lib.bankid_registrator.entities.payment.PaymentStatus;
+import cz.cas.lib.bankid_registrator.entities.payment.PaymentType;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.payment.Payment;
 import java.util.List;
@@ -11,11 +12,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long>
 {
     Optional<Payment> findById(Long id);
 
-    Optional<Payment> findFirstByIdentity_AlephBarcodeOrderByCreatedAtDesc(String alephBarcode);
+    Optional<Payment> findFirstByIdentity_AlephBarcodeOrderByCreatedAtDescIdDesc(String alephBarcode);
 
     List<Payment> findByIdentity(Identity identity);
 
     List<Payment> findByIdentityAndStatus(Identity identity, PaymentStatus status);
 
-    Optional<Payment> findFirstByIdentityOrderByCreatedAtDesc(Identity identity);
+    Optional<Payment> findFirstByIdentityOrderByCreatedAtDescIdDesc(Identity identity);
+
+    boolean existsByIdentityAndType(Identity identity, PaymentType type);
 }

@@ -63,4 +63,29 @@ public class TokenService {
         TokenBlacklisted tokenBlacklisted = new TokenBlacklisted(token, LocalDateTime.now());
         this.tokenBlacklistedRepository.save(tokenBlacklisted);
     }
+
+    /**
+     * Consume a one-time token atomically so concurrent form submissions cannot all pass a separate exists-then-save check
+     */
+    public boolean tryInvalidateToken(String token) {
+        return tryClaimKey(token);
+    }
+
+    /**
+     * Allow a retry when processing failed before any subsequent side effect
+     */
+    public void reactivateToken(String token) {
+        releaseClaimKey(token);
+    }
+
+    /**
+     * Atomically claim an arbitrary idempotency key using the same durable storage as consumed one-time tokens
+     */
+    public boolean tryClaimKey(String key) {
+        return this.tokenBlacklistedRepository.blacklistIfAbsent(key, LocalDateTime.now()) == 1;
+    }
+
+    public void releaseClaimKey(String key) {
+        this.tokenBlacklistedRepository.deleteIfPresent(key);
+    }
 }

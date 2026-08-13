@@ -1,5 +1,6 @@
 package cz.cas.lib.bankid_registrator.model.token;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -14,6 +15,8 @@ public class TokenBlacklisted
 {
     @Id
     private String token;
+
+    @Column(name = "blacklistedAt")
     private LocalDateTime blacklistedAt;
 
     public TokenBlacklisted() {

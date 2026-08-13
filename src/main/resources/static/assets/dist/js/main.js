@@ -141,6 +141,30 @@ class PageLoader {
 }
 
 /**
+ * Check whether a form submission is already being processed.
+ * @param {HTMLFormElement} formElm
+ * @returns {boolean}
+ */
+function isFormSubmitting(formElm) {
+    return formElm.dataset.submitting === "true";
+}
+
+/**
+ * Mark a form as submitted and disable all of its submit buttons.
+ * Call this only after all client-side validation has passed.
+ * @param {HTMLFormElement} formElm
+ */
+function lockFormSubmission(formElm) {
+    formElm.dataset.submitting = "true";
+    formElm.setAttribute("aria-busy", "true");
+
+    formElm.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(submitElm => {
+        submitElm.disabled = true;
+        submitElm.classList.add("cursor-not-allowed", "opacity-60");
+    });
+}
+
+/**
  * Move an element to a target slot if it's not already there
  * @param elm - The element to move
  * @param targetSlot - The target slot element
@@ -873,6 +897,12 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
         });
 
         document.querySelector("form").addEventListener("submit", (event) => {
+            const formElm = event.currentTarget;
+            if (isFormSubmitting(formElm)) {
+                event.preventDefault();
+                return;
+            }
+
             const casEmployeeChecked = document.getElementById("isCasEmployee").checked;
             const validFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.IDLE);
             const nowLoadingFiles = pond.getFiles().filter(file => file.status === FilePond.FileStatus.INIT || file.status === FilePond.FileStatus.LOADING);
@@ -914,6 +944,7 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
                     event.preventDefault();
                     showAlert(window.translations["alert.totalFileSizeExceeded"], "danger");
                 } else {
+                    lockFormSubmission(formElm);
                     loaderAfterSubmit.show();
                 }
             }
@@ -1103,7 +1134,13 @@ if (document.getElementById("form-identity-password")) {
 
     // Password validation
     const pswFormElm = document.getElementById('form-identity-password');
+
     pswFormElm.addEventListener('submit', function(event) {
+        if (isFormSubmitting(pswFormElm)) {
+            event.preventDefault();
+            return;
+        }
+
         const password = document.getElementById('newPassword').value;
         const repeatPassword = document.getElementById('repeatNewPassword').value;
         
@@ -1118,6 +1155,9 @@ if (document.getElementById("form-identity-password")) {
             alert(window.translations["form.patronPassword.error.notMatching"]);
             return;
         }
+
+        // Prevent repeated submissions while the server updates Aleph and prepares payment.
+        lockFormSubmission(pswFormElm);
     });
 
     // Add event listeners to password toggler buttons
@@ -1130,7 +1170,33 @@ if (document.getElementById("form-identity-password")) {
 
 }
 
+// FORM: INITIATE PAYMENT
+const paymentInitiateButtonElm = document.getElementById("payment-initiate-button");
+if (paymentInitiateButtonElm) {
+    const paymentInitiateFormElm = paymentInitiateButtonElm.closest("form");
+
+    paymentInitiateFormElm.addEventListener("submit", function(event) {
+        if (isFormSubmitting(paymentInitiateFormElm)) {
+            event.preventDefault();
+            return;
+        }
+
+        lockFormSubmission(paymentInitiateFormElm);
+    });
+}
+
 // COMMON
+document.querySelectorAll("form.js-prevent-repeat-submit").forEach(formElm => {
+    formElm.addEventListener("submit", function(event) {
+        if (isFormSubmitting(formElm)) {
+            event.preventDefault();
+            return;
+        }
+
+        lockFormSubmission(formElm);
+    });
+});
+
 if (document.getElementById("js-printPage")) {
     document.getElementById("js-printPage").addEventListener("click", triggerPrintPage);
 }

@@ -23,6 +23,7 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,12 +56,28 @@ class PaymentControllerTest
             .thenReturn(Collections.singletonMap("amount", "28000"));
         Model model = new ExtendedModelMap();
 
-        String view = fixture.controller.initiatePayment(model, fixture.request);
+        String view = fixture.controller.initiatePayment(model, Locale.ENGLISH, fixture.request);
 
         assertEquals("payment_redirect", view);
         assertEquals(Collections.singletonMap("amount", "28000"), model.getAttribute("formData"));
         verify(fixture.paymentService).refreshPaymentAmountFromAleph(stalePayment);
         verify(fixture.paymentService).generatePaymentFormData(refreshedPayment, fixture.identity, null);
+    }
+
+    @Test
+    void repeatedPaymentInitiationIsRejectedForSameDisplayedPayment() {
+        ControllerFixture fixture = new ControllerFixture();
+        Payment payment = fixture.payment(new BigDecimal("280.00"));
+        fixture.stubAuthenticatedPayment(payment, payment);
+        when(fixture.paymentService.generatePaymentFormData(payment, fixture.identity, null))
+            .thenReturn(Collections.singletonMap("amount", "28000"));
+
+        fixture.controller.initiatePayment(new ExtendedModelMap(), Locale.ENGLISH, fixture.request);
+
+        assertThrows(
+            cz.cas.lib.bankid_registrator.exceptions.HttpErrorException.class,
+            () -> fixture.controller.initiatePayment(new ExtendedModelMap(), Locale.ENGLISH, fixture.request)
+        );
     }
 
     private static class ControllerFixture
@@ -69,6 +86,7 @@ class PaymentControllerTest
         private final PaymentService paymentService = mock(PaymentService.class);
         private final IdentityService identityService = mock(IdentityService.class);
         private final PaymentServiceConfig paymentServiceConfig = mock(PaymentServiceConfig.class);
+        private final TokenService tokenService = mock(TokenService.class);
         private final Identity identity = identity();
         private final MockHttpServletRequest request = new MockHttpServletRequest();
         private final PaymentController controller = new PaymentController(
@@ -77,7 +95,7 @@ class PaymentControllerTest
             paymentService,
             paymentServiceConfig,
             mock(RegistrationFeeConfig.class),
-            mock(TokenService.class),
+            tokenService,
             identityService,
             mock(VoucherService.class),
             mock(SessionTimerConfig.class)
@@ -90,6 +108,7 @@ class PaymentControllerTest
             when(paymentService.getLatestPaymentByIdentity(identity)).thenReturn(Optional.of(stalePayment));
             when(paymentService.refreshPaymentAmountFromAleph(stalePayment)).thenReturn(refreshedPayment);
             when(paymentServiceConfig.getApiUrl()).thenReturn("https://payments.example.test");
+            when(tokenService.tryClaimKey("payment-initiate:" + refreshedPayment.getId())).thenReturn(true);
         }
 
         private Payment payment(BigDecimal amount) {
