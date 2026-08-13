@@ -38,6 +38,7 @@ import cz.cas.lib.bankid_registrator.services.VoucherService;
 import cz.cas.lib.bankid_registrator.services.TestSettingsService;
 import cz.cas.lib.bankid_registrator.valueobjs.AccessTokenContainer;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
+import cz.cas.lib.bankid_registrator.util.SessionSubmissionGuard;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
 import cz.cas.lib.bankid_registrator.validators.PatronDTOValidator;
 
@@ -708,13 +709,23 @@ public class MainController extends ControllerAbstract
             return "callback_registration_new";
         }
 
+        String code = (String) session.getAttribute("code");
+        String sessionSubmissionKey = "new-registration:" + code;
+        if (code == null || !SessionSubmissionGuard.claim(session, sessionSubmissionKey)) {
+            throw duplicateSubmission(locale);
+        }
+
         // getLogger().info("Session ID: {}", session.getId());
 
         Long patronSysId = (Long) session.getAttribute("patron");
         Patron patron = patronRepository.findById(patronSysId).orElse(null);  // original patron data
         Identify userProfile = (Identify) session.getAttribute("userProfile");
-        String code = (String) session.getAttribute("code");
         Identity identity = this.identityService.findById((Long) session.getAttribute("identity")).orElse(null);
+        String durableSubmissionKey = identity == null ? null : "submission:new-registration:" + identity.getId();
+
+        if (durableSubmissionKey == null || !tryClaimDurably(session, sessionSubmissionKey, durableSubmissionKey)) {
+            throw duplicateSubmission(locale);
+        }
 
         session.removeAttribute("patron");
         session.removeAttribute("userProfile");
@@ -768,6 +779,7 @@ public class MainController extends ControllerAbstract
         synchronized (this) {
             Map<String, Object> patronCreation = this.alephService.createPatron(patron);
             if (patronCreation.containsKey("error")) {
+                this.tokenService.releaseClaimKey(durableSubmissionKey);
                 this.identityAuthService.logout(request);
                 getLogger().info("RESULT: {}", patronCreation);
                 getLogger().error("Error creating patron: {}", patronCreation.get("error"));
@@ -914,11 +926,23 @@ public class MainController extends ControllerAbstract
             return "callback_registration_renewal";
         }
 
+        String code = (String) session.getAttribute("code");
+        String sessionSubmissionKey = "membership-renewal:" + code;
+        if (code == null || !SessionSubmissionGuard.claim(session, sessionSubmissionKey)) {
+            throw duplicateSubmission(locale);
+        }
+
         Long patronSysId = (Long) session.getAttribute("patron");
         Patron patron = patronRepository.findById(patronSysId).orElse(null);    // Original Latest patron (i.e. patron created by merging BankId patron with Aleph patron)
         Identify userProfile = (Identify) session.getAttribute("userProfile");
-        String code = (String) session.getAttribute("code");
         Identity identity = this.identityService.findById((Long) session.getAttribute("identity")).orElse(null);
+        String durableSubmissionKey = identity == null || alephPatron == null
+            ? null
+            : "submission:membership-renewal:" + identity.getId() + ":" + alephPatron.getExpiryDate();
+
+        if (durableSubmissionKey == null || !tryClaimDurably(session, sessionSubmissionKey, durableSubmissionKey)) {
+            throw duplicateSubmission(locale);
+        }
 
         session.removeAttribute("alephPatron");
         session.removeAttribute("patron");
@@ -977,6 +1001,7 @@ public class MainController extends ControllerAbstract
 
         Map<String, Object> patronUpdate = this.alephService.updatePatron(patron, alephPatron);
         if (patronUpdate.containsKey("error")) {
+            this.tokenService.releaseClaimKey(durableSubmissionKey);
             getLogger().info("RESULT: {}", patronUpdate);
             getLogger().error("Error updating patron: {}", patronUpdate.get("error"));
             return "error";
@@ -1124,6 +1149,26 @@ public class MainController extends ControllerAbstract
 
     private boolean isSubmitAndPayAction(String renewalAction) {
         return "submitAndPay".equalsIgnoreCase(renewalAction);
+    }
+
+    private HttpErrorException duplicateSubmission(Locale locale) {
+        return new HttpErrorException(
+            HttpStatus.CONFLICT,
+            this.messageSource.getMessage("error.submission.duplicate", null, locale)
+        );
+    }
+
+    private boolean tryClaimDurably(
+        HttpSession session,
+        String sessionSubmissionKey,
+        String durableSubmissionKey
+    ) {
+        try {
+            return this.tokenService.tryClaimKey(durableSubmissionKey);
+        } catch (RuntimeException e) {
+            SessionSubmissionGuard.release(session, sessionSubmissionKey);
+            throw e;
+        }
     }
 
     private String renderMembershipRenewalSuccess(

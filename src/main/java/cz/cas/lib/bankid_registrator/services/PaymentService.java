@@ -84,12 +84,12 @@ public class PaymentService extends ServiceAbstract
     }
 
     /**
-     * Get payment by Aleph barcode (used when Comgate redirects back)
-     * @param alephBarcode - Aleph patron barcode (9-digit number)
+     * Get payment by Aleph barcode (e.g. used when Comgate redirects back)
+     * @param alephBarcode - Aleph patron barcode
      * @return Optional<Payment>
      */
     public Optional<Payment> getPaymentByAlephBarcode(String alephBarcode) {
-        return paymentRepository.findFirstByIdentity_AlephBarcodeOrderByCreatedAtDesc(alephBarcode);
+        return paymentRepository.findFirstByIdentity_AlephBarcodeOrderByCreatedAtDescIdDesc(alephBarcode);
     }
 
     /**
@@ -116,7 +116,14 @@ public class PaymentService extends ServiceAbstract
      * @return Optional<Payment>
      */
     public Optional<Payment> getLatestPaymentByIdentity(Identity identity) {
-        return paymentRepository.findFirstByIdentityOrderByCreatedAtDesc(identity);
+        return paymentRepository.findFirstByIdentityOrderByCreatedAtDescIdDesc(identity);
+    }
+
+    /**
+     * Check whether this identity already has a payment for the supplied business operation
+     */
+    public boolean paymentExists(Identity identity, PaymentType type) {
+        return paymentRepository.existsByIdentityAndType(identity, type);
     }
 
     /**

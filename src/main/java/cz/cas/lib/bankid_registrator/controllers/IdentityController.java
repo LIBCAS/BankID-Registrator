@@ -17,6 +17,7 @@ import cz.cas.lib.bankid_registrator.services.LdapService;
 import cz.cas.lib.bankid_registrator.services.PaymentService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.services.VoucherService;
+import cz.cas.lib.bankid_registrator.util.SessionSubmissionGuard;
 import cz.cas.lib.bankid_registrator.util.WebUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
 import java.math.BigDecimal;
@@ -132,9 +133,15 @@ public class IdentityController extends ControllerAbstract
             throw new HttpErrorException(HttpStatus.BAD_REQUEST, this.messageSource.getMessage("error.email.patronNoEmail", null, locale));
         }
 
+        String submissionKey = "password-reset-request:" + identity.getId();
+        if (!SessionSubmissionGuard.claim(session, submissionKey)) {
+            throw duplicateSubmission(locale);
+        }
+
         try {
             this.emailService.sendEmailIdentityPasswordReset(emailTo, resetLink, locale);
         } catch (Exception e) {
+            SessionSubmissionGuard.release(session, submissionKey);
             getLogger().error("Failed to send email to " + emailTo + ": " + e.getMessage());
             throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage("error.email.identityPasswordReset.failedToSend", null, locale));
         }
@@ -186,6 +193,7 @@ public class IdentityController extends ControllerAbstract
     ) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordResetting.title", null, locale));
+            model.addAttribute("token", token);
             return "identity_reset_password";
         }
 
@@ -195,9 +203,14 @@ public class IdentityController extends ControllerAbstract
             throw new HttpErrorException(HttpStatus.BAD_REQUEST, this.messageSource.getMessage("error.token.invalidOrMissing", null, locale));
         }
 
+        if (!this.tokenService.tryInvalidateToken(token)) {
+            throw duplicateSubmission(locale);
+        }
+
         Map<String, Object> pswUpdate = this.updatePatronPassword(token, passwordDTO.getNewPassword());
 
         if (pswUpdate.containsKey("error")) {
+            this.tokenService.reactivateToken(token);
             throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage(pswUpdate.get("error").toString(), null, locale));
         }
 
@@ -230,6 +243,13 @@ public class IdentityController extends ControllerAbstract
             return "error_session_expired";
         }
 
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("pageTitle", this.messageSource.getMessage("page.identityPasswordSetting.title", null, locale));
+            model.addAttribute("token", token);
+            model.addAttribute("patronIsCasEmployee", false);
+            return "identity_set_password";
+        }
+
         boolean isTokenValid = this.tokenService.isIdentityTokenValid(token);
         boolean patronIsCasEmployee = false;
 
@@ -237,29 +257,52 @@ public class IdentityController extends ControllerAbstract
             throw new HttpErrorException(HttpStatus.BAD_REQUEST, this.messageSource.getMessage("error.token.invalidOrMissing", null, locale));
         }
 
-        String patronAlephId = null;
+        if (!this.tokenService.tryInvalidateToken(token)) {
+            throw duplicateSubmission(locale);
+        }
+
+        Long identityId;
+        Identity identity;
+        try {
+            identityId = Long.parseLong(this.tokenService.extractIdentityIdFromToken(token));
+            identity = this.identityService.findById(identityId).orElseThrow(
+                () -> new IllegalStateException("Identity not found")
+            );
+        } catch (Exception e) {
+            this.tokenService.reactivateToken(token);
+            getLogger().error("Failed to resolve identity from a password-setting form: {}", e.getMessage());
+            throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR,
+                this.messageSource.getMessage("error.identityPassword.failed", null, locale));
+        }
+
+        String passwordSubmissionKey = "submission:initial-password:" + identity.getId();
+        if (!this.tokenService.tryClaimKey(passwordSubmissionKey)) {
+            throw duplicateSubmission(locale);
+        }
+
+        if (this.paymentService.paymentExists(identity, PaymentType.REGISTRATION)) {
+            getLogger().warn("Ignored repeated registration password submission because a registration payment already exists. Identity: {}",
+                identity.getId());
+            return "redirect:/payment";
+        }
 
         String patronPassword = passwordDTO.getNewPassword();
         Map<String, Object> pswUpdate = this.updatePatronPassword(token, patronPassword);
 
         if (pswUpdate.containsKey("error")) {
+            this.tokenService.reactivateToken(token);
+            this.tokenService.releaseClaimKey(passwordSubmissionKey);
             throw new HttpErrorException(HttpStatus.INTERNAL_SERVER_ERROR, this.messageSource.getMessage("error.identityPassword.failed", null, locale));
         }
 
         request.getSession().setAttribute("patronPassword", patronPassword);
 
-        Long identityId = null;
-        Identity identity = null;
-        String patronAlephBarcode = null;
+        String patronAlephId = identity.getAlephId();
+        String patronAlephBarcode = identity.getAlephBarcode();
 
         try {
-            identityId = Long.parseLong(this.tokenService.extractIdentityIdFromToken(token));
-            identity = this.identityService.findById(identityId).get();
-
             // Store identity ID in session for payment flow
             request.getSession().setAttribute("identity", identityId);
-            patronAlephId = identity.getAlephId();
-            patronAlephBarcode = identity.getAlephBarcode();
             Patron patron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
 
             model.addAttribute("alephId", patronAlephId);
@@ -310,9 +353,17 @@ public class IdentityController extends ControllerAbstract
                 && discountAmount.compareTo(registrationFeeConfig.getDefaultAmount()) >= 0
                 && paymentService.getPatronTotalDueCash(identity.getAlephId()).compareTo(BigDecimal.ZERO) == 0;
 
-            // Create the Aleph registration fee only when the patron actually needs to pay
-            if (!feeFullyCovered) {
-                synchronized (this) {
+            Payment payment;
+            synchronized (this) {
+                // A second token or browser must not create another fee after
+                // the first request has completed the same business operation.
+                if (this.paymentService.paymentExists(identity, PaymentType.REGISTRATION)) {
+                    getLogger().warn("Ignored repeated registration fee submission. Identity: {}", identity.getId());
+                    return "redirect:/payment";
+                }
+
+                // Create the Aleph registration fee only when the patron actually needs to pay
+                if (!feeFullyCovered) {
                     Map<String, Object> feeCreation = this.alephService.createRegistrationFee(
                         (Patron) this.alephService.getAlephPatron(patronAlephId, false).get("patron"));
                     if (feeCreation.containsKey("error")) {
@@ -321,9 +372,11 @@ public class IdentityController extends ControllerAbstract
                             this.messageSource.getMessage("error.identityPassword.failed", null, locale));
                     }
                 }
-            }
 
-            Payment payment = paymentService.createPayment(identity, PaymentType.REGISTRATION, appliedVoucherCode, discountAmount);
+                // Keep payment creation in the same critical section so the
+                // existence check becomes visible before another request enters.
+                payment = paymentService.createPayment(identity, PaymentType.REGISTRATION, appliedVoucherCode, discountAmount);
+            }
             getLogger().info("Created payment for new registration. Identity: {}, Barcode: {}, Discount: {}",
                 identity.getId(), identity.getAlephBarcode(), discountAmount);
 
@@ -349,6 +402,13 @@ public class IdentityController extends ControllerAbstract
 
             return "redirect:/payment/initiate";
         }
+    }
+
+    private HttpErrorException duplicateSubmission(Locale locale) {
+        return new HttpErrorException(
+            HttpStatus.CONFLICT,
+            this.messageSource.getMessage("error.submission.duplicate", null, locale)
+        );
     }
 
     /**

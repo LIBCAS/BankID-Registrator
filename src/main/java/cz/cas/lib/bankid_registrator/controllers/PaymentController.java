@@ -6,6 +6,7 @@ import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.entities.payment.ComgateReturnStatus;
 import cz.cas.lib.bankid_registrator.entities.payment.PaymentStatus;
 import cz.cas.lib.bankid_registrator.entities.payment.PaymentType;
+import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.payment.Payment;
 import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
@@ -13,6 +14,7 @@ import cz.cas.lib.bankid_registrator.services.IdentityService;
 import cz.cas.lib.bankid_registrator.services.PaymentService;
 import cz.cas.lib.bankid_registrator.services.TokenService;
 import cz.cas.lib.bankid_registrator.services.VoucherService;
+import cz.cas.lib.bankid_registrator.util.SessionSubmissionGuard;
 import cz.cas.lib.bankid_registrator.util.WebUtils;
 import java.math.BigDecimal;
 import java.util.Locale;
@@ -20,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -107,6 +110,7 @@ public class PaymentController extends ControllerAbstract
         // After a successful payment, Aleph normally reports zero because the fee has been settled. Preserve Payment.amount as the historical charged amount. For unfinished or retryable payments, refresh the current amount from Aleph.
         if (callbackStatus.orElse(null) != ComgateReturnStatus.SUCCESS) {
             payment = paymentService.refreshPaymentAmountFromAleph(payment);
+            releasePaymentPageSubmissionClaims(request, payment);
         }
 
         // Add payment data to model
@@ -192,6 +196,7 @@ public class PaymentController extends ControllerAbstract
         }
 
         Payment payment = paymentService.refreshPaymentAmountFromAleph(paymentOpt.get());
+        releasePaymentPageSubmissionClaims(request, payment);
 
         // Add payment data to model
         model.addAttribute("payment", payment);
@@ -228,6 +233,7 @@ public class PaymentController extends ControllerAbstract
     @RequestMapping(value = "/initiate", method = {RequestMethod.GET, RequestMethod.POST})
     public String initiatePayment(
         Model model,
+        Locale locale,
         HttpServletRequest request
     ) {
         // User must be authenticated
@@ -253,6 +259,10 @@ public class PaymentController extends ControllerAbstract
         }
 
         Payment payment = paymentService.refreshPaymentAmountFromAleph(paymentOpt.get());
+        String submissionKey = paymentSubmissionKey("initiate", payment);
+        if (!claimPaymentSubmission(request, submissionKey)) {
+            throw duplicateSubmission(locale);
+        }
 
         // If fee is fully covered by voucher, skip payment gateway entirely
         if (payment.getStatus() == PaymentStatus.VOUCHER_COVERED) {
@@ -266,7 +276,13 @@ public class PaymentController extends ControllerAbstract
         }
 
         // Generate payment form data (with digest)
-        Map<String, String> formData = paymentService.generatePaymentFormData(payment, identity, returnUrl);
+        Map<String, String> formData;
+        try {
+            formData = paymentService.generatePaymentFormData(payment, identity, returnUrl);
+        } catch (RuntimeException e) {
+            releasePaymentSubmission(request, submissionKey);
+            throw e;
+        }
 
         // Add form data and API URL to model
         model.addAttribute("paymentApiUrl", paymentServiceConfig.getApiUrl());
@@ -312,6 +328,10 @@ public class PaymentController extends ControllerAbstract
         }
 
         Payment payment = paymentService.refreshPaymentAmountFromAleph(paymentOpt.get());
+        String submissionKey = paymentSubmissionKey("apply-voucher", payment);
+        if (!claimPaymentSubmission(request, submissionKey)) {
+            throw duplicateSubmission(locale);
+        }
 
         if (payment.getType() == PaymentType.RENEWAL_FINES_ONLY) {
             redirectAttributes.addFlashAttribute("voucherError", getMessage("voucher.error.notApplicableToFines", locale));
@@ -365,6 +385,45 @@ public class PaymentController extends ControllerAbstract
             appliedVoucherCode, discountAmount, identity.getId());
 
         return "redirect:/payment";
+    }
+
+    private void releasePaymentPageSubmissionClaims(HttpServletRequest request, Payment payment) {
+        releasePaymentSubmission(request, paymentSubmissionKey("initiate", payment));
+        releasePaymentSubmission(request, paymentSubmissionKey("apply-voucher", payment));
+    }
+
+    private boolean claimPaymentSubmission(HttpServletRequest request, String submissionKey) {
+        if (!SessionSubmissionGuard.claim(request.getSession(), submissionKey)) {
+            return false;
+        }
+
+        try {
+            if (!this.tokenService.tryClaimKey(submissionKey)) {
+                SessionSubmissionGuard.release(request.getSession(), submissionKey);
+                return false;
+            }
+        } catch (RuntimeException e) {
+            SessionSubmissionGuard.release(request.getSession(), submissionKey);
+            throw e;
+        }
+
+        return true;
+    }
+
+    private void releasePaymentSubmission(HttpServletRequest request, String submissionKey) {
+        SessionSubmissionGuard.release(request.getSession(), submissionKey);
+        this.tokenService.releaseClaimKey(submissionKey);
+    }
+
+    private String paymentSubmissionKey(String action, Payment payment) {
+        return "payment-" + action + ":" + payment.getId();
+    }
+
+    private HttpErrorException duplicateSubmission(Locale locale) {
+        return new HttpErrorException(
+            HttpStatus.CONFLICT,
+            this.messageSource.getMessage("error.submission.duplicate", null, locale)
+        );
     }
 
     /**
@@ -471,6 +530,7 @@ public class PaymentController extends ControllerAbstract
 
             // Update to FAILED status
             paymentService.updatePaymentStatus(payment, PaymentStatus.FAILED);
+            releasePaymentPageSubmissionClaims(request, payment);
 
             return handlePaymentFailure(payment, identity, model, locale);
         }
