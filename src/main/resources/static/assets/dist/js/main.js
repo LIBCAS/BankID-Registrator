@@ -975,7 +975,13 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
                         keys: ["value"],
                         src: async(query) => {
                             try {
-                                const fetchData = await fetch(`${apiUrl}/suggest-address/${query}`);
+                                const params = new URLSearchParams({ query });
+                                const fetchData = await fetch(`${apiUrl}/suggest-address?${params.toString()}`);
+
+                                if (!fetchData.ok) {
+                                    return [];
+                                }
+
                                 const jsonData = await fetchData.json();
 
                                 if (jsonData.items) {
@@ -984,6 +990,8 @@ if (document.querySelector(".page-new-registration, .page-membership-renewal")) 
                                         data: item,
                                     }));
                                 }
+
+                                return [];
                             } catch (exc) {
                                 console.log(exc);
 

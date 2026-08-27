@@ -16,12 +16,16 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.security.test.context.support.WithMockUser;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import reactor.core.publisher.Mono;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -173,5 +177,25 @@ public class ApiControllerTest
             .contentType(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.result").value("false"));
+    }
+
+    @Test
+    public void testSuggestAddress_shouldPreserveReservedCharactersInQueryParameter() throws Exception
+    {
+        String query = "V parku 2308/10 & okolí?#";
+        String response = "{\"items\":[]}";
+        when(mapyCzService.suggestAddress(query)).thenReturn(Mono.just(response));
+
+        MvcResult result = mockMvc.perform(get("/api/suggest-address")
+                .param("query", query)
+                .accept(MediaType.APPLICATION_JSON))
+            .andExpect(request().asyncStarted())
+            .andReturn();
+
+        mockMvc.perform(asyncDispatch(result))
+            .andExpect(status().isOk())
+            .andExpect(content().json(response));
+
+        verify(mapyCzService).suggestAddress(query);
     }
 }

@@ -161,11 +161,21 @@ public class ApiController extends ApiControllerAbstract
 
     /**
      * Suggest addresses based on the given query using the Mapy.cz API
+     * Also supports addresses containing path separators such as house numbers in the form 123/45
      * @param query
      * @return
      */
+    @GetMapping("/suggest-address")
+    public Mono<String> suggestAddress(@RequestParam @NotBlank String query)
+    {
+        return this.mapyCzService.suggestAddress(query);
+    }
+
+    /**
+     * Backwards-compatible route for clients using the original path-based endpoint.
+     */
     @GetMapping("/suggest-address/{query}")
-    public Mono<String> suggestAddress(@PathVariable String query)
+    public Mono<String> suggestAddressLegacy(@PathVariable String query)
     {
         return this.mapyCzService.suggestAddress(query);
     }
