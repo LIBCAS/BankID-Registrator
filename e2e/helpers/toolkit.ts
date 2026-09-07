@@ -11,11 +11,21 @@ export async function configureToolkit(
   page: Page,
   options: { middleName: string; forceRenewal: boolean; testerEmail?: string }
 ): Promise<void> {
-  const settingsLoaded = page.waitForResponse(
-    resp => resp.url().includes('/api/test-settings') && resp.request().method() === 'GET'
-  );
-  await page.goto(`${env.contextPath}/welcome`);
-  await settingsLoaded;
+  // Listen before navigation, but surface an unavailable app immediately.
+  // Promise.all also handles the pending response wait if navigation fails.
+  const [settingsResponse] = await Promise.all([
+    page.waitForResponse(
+      resp => resp.url().includes('/api/test-settings') && resp.request().method() === 'GET'
+    ),
+    page.goto(`${env.contextPath}/welcome`).then(response => {
+      if (!response || !response.ok()) {
+        throw new Error(`Cannot configure Tester's Toolkit: welcome page returned HTTP ${response?.status() ?? 'unknown'} at ${page.url()}`);
+      }
+    }),
+  ]);
+  if (!settingsResponse.ok()) {
+    throw new Error(`Cannot configure Tester's Toolkit: settings API returned HTTP ${settingsResponse.status()}`);
+  }
 
   // Open the toolkit panel
   await page.getByRole('button', { name: 'Nástroje pro testování' }).click();

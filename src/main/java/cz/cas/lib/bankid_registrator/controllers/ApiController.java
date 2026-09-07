@@ -1,7 +1,7 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.ApiConfig;
-import cz.cas.lib.bankid_registrator.configurations.RegistrationFeeConfig;
+import cz.cas.lib.bankid_registrator.services.RegistrationFeeService;
 import cz.cas.lib.bankid_registrator.services.AlephService;
 import cz.cas.lib.bankid_registrator.services.IdentityActivityService;
 import cz.cas.lib.bankid_registrator.services.IdentityAuthService;
@@ -44,7 +44,7 @@ public class ApiController extends ApiControllerAbstract
     private final TokenService tokenService;
     private final IdentityAuthService identityAuthService;
     private final VoucherService voucherService;
-    private final RegistrationFeeConfig registrationFeeConfig;
+    private final RegistrationFeeService registrationFeeService;
 
     public ApiController(
         MessageSource messageSource, 
@@ -58,7 +58,7 @@ public class ApiController extends ApiControllerAbstract
         TokenService tokenService,
         IdentityAuthService identityAuthService,
         VoucherService voucherService,
-        RegistrationFeeConfig registrationFeeConfig
+        RegistrationFeeService registrationFeeService
     ) {
         super(messageSource, apiConfig);
         this.patronService = patronService;
@@ -70,7 +70,7 @@ public class ApiController extends ApiControllerAbstract
         this.tokenService = tokenService;
         this.identityAuthService = identityAuthService;
         this.voucherService = voucherService;
-        this.registrationFeeConfig = registrationFeeConfig;
+        this.registrationFeeService = registrationFeeService;
     }
 
     /**
@@ -352,7 +352,8 @@ public class ApiController extends ApiControllerAbstract
         }
 
         Identity identity = identityOpt.get();
-        BigDecimal feeAmount = this.registrationFeeConfig.getDefaultAmount();
+        BigDecimal feeAmount = this.registrationFeeService.getPreviewFee(identity,
+            request.getSession().getAttribute("alephPatron") != null);
 
         Map<String, Object> validation = this.voucherService.validateVoucher(voucherCode, identity, feeAmount);
 

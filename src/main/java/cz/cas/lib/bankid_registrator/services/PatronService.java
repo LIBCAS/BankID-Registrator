@@ -11,6 +11,10 @@ import cz.cas.lib.bankid_registrator.util.DateUtils;
 import cz.cas.lib.bankid_registrator.util.StringUtils;
 
 import java.util.Optional;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
@@ -95,15 +99,21 @@ public class PatronService extends PatronServiceAbstract
             return PatronStatus.STATUS_03;
         }
 
+        // Bank iD supplies yyyyMMdd; Aleph patron reads can contain formatted dates.
+        String birthDate = normalizeBirthDateForAge(patron.getBirthDate());
         int patronAgeWhenMembershipStarts;
         String currentPatronExpiryDate = patron.getExpiryDate();
         String expiryDateFormat = "dd/MM/yyyy";
         if (currentPatronExpiryDate != null && !currentPatronExpiryDate.isEmpty() && !DateUtils.isDateExpired(currentPatronExpiryDate, expiryDateFormat)) {
             // In case of a membership renewal when the reader's membership is still not expired yet, we will calculate the patron's age on the expiration day of the current membership which is a future date
-            patronAgeWhenMembershipStarts = DateUtils.calculateAge(patron.getBirthDate(), null, currentPatronExpiryDate, expiryDateFormat);
+            patronAgeWhenMembershipStarts = DateUtils.calculateAge(birthDate, null, currentPatronExpiryDate, expiryDateFormat);
         } else {
             // In case of a new membership registration or a membership renewal with reader's membership already expired, we will calculate the patron's age as of today
-            patronAgeWhenMembershipStarts = DateUtils.calculateAge(patron.getBirthDate(), null, null, null);
+            patronAgeWhenMembershipStarts = DateUtils.calculateAge(birthDate, null, null, null);
+        }
+
+        if (patronAgeWhenMembershipStarts < 0) {
+            throw new IllegalArgumentException("Cannot determine patron age at membership start");
         }
 
         // Based on the patron's age we can determine if the patron will be retired on the starting date of the very next membership 
@@ -112,6 +122,24 @@ public class PatronService extends PatronServiceAbstract
         }
 
         return PatronStatus.STATUS_16;
+    }
+
+    private String normalizeBirthDateForAge(String value) {
+        if (value != null) {
+            DateTimeFormatter[] formats = {
+                DateTimeFormatter.BASIC_ISO_DATE,
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                DateTimeFormatter.ofPattern("dd-MM-uuuu").withResolverStyle(ResolverStyle.STRICT)
+            };
+            for (DateTimeFormatter format : formats) {
+                try {
+                    return LocalDate.parse(value, format).format(DateTimeFormatter.BASIC_ISO_DATE);
+                } catch (DateTimeParseException ignored) {
+                    // Try the next supported source format.
+                }
+            }
+        }
+        throw new IllegalArgumentException("Cannot determine patron age: invalid birth date");
     }
 
     /**

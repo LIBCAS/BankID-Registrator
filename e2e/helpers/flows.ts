@@ -5,7 +5,7 @@
  * They accept a `ScreenshotHelper` so every test scenario gets
  * consistent screenshot coverage without duplicating logic.
  */
-import { expect, Page } from '@playwright/test';
+import { expect, Page, Locator } from '@playwright/test';
 import { env } from './env';
 import { randomEmail } from './random';
 import { ScreenshotHelper } from './screenshots';
@@ -90,6 +90,33 @@ export async function fillEmployeeRegistrationForm(page: Page, ss: ScreenshotHel
 // Password setting
 // ---------------------------------------------------------------------------
 
+export type VoucherPreview = { feeAmount: number; discountAmount: number; amountToPay: number };
+
+/** Validate a voucher and optionally assert the API response and displayed preview. */
+export async function validateVoucherPreview(
+  page: Page, voucherCode: string, expectedPreview?: VoucherPreview
+): Promise<void> {
+  await page.locator('#voucherCode').fill(voucherCode);
+  const [response] = await Promise.all([
+    page.waitForResponse(resp => resp.url().includes('/api/validate-voucher')
+      && resp.request().method() === 'POST'),
+    page.locator('#btn-validate-voucher').click(),
+  ]);
+  if (expectedPreview) {
+    expect(response.ok()).toBeTruthy();
+    const preview = await response.json();
+    expect(preview.valid).toBe(true);
+    const result = page.locator('#voucher-result');
+    await expect(result).toBeVisible();
+    await expect(result).toHaveAttribute('data-valid', 'true');
+    for (const [field, expected] of Object.entries(expectedPreview)) {
+      expect(Number(preview[field]), `Voucher preview ${field}`).toBe(expected);
+      const attribute = 'data-' + field.replace(/[A-Z]/g, letter => '-' + letter.toLowerCase());
+      await expect.poll(async () => Number(await result.getAttribute(attribute))).toBe(expected);
+    }
+  }
+}
+
 /**
  * Fill and submit the password-setting form (non-employee: "Nastavit heslo a uhradit poplatek").
  * Optionally applies a voucher code before submission.
@@ -97,7 +124,10 @@ export async function fillEmployeeRegistrationForm(page: Page, ss: ScreenshotHel
 export async function setPassword(
   page: Page,
   ss: ScreenshotHelper,
-  options?: { voucherCode?: string }
+  options?: {
+    voucherCode?: string;
+    expectedVoucherPreview?: VoucherPreview;
+  }
 ): Promise<void> {
   await ss.take(page, 'password-form');
 
@@ -105,10 +135,7 @@ export async function setPassword(
   await page.getByRole('textbox', { name: 'Zopakujte zvolené heslo' }).fill(env.patronPassword);
 
   if (options?.voucherCode) {
-    await page.locator('#voucherCode').fill(options.voucherCode);
-    await page.locator('#btn-validate-voucher').click();
-    // Wait for voucher validation API response
-    await page.waitForResponse(resp => resp.url().includes('/api/validate-voucher'));
+    await validateVoucherPreview(page, options.voucherCode, options.expectedVoucherPreview);
     await ss.take(page, 'voucher-validated');
   }
 
@@ -127,7 +154,9 @@ export async function setPassword(
 /**
  * Complete the Comgate sandbox payment: select card → pay → confirm.
  */
-export async function comgatePaymentSuccess(page: Page, ss: ScreenshotHelper): Promise<void> {
+export async function comgatePaymentSuccess(
+  page: Page, ss: ScreenshotHelper, options?: { expectedAmountCzk: number }
+): Promise<void> {
   await ss.take(page, 'comgate-payment-methods');
 
   await page.getByRole('button', { name: 'Card Payment Mastercard, Visa' }).click();
@@ -137,28 +166,56 @@ export async function comgatePaymentSuccess(page: Page, ss: ScreenshotHelper): P
   // Clicking too early can leave the payment form in a transient state.
   await page.waitForTimeout(10_000);
 
-  await Promise.all([
-    page.waitForURL('**/provider/testing/display/**', {
-      timeout: 30_000,
-      waitUntil: 'domcontentloaded',
-    }),
-    page.getByRole('button', { name: /Pay \d+ CZK/ }).click(),
-  ]);
-  await ss.take(page, 'comgate-pay-clicked');
+  const payButton = options
+    ? page.getByRole('button', { name: `Pay ${options.expectedAmountCzk} CZK`, exact: true })
+    : page.getByRole('button', { name: /Pay \d+ CZK/ });
+  await expect(payButton).toBeVisible();
 
-  const confirmButton = page.getByRole('button', { name: 'Confirm' });
-  await confirmButton.waitFor({ state: 'visible', timeout: 30_000 });
-  await ss.take(page, 'comgate-provider-testing');
+  await confirmComgateSandboxPayment(page, ss, () => payButton.click());
+}
 
-  // Tie the confirm click directly to the expected callback so we only proceed
-  // once the provider page actually starts redirecting back to the app.
-  await Promise.all([
-    page.waitForURL(`**${env.contextPath}/**`, {
-      timeout: 60_000,
-      waitUntil: 'commit',
-    }),
-    confirmButton.click(),
-  ]);
+/** Handle full-page, embedded, and popup sandbox payment verification. */
+export async function confirmComgateSandboxPayment(
+  page: Page, ss: ScreenshotHelper, submitPayment: () => Promise<void>
+): Promise<void> {
+  const verificationPages = new Set<Page>([page]);
+  const onPopup = (popup: Page) => verificationPages.add(popup);
+  page.on('popup', onPopup);
+  let confirmButton: Locator | undefined;
+  let continued = false;
+  try {
+    await submitPayment();
+    await ss.take(page, 'comgate-pay-clicked');
+    await expect.poll(async () => {
+      for (const candidate of verificationPages) {
+        if (candidate.isClosed()) continue;
+        for (const frame of candidate.frames()) {
+          const button = frame.getByRole('button', { name: 'Confirm', exact: true });
+          if (await button.isVisible().catch(() => false)) {
+            confirmButton = button;
+            return true;
+          }
+        }
+      }
+      // Some sandbox runs require explicitly opening the verification page.
+      const verificationMessage = page.getByText("Can't see the payment verification page?", { exact: false });
+      const continueButton = page.getByRole('button', { name: 'Continue', exact: true });
+      if (!continued && await verificationMessage.isVisible().catch(() => false)
+          && await continueButton.isVisible().catch(() => false)) {
+        await continueButton.click();
+        continued = true;
+      }
+      return false;
+    }, { timeout: 30_000, message: 'Waiting for Comgate sandbox Confirm control', intervals: [250, 500] }).toBe(true);
+
+    await ss.take(page, 'comgate-provider-testing');
+    await Promise.all([
+      page.waitForURL(`**${env.contextPath}/**`, { timeout: 60_000, waitUntil: 'commit' }),
+      confirmButton!.click(),
+    ]);
+  } finally {
+    page.off('popup', onPopup);
+  }
 }
 
 /**

@@ -91,6 +91,61 @@ class PaymentServiceTest
         assertFalse(paymentService.paymentExists(identity, PaymentType.RENEWAL));
     }
 
+    @Test
+    void seniorChargeCoveredByVoucherStillRequiresSettlement() {
+        PaymentRepository repository = mock(PaymentRepository.class);
+        AlephService aleph = mock(AlephService.class);
+        PaymentService service = createPaymentService(repository, aleph);
+        Identity identity = paymentWithAmount(BigDecimal.ZERO).getIdentity();
+        when(aleph.getPatronFines(TEST_ALEPH_ID)).thenReturn(finesResult(new BigDecimal("150")));
+        when(repository.save(any(Payment.class))).thenAnswer(call -> call.getArgument(0));
+
+        Payment payment = service.createPayment(identity, PaymentType.REGISTRATION, "SENIOR", new BigDecimal("150"));
+
+        assertEquals(PaymentStatus.PENDING, payment.getStatus());
+        assertEquals(0, payment.getAmountToPay().signum());
+        assertFalse(service.verifyPaymentStatus(TEST_ALEPH_ID));
+    }
+
+    @Test
+    void waivedFeeWithoutAlephChargeCanCompleteWithoutGateway() {
+        PaymentRepository repository = mock(PaymentRepository.class);
+        AlephService aleph = mock(AlephService.class);
+        PaymentService service = createPaymentService(repository, aleph);
+        when(aleph.getPatronFines(TEST_ALEPH_ID)).thenReturn(finesResult(BigDecimal.ZERO));
+        when(repository.save(any(Payment.class))).thenAnswer(call -> call.getArgument(0));
+
+        Payment payment = service.createPayment(paymentWithAmount(BigDecimal.ZERO).getIdentity(),
+            PaymentType.REGISTRATION, "SENIOR", new BigDecimal("150"));
+
+        assertEquals(PaymentStatus.VOUCHER_COVERED, payment.getStatus());
+        assertTrue(service.verifyPaymentStatus(TEST_ALEPH_ID));
+    }
+
+    @Test
+    void seniorVoucherLeavesRenewalFinesPayable() {
+        PaymentRepository repository = mock(PaymentRepository.class);
+        AlephService aleph = mock(AlephService.class);
+        when(aleph.getPatronFines(TEST_ALEPH_ID)).thenReturn(finesResult(new BigDecimal("200")));
+        when(repository.save(any(Payment.class))).thenAnswer(call -> call.getArgument(0));
+        Payment payment = createPaymentService(repository, aleph).createPayment(
+            paymentWithAmount(BigDecimal.ZERO).getIdentity(), PaymentType.RENEWAL, "SENIOR", new BigDecimal("150"));
+        assertEquals(PaymentStatus.PENDING, payment.getStatus());
+        assertEquals(new BigDecimal("50"), payment.getAmountToPay());
+    }
+
+    @Test
+    void balanceLookupFailureCannotCreateOrVerifyPayment() {
+        PaymentRepository repository = mock(PaymentRepository.class);
+        AlephService aleph = mock(AlephService.class);
+        PaymentService service = createPaymentService(repository, aleph);
+        when(aleph.getPatronFines(TEST_ALEPH_ID)).thenReturn(java.util.Collections.singletonMap("error", "unavailable"));
+        assertThrows(IllegalStateException.class, () -> service.createPayment(
+            paymentWithAmount(BigDecimal.ZERO).getIdentity(), PaymentType.REGISTRATION, "SENIOR", new BigDecimal("150")));
+        assertThrows(IllegalStateException.class, () -> service.verifyPaymentStatus(TEST_ALEPH_ID));
+        verify(repository, never()).save(any(Payment.class));
+    }
+
     private PaymentService createPaymentService(
         PaymentRepository paymentRepository,
         AlephService alephService

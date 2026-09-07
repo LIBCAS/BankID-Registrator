@@ -69,8 +69,9 @@ public class PaymentService extends ServiceAbstract
         // Create payment record with voucher info
         PaymentStatus status;
         if (discountAmount != null && discountAmount.compareTo(BigDecimal.ZERO) > 0
-                && amount.subtract(discountAmount).compareTo(BigDecimal.ZERO) <= 0) {
-            // Fee fully covered by voucher
+                && amount.compareTo(BigDecimal.ZERO) == 0) {
+            // No Aleph charge exists. Positive balances must be settled through the payments API,
+            // even when the voucher reduces the amount payable to zero.
             status = PaymentStatus.VOUCHER_COVERED;
         } else {
             status = PaymentStatus.PENDING;
@@ -154,12 +155,12 @@ public class PaymentService extends ServiceAbstract
     public BigDecimal getPatronTotalDueCash(String patronId) {
         Map<String, Object> finesResult = alephService.getPatronFines(patronId);
 
-        if (finesResult.containsKey("error")) {
-            getLogger().error("Failed to get patron fines: {}", finesResult.get("error"));
-            return BigDecimal.ZERO;
+        if (finesResult == null || finesResult.containsKey("error")
+                || !(finesResult.get("totalDueCash") instanceof BigDecimal)
+                || ((BigDecimal) finesResult.get("totalDueCash")).signum() < 0) {
+            throw new IllegalStateException("Aleph returned an invalid payment amount");
         }
-
-        return (BigDecimal) finesResult.getOrDefault("totalDueCash", BigDecimal.ZERO);
+        return (BigDecimal) finesResult.get("totalDueCash");
     }
 
     /**
@@ -177,27 +178,7 @@ public class PaymentService extends ServiceAbstract
     @Transactional
     public Payment refreshPaymentAmountFromAleph(Payment payment) {
         String patronId = payment.getIdentity().getAlephId();
-        Map<String, Object> finesResult = alephService.getPatronFines(patronId);
-
-        if (finesResult.containsKey("error")) {
-            getLogger().error("Cannot refresh payment {} from Aleph for patron {}: {}",
-                payment.getId(), patronId, finesResult.get("error"));
-            throw new IllegalStateException("Failed to refresh payment amount from Aleph");
-        }
-
-        Object totalDueCash = finesResult.get("totalDueCash");
-        if (!(totalDueCash instanceof BigDecimal)) {
-            getLogger().error("Cannot refresh payment {} from Aleph for patron {}: missing or invalid totalDueCash",
-                payment.getId(), patronId);
-            throw new IllegalStateException("Aleph returned an invalid payment amount");
-        }
-
-        BigDecimal currentAmount = (BigDecimal) totalDueCash;
-        if (currentAmount.compareTo(BigDecimal.ZERO) < 0) {
-            getLogger().error("Cannot refresh payment {} from Aleph for patron {}: negative totalDueCash {}",
-                payment.getId(), patronId, currentAmount);
-            throw new IllegalStateException("Aleph returned an invalid payment amount");
-        }
+        BigDecimal currentAmount = getPatronTotalDueCash(patronId);
 
         if (payment.getAmount().compareTo(currentAmount) != 0) {
             BigDecimal previousAmount = payment.getAmount();

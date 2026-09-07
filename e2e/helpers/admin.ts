@@ -68,6 +68,26 @@ export class AdminHelper {
     await ss.take(this.page!, description, 'admin');
   }
 
+  /** Read the dashboard's live Aleph payment status, independently of Spring's success page. */
+  async getIdentityPaymentStatus(searchMiddleName: string): Promise<string> {
+    await this.openIdentityDetail(searchMiddleName);
+    const row = this.page!.locator('tr').filter({
+      has: this.page!.getByRole('rowheader', { name: 'Status platby', exact: true }),
+    });
+    return (await row.locator('td').innerText()).replace(/\s+/g, ' ').trim();
+  }
+
+  async getMembershipExpiry(searchMiddleName: string): Promise<string> {
+    await this.openIdentityDetail(searchMiddleName);
+    const row = this.page!.locator('tr').filter({
+      has: this.page!.getByRole('rowheader', { name: 'Registrace', exact: true }),
+    });
+    const text = await row.locator('td').innerText();
+    const date = text.match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/);
+    if (!date) throw new Error(`Cannot read Aleph membership expiry: ${text}`);
+    return `${date[3]}-${date[2]}-${date[1]}`;
+  }
+
   /**
    * Read Aleph identifiers from the current identity detail page.
    */
@@ -95,6 +115,7 @@ export class AdminHelper {
     options: {
       discountType: 'FIXED_CZK' | 'PERCENTAGE';
       discountValue: number;
+      recipientType?: 'SENIOR';
       code?: string;
     }
   ): Promise<string> {
@@ -108,6 +129,9 @@ export class AdminHelper {
     await this.page.locator('#create-discountType').selectOption(options.discountType);
     await this.page.locator('#create-discountValue').fill(String(options.discountValue));
     await this.page.locator('#create-maxUses').fill('1');
+    if (options.recipientType) {
+      await this.page.locator('#create-recipientType').selectOption(options.recipientType);
+    }
     await ss.take(this.page, 'voucher-creation-form', 'admin');
 
     await this.page.getByRole('button', { name: 'Vytvořit voucher' }).click();

@@ -1,7 +1,7 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.PaymentServiceConfig;
-import cz.cas.lib.bankid_registrator.configurations.RegistrationFeeConfig;
+import cz.cas.lib.bankid_registrator.services.RegistrationFeeService;
 import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.entities.payment.ComgateReturnStatus;
 import cz.cas.lib.bankid_registrator.entities.payment.PaymentStatus;
@@ -38,7 +38,7 @@ public class PaymentController extends ControllerAbstract
 {
     private final PaymentService paymentService;
     private final PaymentServiceConfig paymentServiceConfig;
-    private final RegistrationFeeConfig registrationFeeConfig;
+    private final RegistrationFeeService registrationFeeService;
     private final TokenService tokenService;
     private final IdentityService identityService;
     private final VoucherService voucherService;
@@ -48,7 +48,7 @@ public class PaymentController extends ControllerAbstract
         IdentityAuthService identityAuthService,
         PaymentService paymentService,
         PaymentServiceConfig paymentServiceConfig,
-        RegistrationFeeConfig registrationFeeConfig,
+        RegistrationFeeService registrationFeeService,
         TokenService tokenService,
         IdentityService identityService,
         VoucherService voucherService,
@@ -57,7 +57,7 @@ public class PaymentController extends ControllerAbstract
         super(messageSource, identityAuthService, sessionTimerConfig);
         this.paymentService = paymentService;
         this.paymentServiceConfig = paymentServiceConfig;
-        this.registrationFeeConfig = registrationFeeConfig;
+        this.registrationFeeService = registrationFeeService;
         this.tokenService = tokenService;
         this.identityService = identityService;
         this.voucherService = voucherService;
@@ -344,7 +344,7 @@ public class PaymentController extends ControllerAbstract
             return "redirect:/payment";
         }
 
-        BigDecimal feeAmount = registrationFeeConfig.getDefaultAmount();
+        BigDecimal feeAmount = registrationFeeService.getFee(identity);
         Map<String, Object> voucherResult = voucherService.validateVoucher(voucherCode.trim(), identity, feeAmount);
 
         if (!Boolean.TRUE.equals(voucherResult.get("valid"))) {
@@ -473,16 +473,8 @@ public class PaymentController extends ControllerAbstract
      * Handle successful payment callback
      */
     private String handlePaymentSuccess(Payment payment, Identity identity, Model model, Locale locale, HttpServletRequest request) {
-        boolean isPaid;
-
-        if (payment.getStatus() == PaymentStatus.VOUCHER_COVERED) {
-            // Fee was fully covered by voucher — no need to verify with Aleph
-            isPaid = true;
-            getLogger().info("Payment fully covered by voucher. Skipping Aleph verification. Identity: {}", identity.getId());
-        } else {
-            // Verify payment with Aleph - don't trust URL parameter alone!
-            isPaid = paymentService.verifyPaymentStatus(identity.getAlephId());
-        }
+        // A voucher only changes what the customer owes; success still requires no Aleph debt.
+        boolean isPaid = paymentService.verifyPaymentStatus(identity.getAlephId());
 
         if (isPaid) {
             // Update payment status

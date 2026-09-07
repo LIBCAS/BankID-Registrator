@@ -3,7 +3,7 @@ package cz.cas.lib.bankid_registrator.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import cz.cas.lib.bankid_registrator.configurations.MainConfiguration;
-import cz.cas.lib.bankid_registrator.configurations.RegistrationFeeConfig;
+import cz.cas.lib.bankid_registrator.services.RegistrationFeeService;
 import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.AlertDTO;
@@ -91,7 +91,7 @@ public class MainController extends ControllerAbstract
     private final TokenService tokenService;
     private final PaymentService paymentService;
     private final VoucherService voucherService;
-    private final RegistrationFeeConfig registrationFeeConfig;
+    private final RegistrationFeeService registrationFeeService;
 
     @Autowired(required = false)
     private TestSettingsService testSettingsService;
@@ -116,7 +116,7 @@ public class MainController extends ControllerAbstract
         TokenService tokenService,
         PaymentService paymentService,
         VoucherService voucherService,
-        RegistrationFeeConfig registrationFeeConfig,
+        RegistrationFeeService registrationFeeService,
         SessionTimerConfig sessionTimerConfig
     ) {
         super(messageSource, identityAuthService, sessionTimerConfig);
@@ -137,7 +137,7 @@ public class MainController extends ControllerAbstract
         this.tokenService = tokenService;
         this.paymentService = paymentService;
         this.voucherService = voucherService;
-        this.registrationFeeConfig = registrationFeeConfig;
+        this.registrationFeeService = registrationFeeService;
 
         init();
     }
@@ -488,7 +488,7 @@ public class MainController extends ControllerAbstract
             model.addAttribute("membershipExpiresToday", membershipExpiresToday);
             model.addAttribute("expiryDateIn1MonthOrLess", expiryDateIn1MonthOrLess);
             model.addAttribute("outstandingFinesAmount", outstandingFinesAmount);
-            model.addAttribute("standardRenewalFeeAmount", registrationFeeConfig.getDefaultAmount());
+            model.addAttribute("standardRenewalFeeAmount", registrationFeeService.getRenewalFee(alephPatron));
 
             return "callback_registration_renewal";
         }
@@ -919,7 +919,7 @@ public class MainController extends ControllerAbstract
             model.addAttribute("membershipExpiresToday", session.getAttribute("membershipExpiresToday"));
             model.addAttribute("expiryDateIn1MonthOrLess", session.getAttribute("expiryDateIn1MonthOrLess"));
             model.addAttribute("outstandingFinesAmount", session.getAttribute("outstandingFinesAmount"));
-            model.addAttribute("standardRenewalFeeAmount", registrationFeeConfig.getDefaultAmount());
+            model.addAttribute("standardRenewalFeeAmount", registrationFeeService.getRenewalFee(alephPatron));
 
             model.addAttribute("org.springframework.validation.BindingResult.patron", bindingResult);
 
@@ -1085,7 +1085,7 @@ public class MainController extends ControllerAbstract
 
             // Validate and apply voucher if provided
             if (voucherCode != null && !voucherCode.trim().isEmpty()) {
-                BigDecimal feeAmount = registrationFeeConfig.getDefaultAmount();
+                BigDecimal feeAmount = registrationFeeService.getFee(patron);
                 Map<String, Object> voucherResult = voucherService.validateVoucher(voucherCode.trim(), identity, feeAmount);
 
                 if (Boolean.TRUE.equals(voucherResult.get("valid"))) {
@@ -1102,7 +1102,7 @@ public class MainController extends ControllerAbstract
             }
 
             boolean feeFullyCovered = appliedVoucherCode != null
-                && discountAmount.compareTo(registrationFeeConfig.getDefaultAmount()) >= 0;
+                && discountAmount.compareTo(registrationFeeService.getFee(patron)) >= 0;
 
             if (feeFullyCovered) {
                 voucherService.confirmOrCreateUsage(appliedVoucher, identity, discountAmount);

@@ -3,6 +3,8 @@ import { AdminHelper } from './admin';
 import { env, isRenewalFinesScenarioConfigured, RenewalFinesScenarioConfig, RenewalFinesScenarioKey } from './env';
 import {
   bankIdVerification,
+  validateVoucherPreview,
+  VoucherPreview,
   comgatePaymentSuccess,
   fillEmployeeRegistrationForm,
   fillRegistrationForm,
@@ -47,6 +49,7 @@ export async function completeRegistrationForRenewalSeed(
     middleName: string;
     bankIdIdentity?: string;
     isEmployee?: boolean;
+    expectedRegistrationFeeCzk?: number;
   }
 ): Promise<RegisteredPatronInfo> {
   const bankIdIdentity = options.bankIdIdentity ?? env.bankIdIdentity;
@@ -73,7 +76,8 @@ export async function completeRegistrationForRenewalSeed(
     await waitFinalPage(page, ss);
     await admin.screenshotIdentityDetail(options.middleName, ss, 'registration-after-completion');
   } else {
-    await comgatePaymentSuccess(page, ss);
+    await comgatePaymentSuccess(page, ss, options.expectedRegistrationFeeCzk === undefined
+      ? undefined : { expectedAmountCzk: options.expectedRegistrationFeeCzk });
     await waitFinalPage(page, ss);
     await admin.screenshotIdentityDetail(options.middleName, ss, 'registration-after-payment');
   }
@@ -120,6 +124,7 @@ export async function fillRenewalForm(
   options?: {
     isEmployee?: boolean;
     voucherCode?: string;
+    expectedVoucherPreview?: VoucherPreview;
     voucherSequence?: {
       invalidVoucher: string;
       partialVoucher1: string;
@@ -164,9 +169,7 @@ export async function fillRenewalForm(
   if (options?.voucherSequence) {
     await exerciseRenewalVoucherSequence(page, ss, options.voucherSequence);
   } else if (options?.voucherCode) {
-    await page.locator('#voucherCode').fill(options.voucherCode);
-    await page.locator('#btn-validate-voucher').click();
-    await page.waitForResponse(resp => resp.url().includes('/api/validate-voucher'));
+    await validateVoucherPreview(page, options.voucherCode, options.expectedVoucherPreview);
     await ss.take(page, 'renewal-form-voucher-validated');
   }
 

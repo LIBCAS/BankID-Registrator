@@ -11,9 +11,19 @@ public class RegistrationFeeConfig {
     /**
      * Default registration/renewal fee amount in CZK.
      * Must match the fee amount configured in Aleph for the patron's item status.
-     * Used for voucher discount calculation on the frontend before payment creation.
+     * Used as the standard tariff for voucher calculations before fee creation.
      */
     private BigDecimal defaultAmount = new BigDecimal("280");
+
+    private BigDecimal seniorAmount = new BigDecimal("150");
+
+    public BigDecimal getSeniorAmount() {
+        return seniorAmount;
+    }
+
+    public void setSeniorAmount(BigDecimal seniorAmount) {
+        this.seniorAmount = seniorAmount;
+    }
 
     public BigDecimal getDefaultAmount() {
         return defaultAmount;

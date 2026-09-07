@@ -1,6 +1,6 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
-import cz.cas.lib.bankid_registrator.configurations.RegistrationFeeConfig;
+import cz.cas.lib.bankid_registrator.services.RegistrationFeeService;
 import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.dto.PatronPasswordDTO;
 import cz.cas.lib.bankid_registrator.entities.payment.PaymentStatus;
@@ -52,7 +52,7 @@ public class IdentityController extends ControllerAbstract
     private final LdapService ldapService;
     private final PaymentService paymentService;
     private final VoucherService voucherService;
-    private final RegistrationFeeConfig registrationFeeConfig;
+    private final RegistrationFeeService registrationFeeService;
 
     public IdentityController(
         MessageSource messageSource,
@@ -64,7 +64,7 @@ public class IdentityController extends ControllerAbstract
         LdapService ldapService,
         PaymentService paymentService,
         VoucherService voucherService,
-        RegistrationFeeConfig registrationFeeConfig,
+        RegistrationFeeService registrationFeeService,
         SessionTimerConfig sessionTimerConfig
     ) {
         super(messageSource, identityAuthService, sessionTimerConfig);
@@ -75,7 +75,7 @@ public class IdentityController extends ControllerAbstract
         this.ldapService = ldapService;
         this.paymentService = paymentService;
         this.voucherService = voucherService;
-        this.registrationFeeConfig = registrationFeeConfig;
+        this.registrationFeeService = registrationFeeService;
     }
 
     /**
@@ -299,11 +299,12 @@ public class IdentityController extends ControllerAbstract
 
         String patronAlephId = identity.getAlephId();
         String patronAlephBarcode = identity.getAlephBarcode();
+        Patron patron;
 
         try {
             // Store identity ID in session for payment flow
             request.getSession().setAttribute("identity", identityId);
-            Patron patron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
+            patron = (Patron) this.alephService.getAlephPatron(patronAlephId, true).get("patron");
 
             model.addAttribute("alephId", patronAlephId);
             model.addAttribute("alephBarcode", patronAlephBarcode);
@@ -331,9 +332,10 @@ public class IdentityController extends ControllerAbstract
             BigDecimal discountAmount = BigDecimal.ZERO;
             String appliedVoucherCode = null;
 
+            BigDecimal feeAmount = registrationFeeService.getFee(patron);
+
             // Validate and apply voucher if provided
             if (voucherCode != null && !voucherCode.trim().isEmpty()) {
-                BigDecimal feeAmount = registrationFeeConfig.getDefaultAmount();
                 Map<String, Object> voucherResult = voucherService.validateVoucher(voucherCode.trim(), identity, feeAmount);
 
                 if (Boolean.TRUE.equals(voucherResult.get("valid"))) {
@@ -350,7 +352,7 @@ public class IdentityController extends ControllerAbstract
 
             // Determine if the fee is fully covered by voucher (no Aleph fee needed)
             boolean feeFullyCovered = appliedVoucherCode != null
-                && discountAmount.compareTo(registrationFeeConfig.getDefaultAmount()) >= 0
+                && discountAmount.compareTo(feeAmount) >= 0
                 && paymentService.getPatronTotalDueCash(identity.getAlephId()).compareTo(BigDecimal.ZERO) == 0;
 
             Payment payment;

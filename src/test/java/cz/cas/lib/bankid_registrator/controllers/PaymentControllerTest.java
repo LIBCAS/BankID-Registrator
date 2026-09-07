@@ -1,7 +1,7 @@
 package cz.cas.lib.bankid_registrator.controllers;
 
 import cz.cas.lib.bankid_registrator.configurations.PaymentServiceConfig;
-import cz.cas.lib.bankid_registrator.configurations.RegistrationFeeConfig;
+import cz.cas.lib.bankid_registrator.services.RegistrationFeeService;
 import cz.cas.lib.bankid_registrator.configurations.SessionTimerConfig;
 import cz.cas.lib.bankid_registrator.entities.payment.PaymentStatus;
 import cz.cas.lib.bankid_registrator.entities.payment.PaymentType;
@@ -80,6 +80,41 @@ class PaymentControllerTest
         );
     }
 
+    @Test
+    void fullyDiscountedExistingChargeUsesZeroPaymentFinalization() {
+        ControllerFixture fixture = new ControllerFixture();
+        Payment payment = fixture.payment(new BigDecimal("150"));
+        payment.setVoucherCode("SENIOR");
+        payment.setDiscountAmount(new BigDecimal("150"));
+        fixture.stubAuthenticatedPayment(payment, payment);
+        String returnUrl = "http://localhost/payment/callback?refId=999999999&status=success";
+        when(fixture.paymentService.generatePaymentFormData(payment, fixture.identity, returnUrl))
+            .thenReturn(Collections.singletonMap("amount", "0"));
+        Model model = new ExtendedModelMap();
+
+        assertEquals("payment_redirect", fixture.controller.initiatePayment(model, Locale.ENGLISH, fixture.request));
+        verify(fixture.paymentService).generatePaymentFormData(payment, fixture.identity, returnUrl);
+        assertEquals(Collections.singletonMap("amount", "0"), model.getAttribute("formData"));
+    }
+
+    @Test
+    void voucherCoveredStatusCannotReportSuccessWhileAlephStillHasDebt() {
+        ControllerFixture fixture = new ControllerFixture();
+        Payment payment = fixture.payment(new BigDecimal("150"));
+        payment.setStatus(PaymentStatus.VOUCHER_COVERED);
+        fixture.stubAuthenticatedPayment(payment, payment);
+        when(fixture.paymentService.getPaymentByAlephBarcode(fixture.identity.getAlephBarcode()))
+            .thenReturn(Optional.of(payment));
+        when(fixture.paymentService.verifyPaymentStatus(fixture.identity.getAlephId())).thenReturn(false);
+        Model model = new ExtendedModelMap();
+
+        assertEquals("payment", fixture.controller.paymentCallback(fixture.identity.getAlephBarcode(),
+            null, "success", model, Locale.ENGLISH, fixture.request));
+        assertEquals(false, model.getAttribute("paymentSuccess"));
+        assertEquals(true, model.getAttribute("paymentFailed"));
+        verify(fixture.paymentService).updatePaymentStatus(payment, PaymentStatus.FAILED);
+    }
+
     private static class ControllerFixture
     {
         private final IdentityAuthService identityAuthService = mock(IdentityAuthService.class);
@@ -94,7 +129,7 @@ class PaymentControllerTest
             identityAuthService,
             paymentService,
             paymentServiceConfig,
-            mock(RegistrationFeeConfig.class),
+            mock(RegistrationFeeService.class),
             tokenService,
             identityService,
             mock(VoucherService.class),
@@ -103,6 +138,7 @@ class PaymentControllerTest
 
         private void stubAuthenticatedPayment(Payment stalePayment, Payment refreshedPayment) {
             when(identityAuthService.isLoggedin(request)).thenReturn(true);
+            when(identityAuthService.isAuthenticatedAs(request, identity.getId())).thenReturn(true);
             when(identityAuthService.getAuthenticatedIdentityId(request)).thenReturn(identity.getId());
             when(identityService.findById(identity.getId())).thenReturn(Optional.of(identity));
             when(paymentService.getLatestPaymentByIdentity(identity)).thenReturn(Optional.of(stalePayment));

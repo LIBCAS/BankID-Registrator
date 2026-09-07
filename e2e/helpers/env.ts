@@ -43,6 +43,7 @@ export const env = {
   adminUsername: requireEnv('ADMIN_USERNAME'),
   adminPassword: requireEnv('ADMIN_PASSWORD'),
   bankIdIdentity: requireEnv('BANKID_SANDBOX_IDENTITY'),
+  bankIdIdentitySenior: optionalEnv('BANKID_SANDBOX_IDENTITY_SENIOR'),
   middleNamePrefix: requireEnv('TEST_MIDDLE_NAME_PREFIX'),
   patronPassword: requireEnv('PATRON_PASSWORD'),
   employeeEmailDomain: requireEnv('EMPLOYEE_EMAIL_DOMAIN'),

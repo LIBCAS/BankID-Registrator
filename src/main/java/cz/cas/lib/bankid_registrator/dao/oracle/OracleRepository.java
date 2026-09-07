@@ -231,6 +231,9 @@ public class OracleRepository
 
         String feeDescr = "Bank iD";
 
+        // The fixed-width record key includes the fee creation sequence. DATE_X alone
+        // cannot distinguish a paid registration from a later renewal on the same day.
+
         String sql = 
             "SELECT " + 
             "    TRIM(SUBSTR(Z303.Z303_REC_KEY, 1, INSTR(Z303.Z303_REC_KEY, ' ') - 1)) AS patron_id, " + 
@@ -246,7 +249,7 @@ public class OracleRepository
             "LEFT JOIN ( " + 
             "    SELECT " + 
             "        Z31.*, " + 
-            "        ROW_NUMBER() OVER (PARTITION BY SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) ORDER BY Z31.Z31_DATE_X DESC) AS rn " + 
+            "        ROW_NUMBER() OVER (PARTITION BY SUBSTR(Z31.Z31_REC_KEY, 1, INSTR(Z31.Z31_REC_KEY, ' ') - 1) ORDER BY Z31.Z31_DATE_X DESC, Z31.Z31_REC_KEY DESC) AS rn " +
             "    FROM KNA50.Z31 Z31 " + 
             "    WHERE Z31.Z31_DESCRIPTION = :feeDescr " + 
             ") Z31 ON " + 
