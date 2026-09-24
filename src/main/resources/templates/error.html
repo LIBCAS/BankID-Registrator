@@ -12,8 +12,11 @@
       <br>
       <span class="text-7xl" th:text="${errorCode}"></span>
     </h1>
-    <div th:if="${error != null}" class="container my-2 text-2xl font-bold my-4">
-      <p th:text="${error}" />
+    <div th:if="${errorHtml != null}" class="container my-2 text-2xl font-bold my-4">
+      <p th:utext="${errorHtml}"></p>
+    </div>
+    <div th:if="${errorHtml == null and error != null}" class="container my-2 text-2xl font-bold my-4">
+      <p th:text="${error}"></p>
     </div>
     <div class="container my-10">
       <a th:href="@{/welcome}"

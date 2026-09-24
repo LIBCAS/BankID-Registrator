@@ -1642,11 +1642,10 @@ logger.info("AAA doHttpRequest method: {}", method);
     /**
      * Checks if a patron exists in Aleph based on the name and birth date.
      * @param patron Patron's data
-     * @return true if patron exists in Aleph, false otherwise
+     * @return true if no patron matches; ambiguous matches raise an exception
      */
     public boolean isNewAlephPatron(Patron patron) {
-        boolean isNewInOracle = (oracleRepository.getPatronRowsCount(patron.getName(), patron.getBirthDate()) == 0);
-        return isNewInOracle;
+        return !getAlephPatronIdByNameAndBirth(patron).isPresent();
     }
 
     /**

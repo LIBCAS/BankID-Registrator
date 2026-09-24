@@ -16,6 +16,7 @@ import cz.cas.lib.bankid_registrator.entities.payment.PaymentStatus;
 import cz.cas.lib.bankid_registrator.entities.payment.PaymentType;
 import cz.cas.lib.bankid_registrator.exceptions.HttpErrorException;
 import cz.cas.lib.bankid_registrator.exceptions.IdentityAuthException;
+import cz.cas.lib.bankid_registrator.exceptions.AmbiguousPatronMatchException;
 import cz.cas.lib.bankid_registrator.model.identity.Identity;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.model.payment.Payment;
@@ -292,7 +293,21 @@ public class MainController extends ControllerAbstract
         Identity identity;
 
         // Mapping BankID user data to a Patron entity (so-called "BankId patron")
-        Map<String, Object> bankIdPatronCreation = this.envAlephService.newPatron(userInfo, userProfile);
+        Map<String, Object> bankIdPatronCreation;
+        try {
+            bankIdPatronCreation = this.envAlephService.newPatron(userInfo, userProfile);
+        } catch (AmbiguousPatronMatchException e) {
+            getLogger().warn("Multiple Aleph patrons match the verified identity; staff assistance required");
+            this.identityAuthService.logout(request);
+            Optional<String> supportEmail = this.appSettingsService.getPrimarySupportEmail()
+                .map(email -> email.getEmail()).map(String::trim).filter(email -> !email.isEmpty());
+
+            model.addAttribute("errorHtml", supportEmail
+                .map(email -> this.messageSource.getMessage("error.identity.ambiguousPatron.withEmail",
+                    new Object[] {org.springframework.web.util.HtmlUtils.htmlEscape(email)}, locale))
+                .orElseGet(() -> this.messageSource.getMessage("error.identity.ambiguousPatron", null, locale)));
+            return "error";
+        }
 
         if (bankIdPatronCreation.containsKey("error")) {
             this.identityAuthService.logout(request);
