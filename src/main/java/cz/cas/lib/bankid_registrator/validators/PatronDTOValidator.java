@@ -43,7 +43,22 @@ public class PatronDTOValidator implements Validator
      * @param mediaFiles
      */
     public void validate(Object target, Errors errors, @Nullable String patronId, @Nullable MultipartFile[] mediaFiles) {
+        validate(target, errors, patronId, mediaFiles, true);
+    }
+
+    public void validateRenewal(Object target, Errors errors, String patronId, @Nullable MultipartFile[] mediaFiles) {
+        validate(target, errors, patronId, mediaFiles, false);
+    }
+
+    private void validate(Object target, Errors errors, @Nullable String patronId, @Nullable MultipartFile[] mediaFiles, boolean requireExportConsent) {
         PatronDTO patron = (PatronDTO) target;
+
+        // Renewal declarations remain mandatory independently of Aleph history consent.
+        if (!requireExportConsent) {
+            if (!patron.isDeclaration1()) errors.rejectValue("declaration1", "form.error.field.required");
+            if (!patron.isDeclaration2()) errors.rejectValue("declaration2", "form.error.field.required");
+            if (!patron.isDeclaration3()) errors.rejectValue("declaration3", "form.error.field.required");
+        }
 
         // Validate declaration4
         if (!patron.getIsCasEmployee() && !patron.getDeclaration4()) {
@@ -65,7 +80,7 @@ public class PatronDTOValidator implements Validator
         }
 
         // Validate Export Consent
-        if (patron.getExportConsent() != PatronBoolean.Y) {
+        if (requireExportConsent && patron.getExportConsent() != PatronBoolean.Y) {
             errors.rejectValue("exportConsent", "form.error.field.required", "Export consent must be accepted");
         }
 

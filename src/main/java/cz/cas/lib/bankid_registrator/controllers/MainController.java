@@ -908,7 +908,7 @@ public class MainController extends ControllerAbstract
 
         Patron alephPatron = patronRepository.findById(alephPatronSysId).orElse(null);  // original Aleph patron
 
-        this.patronDTOValidator.validate(editedPatron, bindingResult, alephPatron.getId(), mediaFiles);
+        this.patronDTOValidator.validateRenewal(editedPatron, bindingResult, alephPatron.getId(), mediaFiles);
 
         if (bindingResult.hasErrors()) {
             PatronDTO beforeEditedPatron = (PatronDTO) session.getAttribute("latestPatronDTO");
@@ -991,20 +991,13 @@ public class MainController extends ControllerAbstract
             );
         }
 
-        if (editedPatron.getExportConsent() != PatronBoolean.Y) {
-            throw new HttpErrorException(
-                HttpStatus.BAD_REQUEST, 
-                this.messageSource.getMessage("error.400.text", null, locale)
-            );
-        }
-
         boolean identityWasArchived = identity.isDeleted();
         this.identityActivityService.logMembershipRenewalSubmission(identity);
 
         this.patronRepository.deleteById(patronSysId);
         this.patronRepository.deleteById(alephPatronSysId);
 
-        patron.update(editedPatron);
+        patron.updateForRenewal(editedPatron, alephPatron);
         patron.setStatus(this.patronService.determinePatronStatus(patron).getId());
         patron.setExpiryDate(this.patronService.determinePatronExpiryDate(patron));
 

@@ -3,12 +3,10 @@ package cz.cas.lib.bankid_registrator.services;
 import cz.cas.lib.bankid_registrator.configurations.AppConfig;
 import cz.cas.lib.bankid_registrator.dao.mariadb.PatronRepository;
 import cz.cas.lib.bankid_registrator.dto.PatronDTO;
-import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
 import cz.cas.lib.bankid_registrator.exceptions.PatronNotFoundException;
 import cz.cas.lib.bankid_registrator.model.patron.Patron;
 import cz.cas.lib.bankid_registrator.util.DateUtils;
-import cz.cas.lib.bankid_registrator.util.StringUtils;
 
 import java.util.Optional;
 import java.time.LocalDate;
@@ -201,7 +199,7 @@ public class PatronService extends PatronServiceAbstract
         latestPatron.setIdCardDetail(mergeField(bankIdPatron.getIdCardDetail(), alephPatron.getIdCardDetail()));
         latestPatron.setVerification(alephPatron.getVerification());
         latestPatron.setBankIdSub(bankIdPatron.getBankIdSub());
-        latestPatron.setExportConsent(PatronBoolean.N); // the user has to give consent again even if they gave it before
+        latestPatron.setExportConsent(alephPatron.getExportConsent()); // preserve Aleph activity-history preference
         latestPatron.setIsCasEmployee(false); // the user has to confirm their CAS employee status again
         latestPatron.setRfid(mergeField(bankIdPatron.getRfid(), alephPatron.getRfid()));
         latestPatron.setExpiryDate(alephPatron.getExpiryDate());

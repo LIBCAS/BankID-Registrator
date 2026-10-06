@@ -6,8 +6,6 @@ import cz.cas.lib.bankid_registrator.dto.PatronDTO;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronAction;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronBoolean;
 import cz.cas.lib.bankid_registrator.entities.patron.PatronLanguage;
-import cz.cas.lib.bankid_registrator.entities.patron.PatronStatus;
-import cz.cas.lib.bankid_registrator.util.DateUtils;
 import java.util.Optional;
 import javax.persistence.*;
 import lombok.AllArgsConstructor;
@@ -187,9 +185,16 @@ public class Patron {
     }
 
     /**
-     * Update the patron with the given DTO data.
+     * Update the patron with the given DTO data from the renewal form while retaining the original Aleph activity-history preference
      * @param patron
      */
+    public void updateForRenewal(PatronDTO patron, Patron originalAlephPatron) {
+        update(patron);
+
+        // Form declarations must never overwrite the existing activity-history preference.
+        this.exportConsent = originalAlephPatron.getExportConsent();
+    }
+
     public void update(PatronDTO patron) {
         Optional.ofNullable(patron.email).ifPresent(e -> this.email = e.trim());
         Optional.ofNullable(patron.smsNumber).ifPresent(e -> this.smsNumber = e.trim());
