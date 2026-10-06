@@ -23,6 +23,7 @@
 
     <!-- Custom scripts -->
     <script type="module" src="/bankid-registrator/assets/dist/js/main.js"></script>
+    <script th:if="${isAdminPage ?: false}" defer th:src="@{/assets/dist/js/admin.js}"></script>
 
     <!-- Translations script -->
     <script th:inline="javascript">

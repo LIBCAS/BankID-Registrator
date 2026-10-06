@@ -32,9 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(VoucherController.class)
-@Import({LocaleConfig.class, MessageConfig.class})
-class VoucherControllerTest
-{
+@Import({ LocaleConfig.class, MessageConfig.class })
+class VoucherControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
@@ -67,19 +66,94 @@ class VoucherControllerTest
         }
 
         when(voucherService.findVouchers(
-            any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
-        )).thenReturn(new PageImpl<>(vouchers, PageRequest.of(0, 25), 26));
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(vouchers, PageRequest.of(0, 25), 26));
         when(appSettingsService.hasVoucherPrinterAppUrl()).thenReturn(true);
 
         mockMvc.perform(get("/dashboard/vouchers"))
-            .andExpect(status().isOk())
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"voucherSearch\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"patronId\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"print-all-matching-vouchers\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"FILTERED\"")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"selected-voucher-count\">0</span>")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"voucher-page-number\">1 / 2</span>")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"voucher-display-range\">1 - 25</span>")))
-            .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"voucher-total-count\">26</span>")));
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"voucherSearch\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"patronId\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"print-all-matching-vouchers\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("value=\"FILTERED\"")))
+                .andExpect(content()
+                        .string(org.hamcrest.Matchers.containsString("id=\"selected-voucher-count\">0</span>")))
+                .andExpect(content()
+                        .string(org.hamcrest.Matchers.containsString("id=\"voucher-page-number\">1 / 2</span>")))
+                .andExpect(content()
+                        .string(org.hamcrest.Matchers.containsString("id=\"voucher-display-range\">1 - 25</span>")))
+                .andExpect(
+                        content().string(org.hamcrest.Matchers.containsString("id=\"voucher-total-count\">26</span>")));
     }
+
+    @Test
+    void defaultExpiryUsesCalendarYearAnd2359IncludingLeapDay() {
+        org.junit.jupiter.api.Assertions.assertEquals(LocalDateTime.of(2027, 7, 1, 23, 59),
+                VoucherController.resolveGenerationExpiry("", false, java.time.LocalDate.of(2026, 7, 1)));
+        org.junit.jupiter.api.Assertions.assertEquals(LocalDateTime.of(2025, 2, 28, 23, 59),
+                VoucherController.resolveGenerationExpiry(null, false, java.time.LocalDate.of(2024, 2, 29)));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+            "create,missing", "create,empty", "create,explicit", "create,never",
+            "bulk-generate,missing", "bulk-generate,empty", "bulk-generate,explicit", "bulk-generate,never"
+    })
+    @WithMockUser(username = "admin@example.org")
+    void generationResolvesExpiry(String method, String scenario) throws Exception {
+        when(voucherIssuanceConfig.isAllowPartialDiscounts()).thenReturn(true);
+        org.mockito.ArgumentCaptor<Voucher> saved = org.mockito.ArgumentCaptor.forClass(Voucher.class);
+        org.mockito.ArgumentCaptor<LocalDateTime> bulkExpiry = org.mockito.ArgumentCaptor.forClass(LocalDateTime.class);
+        if (method.equals("bulk-generate")) {
+            when(voucherService.bulkGenerate(org.mockito.ArgumentMatchers.anyInt(), any(), any(),
+                    org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.nullable(LocalDateTime.class),
+                    any(), any(), any(), any(), any(), any())).thenReturn(List.of());
+        }
+        java.time.LocalDate before = java.time.LocalDate.now();
+        org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request = org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .post("/dashboard/vouchers/" + method)
+                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                .param("code", "EXPIRYTEST").param("count", "2")
+                .param("discountType", "PERCENTAGE").param("discountValue", "100");
+        if (scenario.equals("empty"))
+            request.param("expiresAt", "");
+        if (scenario.equals("explicit") || scenario.equals("never"))
+            request.param("expiresAt", "2029-08-12T15:30");
+        if (scenario.equals("never"))
+            request.param("neverExpires", "true");
+        mockMvc.perform(request).andExpect(status().is3xxRedirection())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash()
+                        .attributeExists("successMessage"));
+        LocalDateTime actual;
+        if (method.equals("create")) {
+            org.mockito.Mockito.verify(voucherService).save(saved.capture());
+            actual = saved.getValue().getExpiresAt();
+        } else {
+            org.mockito.Mockito.verify(voucherService).bulkGenerate(org.mockito.ArgumentMatchers.eq(2), any(), any(),
+                    org.mockito.ArgumentMatchers.eq(1), bulkExpiry.capture(), any(), any(), any(), any(), any(), any());
+            actual = bulkExpiry.getValue();
+        }
+        if (scenario.equals("never"))
+            org.junit.jupiter.api.Assertions.assertNull(actual);
+        else if (scenario.equals("explicit"))
+            org.junit.jupiter.api.Assertions.assertEquals(LocalDateTime.of(2029, 8, 12, 15, 30), actual);
+        else
+            org.junit.jupiter.api.Assertions.assertTrue(actual.equals(before.plusYears(1).atTime(23, 59))
+                    || actual.equals(java.time.LocalDate.now().plusYears(1).atTime(23, 59)));
+    }
+
+    @Test
+    @WithMockUser(username = "admin@example.org")
+    void generationFormsRenderUncheckedNeverExpiryControls() throws Exception {
+        mockMvc.perform(get("/dashboard/vouchers/new"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"create-neverExpires\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"bulk-neverExpires\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("/assets/dist/js/admin.js")))
+                .andExpect(content().string(org.hamcrest.Matchers
+                        .not(org.hamcrest.Matchers.containsString("document.querySelectorAll('[data-expiry-input]')"))))
+                .andExpect(
+                        content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("checked="))));
+    }
+
 }

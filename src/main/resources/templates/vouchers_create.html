@@ -66,6 +66,12 @@
                             <label for="create-expiresAt" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.expiresAt}"></label>
                             <input id="create-expiresAt" type="datetime-local" name="expiresAt"
                                 class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                            <p class="text-xs text-gray-500 mt-1" th:text="#{voucher.admin.defaultExpiryHint}"></p>
+                            <label for="create-neverExpires" class="flex items-center gap-2 mt-2 text-sm text-gray-700 cursor-pointer">
+                                <input id="create-neverExpires" type="checkbox" name="neverExpires" value="true"
+                                    class="rounded border-gray-300" data-expiry-input="create-expiresAt" />
+                                <span th:text="#{voucher.admin.neverExpires}"></span>
+                            </label>
                         </div>
                         <div>
                             <label for="create-note" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.note}"></label>
@@ -134,6 +140,12 @@
                             <label for="bulk-expiresAt" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.expiresAt}"></label>
                             <input id="bulk-expiresAt" type="datetime-local" name="expiresAt"
                                 class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" />
+                            <p class="text-xs text-gray-500 mt-1" th:text="#{voucher.admin.defaultExpiryHint}"></p>
+                            <label for="bulk-neverExpires" class="flex items-center gap-2 mt-2 text-sm text-gray-700 cursor-pointer">
+                                <input id="bulk-neverExpires" type="checkbox" name="neverExpires" value="true"
+                                    class="rounded border-gray-300" data-expiry-input="bulk-expiresAt" />
+                                <span th:text="#{voucher.admin.neverExpires}"></span>
+                            </label>
                         </div>
                         <div>
                             <label for="bulk-note" class="block text-sm font-medium text-gray-700" th:text="#{voucher.admin.note}"></label>

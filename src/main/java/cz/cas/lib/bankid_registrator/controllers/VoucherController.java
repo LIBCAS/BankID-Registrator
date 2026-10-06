@@ -330,6 +330,7 @@ public class VoucherController extends AdminControllerAbstract
         @RequestParam BigDecimal discountValue,
         @RequestParam(defaultValue = "1") int maxUses,
         @RequestParam(required = false) String expiresAt,
+        @RequestParam(defaultValue = "false") boolean neverExpires,
         @RequestParam(required = false) String note,
         @RequestParam(defaultValue = "DIGITAL") VoucherType type,
         @RequestParam(required = false) VoucherRecipientType recipientType,
@@ -348,9 +349,7 @@ public class VoucherController extends AdminControllerAbstract
 
             String voucherCode = (code != null && !code.trim().isEmpty()) ? code.trim().toUpperCase() : voucherService.generateUniqueCode();
             Voucher voucher = new Voucher(voucherCode, discountType, discountValue, maxUses);
-            if (expiresAt != null && !expiresAt.isEmpty()) {
-                voucher.setExpiresAt(LocalDateTime.parse(expiresAt, DateTimeFormatter.ISO_LOCAL_DATE_TIME));
-            }
+            voucher.setExpiresAt(resolveGenerationExpiry(expiresAt, neverExpires, LocalDate.now()));
             voucher.setNote(note);
             voucher.setType(type);
             voucher.setRecipientType(recipientType);
@@ -376,6 +375,7 @@ public class VoucherController extends AdminControllerAbstract
         @RequestParam BigDecimal discountValue,
         @RequestParam(defaultValue = "1") int maxUses,
         @RequestParam(required = false) String expiresAt,
+        @RequestParam(defaultValue = "false") boolean neverExpires,
         @RequestParam(required = false) String note,
         @RequestParam(defaultValue = "DIGITAL") VoucherType type,
         @RequestParam(required = false) VoucherRecipientType recipientType,
@@ -392,10 +392,7 @@ public class VoucherController extends AdminControllerAbstract
                 return "redirect:/dashboard/vouchers/new";
             }
 
-            LocalDateTime expiry = null;
-            if (expiresAt != null && !expiresAt.isEmpty()) {
-                expiry = LocalDateTime.parse(expiresAt, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            }
+            LocalDateTime expiry = resolveGenerationExpiry(expiresAt, neverExpires, LocalDate.now());
             List<Voucher> vouchers = voucherService.bulkGenerate(count, discountType, discountValue, maxUses, expiry, note, type, recipientType, buyer, paymentMethod, invoice);
             String codes = vouchers.stream().map(Voucher::getCode).collect(Collectors.joining(", "));
             redirectAttributes.addFlashAttribute("successMessage",
@@ -445,6 +442,21 @@ public class VoucherController extends AdminControllerAbstract
 
     private static boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    /**
+     * Resolve admin generation expiry: never expires, explicit date, or one year at 23:59.
+     */
+    static LocalDateTime resolveGenerationExpiry(String expiresAt, boolean neverExpires, LocalDate generationDate) {
+        if (neverExpires) {
+            return null;
+        }
+
+        if (expiresAt == null || expiresAt.trim().isEmpty()) {
+            return generationDate.plusYears(1).atTime(23, 59);
+        }
+
+        return LocalDateTime.parse(expiresAt, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
     /**
