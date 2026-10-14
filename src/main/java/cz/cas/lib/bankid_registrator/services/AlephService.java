@@ -18,9 +18,7 @@ import cz.cas.lib.bankid_registrator.util.TimestampToDate;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+// import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.ThreadLocalRandom;
@@ -811,10 +809,14 @@ public class AlephService extends AlephServiceAbstract
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        HttpEntity<String> entity = new HttpEntity<>("post_xml=" + body, headers);
 logger.info("AAA doHttpRequest url: {}", url);
 logger.info("AAA doHttpRequest body: {}", body);
 logger.info("AAA doHttpRequest method: {}", method);
+
+        // Encode the complete XML as one form value, after XML serialization.
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("post_xml", body);
+        HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(form, headers);
         ResponseEntity<String> response;
         try {
             response = restTemplate.exchange(url, method, entity, String.class);
@@ -1500,11 +1502,10 @@ logger.info("AAA doHttpRequest method: {}", method);
             
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             Transformer transformer = transformerFactory.newTransformer(new StreamSource(resource.getInputStream()));
-            String encodedPasswordOld = URLEncoder.encode(passwordOld, StandardCharsets.UTF_8.toString());
-            String encodedPasswordNew = URLEncoder.encode(passwordNew, StandardCharsets.UTF_8.toString());
 
-            transformer.setParameter("oldPassword", encodedPasswordOld);
-            transformer.setParameter("newPassword", encodedPasswordNew);            
+            // The transformer escapes XML text; form encoding happens at transport time.
+            transformer.setParameter("oldPassword", passwordOld);
+            transformer.setParameter("newPassword", passwordNew);
 
             StringWriter stringWriter = new StringWriter();
             Result streamResult = new StreamResult(stringWriter);
@@ -1518,9 +1519,9 @@ logger.info("AAA doHttpRequest method: {}", method);
         } catch (TransformerException ex) {
             result.put("error", ex.getMessage());
             getLogger().error(MainService.class.getName(), ex);
-        } catch (UnsupportedEncodingException ex) {
-            result.put("error", "Encoding error: " + ex.getMessage());
-            getLogger().error("UnsupportedEncodingException in createPatronPswUpdateXml", ex);
+        // } catch (UnsupportedEncodingException ex) {
+        //     result.put("error", "Encoding error: " + ex.getMessage());
+        //     getLogger().error("UnsupportedEncodingException in createPatronPswUpdateXml", ex);
         } catch (IOException ex) {
             result.put("error", ex.getMessage());
             getLogger().error(MainService.class.getName(), ex);
