@@ -573,10 +573,10 @@ public class VoucherController extends AdminControllerAbstract
         try (PrintWriter writer = response.getWriter()) {
             // BOM for Excel UTF-8 recognition
             writer.print('\uFEFF');
-            writer.println("ID,Code,Type,Recipient Type,Status,Discount Type,Discount Value,Uses,Max Uses,Expires At,First Used At,Patron IDs,Note,Buyer,Payment Method,Invoice,Created At");
+            writer.println("ID;Code;Type;Recipient Type;Status;Discount Type;Discount Value;Uses;Max Uses;Expires At;First Used At;Patron IDs;Note;Buyer;Payment Method;Invoice;Created At");
 
             for (Voucher v : allVouchers.getContent()) {
-                writer.println(String.join(",",
+                writer.println(String.join(";",
                     escapeCsv(String.valueOf(v.getId())),
                     escapeCsv(v.getCode()),
                     escapeCsv(v.getType() != null ? v.getType().name() : ""),
@@ -608,7 +608,7 @@ public class VoucherController extends AdminControllerAbstract
     }
 
     private static String escapeCsv(String value) {
-        if (value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r")) {
+        if (value.contains(";") || value.contains("\"") || value.contains("\n") || value.contains("\r")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;

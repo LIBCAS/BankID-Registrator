@@ -34,6 +34,33 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(VoucherController.class)
 @Import({ LocaleConfig.class, MessageConfig.class })
 class VoucherControllerTest {
+    @Test
+    @WithMockUser(username = "admin@example.org")
+    void voucherExportUsesSemicolonsAndEscapesSpecialCharacters() throws Exception {
+        Voucher voucher = new Voucher("CSV-CODE", DiscountType.FIXED_CZK, new BigDecimal("100"), 1);
+        voucher.setId(1L);
+        voucher.setType(VoucherType.DIGITAL);
+        voucher.setStatus(VoucherStatus.ACTIVE);
+        voucher.setNote("Řádek; s \"uvozovkami\"\na novým řádkem");
+        voucher.setBuyer("Novák, Jan");
+        voucher.setInvoice("první\rdruhý");
+        voucher.setCreatedAt(LocalDateTime.of(2026, 10, 27, 10, 0));
+
+        when(voucherService.findVouchers(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(voucher)));
+
+        mockMvc.perform(get("/dashboard/vouchers/export"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Content-Disposition", "attachment; filename=\"vouchers.csv\""))
+                .andExpect(content().contentType("text/csv; charset=UTF-8"))
+                .andExpect(content().string("\uFEFFID;Code;Type;Recipient Type;Status;Discount Type;Discount Value;Uses;Max Uses;Expires At;First Used At;Patron IDs;Note;Buyer;Payment Method;Invoice;Created At"
+                        + System.lineSeparator()
+                        + "1;CSV-CODE;DIGITAL;;ACTIVE;FIXED_CZK;100;0;1;;;;\"Řádek; s \"\"uvozovkami\"\"\na novým řádkem\";Novák, Jan;;\"první\rdruhý\";2026-10-27 10:00:00"
+                        + System.lineSeparator()));
+    }
+
     @Autowired
     private MockMvc mockMvc;
 
