@@ -43,7 +43,7 @@ class IdentityVoucherTest {
         VoucherRepository voucherRepository = mock(VoucherRepository.class);
         Voucher voucher = new Voucher("TEST", DiscountType.FIXED_CZK, new BigDecimal(voucherValue), 1);
         when(voucherRepository.findByCode("TEST")).thenReturn(Optional.of(voucher));
-        VoucherService validator = new VoucherService(voucherRepository, mock(VoucherUsageRepository.class));
+        VoucherService validator = new VoucherService(voucherRepository, mock(VoucherUsageRepository.class), mock(VoucherAccountingService.class));
         when(vouchers.validateVoucher(eq("TEST"), eq(identity), any(BigDecimal.class)))
             .thenAnswer(call -> validator.validateVoucher("TEST", identity, call.getArgument(2)));
         when(vouchers.findByCode("TEST")).thenReturn(Optional.of(voucher));

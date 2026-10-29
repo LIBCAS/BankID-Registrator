@@ -17,6 +17,16 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface VoucherRepository extends JpaRepository<Voucher, Long>
 {
+    @Query("SELECT v.id FROM Voucher v WHERE v.accountingNumber IS NULL ORDER BY v.id ASC")
+    List<Long> findIdsWithoutAccountingNumber();
+
+    @Query("SELECT COALESCE(MAX(v.accountingNumber), 0) FROM Voucher v")
+    long findMaximumAccountingNumber();
+
+    @Modifying
+    @Query(value = "UPDATE voucher SET accounting_number = :number WHERE id = :id AND accounting_number IS NULL", nativeQuery = true)
+    int assignAccountingNumber(Long id, long number);
+
     Optional<Voucher> findByCode(String code);
 
     boolean existsByCode(String code);

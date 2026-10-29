@@ -46,6 +46,14 @@ Features:
    ./mvnw test
    ```
 
+The voucher accounting integration tests use a separate, disposable MariaDB database. Run the focused checks from the project root:
+
+```sh
+docker compose -f .docker/local/docker-compose.yml build app
+docker compose -f .docker/local/tests/voucher-accounting.yml run --rm tests
+docker compose -f .docker/local/tests/voucher-accounting.yml down
+```
+
 #### Playwright E2E tests
 
 The Playwright suite in `e2e/` covers complete registration and membership-renewal journeys, including Bank iD verification, employee registrations, vouchers, Comgate payments, payment failures and retries, and admin-dashboard checks.

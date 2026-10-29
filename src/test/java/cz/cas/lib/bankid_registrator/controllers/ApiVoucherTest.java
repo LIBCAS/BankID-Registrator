@@ -39,11 +39,20 @@ class ApiVoucherTest {
         when(repository.findByCode("TEST")).thenReturn(Optional.of(
             new Voucher("TEST", DiscountType.FIXED_CZK, new BigDecimal("150"), 1)));
         PatronService patrons = mock(PatronService.class);
-        ApiController controller = new ApiController(mock(MessageSource.class), mock(ApiConfig.class),
-            patrons, aleph, identities, mock(IdentityActivityService.class), mock(MapyCzService.class),
-            mock(LdapService.class), mock(TokenService.class), auth,
-            new VoucherService(repository, mock(VoucherUsageRepository.class)),
-            new RegistrationFeeService(new RegistrationFeeConfig(), aleph, patrons));
+        ApiController controller = new ApiController(
+            mock(MessageSource.class),
+            mock(ApiConfig.class),
+            patrons,
+            aleph,
+            identities,
+            mock(IdentityActivityService.class),
+            mock(MapyCzService.class),
+            mock(LdapService.class),
+            mock(TokenService.class),
+            auth,
+            new VoucherService(repository, mock(VoucherUsageRepository.class), mock(VoucherAccountingService.class)),
+            new RegistrationFeeService(new RegistrationFeeConfig(), aleph, patrons)
+        );
 
         Map<String, Object> result = controller.validateVoucher("TEST", request).getBody();
 

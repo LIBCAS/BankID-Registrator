@@ -1,0 +1,29 @@
+name: bankid-accounting-tests
+
+services:
+  database:
+    image: mariadb:10.6.4-focal
+    command: ["--auto-increment-increment=3", "--auto-increment-offset=1"]
+    environment:
+      MYSQL_ROOT_PASSWORD: accounting-test-only
+      MYSQL_DATABASE: voucher_accounting_test
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-paccounting-test-only"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  tests:
+    image: local-app:latest
+    working_dir: /app
+    environment:
+      ACCOUNTING_TEST_JDBC_URL: jdbc:mariadb://database:3306/voucher_accounting_test
+    volumes:
+      - ../../..:/app
+      - ../../../.m2:/root/.m2
+    depends_on:
+      database:
+        condition: service_healthy
+    command: ["./mvnw", "test", "-Dtest=VoucherAccountingServiceTest,VoucherControllerTest,ApiVoucherTest,IdentityVoucherTest,VoucherPrinterServiceTest"]

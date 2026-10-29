@@ -38,7 +38,8 @@ class VoucherControllerTest {
     @WithMockUser(username = "admin@example.org")
     void voucherExportUsesSemicolonsAndEscapesSpecialCharacters() throws Exception {
         Voucher voucher = new Voucher("CSV-CODE", DiscountType.FIXED_CZK, new BigDecimal("100"), 1);
-        voucher.setId(1L);
+        voucher.setId(205L);
+        voucher.setAccountingNumber(1L);
         voucher.setType(VoucherType.DIGITAL);
         voucher.setStatus(VoucherStatus.ACTIVE);
         voucher.setNote("Řádek; s \"uvozovkami\"\na novým řádkem");
@@ -55,9 +56,9 @@ class VoucherControllerTest {
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
                         .string("Content-Disposition", "attachment; filename=\"vouchers.csv\""))
                 .andExpect(content().contentType("text/csv; charset=UTF-8"))
-                .andExpect(content().string("\uFEFFID;Code;Type;Recipient Type;Status;Discount Type;Discount Value;Uses;Max Uses;Expires At;First Used At;Patron IDs;Note;Buyer;Payment Method;Invoice;Created At"
+                .andExpect(content().string("\uFEFFID;Internal ID;Code;Type;Recipient Type;Status;Discount Type;Discount Value;Uses;Max Uses;Expires At;First Used At;Patron IDs;Note;Buyer;Payment Method;Invoice;Created At"
                         + System.lineSeparator()
-                        + "1;CSV-CODE;DIGITAL;;ACTIVE;FIXED_CZK;100;0;1;;;;\"Řádek; s \"\"uvozovkami\"\"\na novým řádkem\";Novák, Jan;;\"první\rdruhý\";2026-10-27 10:00:00"
+                        + "1;205;CSV-CODE;DIGITAL;;ACTIVE;FIXED_CZK;100;0;1;;;;\"Řádek; s \"\"uvozovkami\"\"\na novým řádkem\";Novák, Jan;;\"první\rdruhý\";2026-10-27 10:00:00"
                         + System.lineSeparator()));
     }
 
@@ -86,6 +87,7 @@ class VoucherControllerTest {
         for (long id = 1; id <= 25; id++) {
             Voucher voucher = new Voucher("CODE" + id, DiscountType.FIXED_CZK, new BigDecimal("100"), 1);
             voucher.setId(id);
+            voucher.setAccountingNumber(987654L + id);
             voucher.setCreatedAt(LocalDateTime.of(2026, 7, 24, 10, 0));
             voucher.setStatus(VoucherStatus.ACTIVE);
             voucher.setType(VoucherType.DIGITAL);
@@ -99,6 +101,7 @@ class VoucherControllerTest {
 
         mockMvc.perform(get("/dashboard/vouchers"))
                 .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("987655"))))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"voucherSearch\"")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("name=\"patronId\"")))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("id=\"print-all-matching-vouchers\"")))

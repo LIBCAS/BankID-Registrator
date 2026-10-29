@@ -1,5 +1,6 @@
 package cz.cas.lib.bankid_registrator.model.voucher;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import cz.cas.lib.bankid_registrator.entities.voucher.DiscountType;
 import cz.cas.lib.bankid_registrator.entities.voucher.VoucherRecipientType;
 import cz.cas.lib.bankid_registrator.entities.voucher.VoucherStatus;
@@ -39,6 +40,11 @@ public class Voucher
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** Permanent sequential reference used only in CSV exports for the sake of the people in accounting */
+    @JsonIgnore
+    @Column(name = "accounting_number", unique = true, updatable = false)
+    private Long accountingNumber;
 
     /**
      * Unique voucher code (the string entered by the patron)

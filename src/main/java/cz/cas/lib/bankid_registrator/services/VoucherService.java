@@ -39,11 +39,13 @@ public class VoucherService extends ServiceAbstract
 
     private final VoucherRepository voucherRepository;
     private final VoucherUsageRepository voucherUsageRepository;
+    private final VoucherAccountingService voucherAccountingService;
 
-    public VoucherService(VoucherRepository voucherRepository, VoucherUsageRepository voucherUsageRepository) {
+    public VoucherService(VoucherRepository voucherRepository, VoucherUsageRepository voucherUsageRepository, VoucherAccountingService voucherAccountingService) {
         super(null);
         this.voucherRepository = voucherRepository;
         this.voucherUsageRepository = voucherUsageRepository;
+        this.voucherAccountingService = voucherAccountingService;
     }
 
     // ========== Validation ==========
@@ -329,9 +331,11 @@ public class VoucherService extends ServiceAbstract
         return voucherRepository.findAllById(ids);
     }
 
-    @Transactional
     public Voucher save(Voucher voucher) {
         voucher.setCode(voucher.getCode().trim().toUpperCase());
+        if (voucher.getId() == null) {
+            return voucherAccountingService.create(Collections.singletonList(voucher)).get(0);
+        }
         return voucherRepository.save(voucher);
     }
 
@@ -417,7 +421,6 @@ public class VoucherService extends ServiceAbstract
      * @param recipientType Optional recipient type for Voucher printer rendering
      * @return List of created vouchers
      */
-    @Transactional
     public List<Voucher> bulkGenerate(int count, DiscountType discountType, BigDecimal discountValue,
                                        int maxUses, LocalDateTime expiresAt, String note, VoucherType type,
                                        VoucherRecipientType recipientType, String buyer, String paymentMethod, String invoice) {
@@ -432,9 +435,9 @@ public class VoucherService extends ServiceAbstract
             voucher.setBuyer(buyer);
             voucher.setPaymentMethod(paymentMethod);
             voucher.setInvoice(invoice);
-            vouchers.add(voucherRepository.save(voucher));
+            vouchers.add(voucher);
         }
-        return vouchers;
+        return voucherAccountingService.create(vouchers);
     }
 
     /**
