@@ -26,7 +26,7 @@ FROM eclipse-temurin:11-jre-alpine
 WORKDIR /app
 
 # Copy the built JAR from the builder stage
-COPY --from=builder /app/target/bankid-registrator-0.0.1-SNAPSHOT.jar /app/app.jar
+COPY --from=builder /app/target/bankid-registrator.jar /app/app.jar
 
 # Set environment variables
 ENV LOG_PATH=/app/logs
